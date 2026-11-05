@@ -18,6 +18,8 @@ npm run dev
 
 L'application s'ouvre sur http://127.0.0.1:5173. Le menu « Charger un cas fictif » propose 13 patients fictifs.
 
+Un aperçu en ligne est publié sur https://hacuubo.github.io/infectiology/ à partir de la branche `gh-pages`, qui contient seulement le build. Il ne se met pas à jour tout seul : chaque publication est manuelle. Cet aperçu sert à la démonstration avec des cas fictifs, pas à l'usage clinique. La page demande aux moteurs de recherche de ne pas l'indexer.
+
 Autres commandes :
 
 ```bash
