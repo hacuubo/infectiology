@@ -1,0 +1,98 @@
+name: Veille mensuelle des sources
+
+# Objectif : le 1er de chaque mois à 08:00, fuseau Europe/Paris (heure d'été et d'hiver gérées).
+# GitHub Actions accepte désormais un fuseau IANA sur les déclencheurs planifiés (clé `timezone`,
+# documentée dans « Events that trigger workflows › schedule », changelog du 19 mars 2026).
+# La minute 7 évite le pic de charge du début d'heure ; GitHub documente des retards possibles
+# en forte charge et l'abandon éventuel de jobs en file : le créneau de rattrapage du 2 du mois
+# ne fait rien si la veille du mois a déjà réussi (prévention des doublons dans run.mjs).
+# Dans un dépôt public, les workflows planifiés sont désactivés après 60 jours sans activité :
+# un lancement manuel (workflow_dispatch) ou un commit les réactive.
+on:
+  schedule:
+    - cron: '7 8 1 * *'
+      timezone: 'Europe/Paris'
+    - cron: '7 8 2 * *'
+      timezone: 'Europe/Paris'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Forcer la veille même si une veille réussie existe déjà ce mois-ci'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: veille-mensuelle
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Exécuter la veille (prévention des doublons, échec partiel si source inaccessible)
+        id: veille
+        continue-on-error: true
+        run: |
+          if [ "${{ inputs.force }}" = "true" ]; then node tools/veille/run.mjs --force; else node tools/veille/run.mjs; fi
+
+      - name: Lire le résultat
+        id: resultat
+        run: |
+          STATUT=$(node -e "const r=require('./tools/veille/resultat-veille.json');console.log(r.statut)")
+          JOUR=$(node -e "const r=require('./tools/veille/resultat-veille.json');console.log(r.jour||'')")
+          echo "statut=$STATUT" >> "$GITHUB_OUTPUT"
+          echo "jour=$JOUR" >> "$GITHUB_OUTPUT"
+          echo "Statut de la veille : $STATUT ($JOUR)"
+
+      - name: Vérifier l'accessibilité des sources du registre clinique
+        if: steps.resultat.outputs.statut != 'ignoree_doublon'
+        continue-on-error: true
+        run: node tools/veille/verifier-sources.mjs
+
+      - name: Tests déterministes (base clinique, moteur, cas d'acceptation)
+        if: steps.resultat.outputs.statut != 'ignoree_doublon'
+        run: npm test
+
+      - name: Ouvrir ou mettre à jour la pull request de veille
+        if: steps.resultat.outputs.statut != 'ignoree_doublon'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: veille/${{ steps.resultat.outputs.jour }}
+          title: 'Veille sources ${{ steps.resultat.outputs.jour }} — ${{ steps.resultat.outputs.statut }}'
+          commit-message: 'veille: journal du ${{ steps.resultat.outputs.jour }} (${{ steps.resultat.outputs.statut }})'
+          labels: veille,validation-humaine-requise
+          body: |
+            Veille automatique des sources officielles (statut : **${{ steps.resultat.outputs.statut }}**).
+
+            - Journal : `docs/veille/journal/${{ steps.resultat.outputs.jour }}.md`
+            - État de la base : `src/clinical/etat-base.json` (dernière veille tentée/réussie, changements en attente)
+
+            **Aucun changement clinique n'est appliqué automatiquement.** Si des sources ont changé, la procédure
+            `docs/veille/PROCEDURE.md` s'applique : analyse source par source, identification des règles concernées
+            (choix, doses, durées, surveillance, contrôles), modifications et tests, relecture développeur/ergonomie,
+            audit documentaire infectiologique, puis **validation humaine qualifiée** avant toute publication thérapeutique.
+            Une source inaccessible constitue un échec partiel : relancer la veille (onglet Actions → Run workflow).
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+      - name: Signaler un échec partiel
+        if: steps.resultat.outputs.statut == 'echec_partiel'
+        run: |
+          echo "::warning::Veille en échec partiel : au moins une source est inaccessible. Relancer manuellement."
+          exit 2

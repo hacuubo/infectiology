@@ -1,0 +1,392 @@
+import type { Dossier } from '../engine/etat';
+import { nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
+import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, CategorieSIR, FoyerId, MecanismeResistance, OrganismeId, Prelevement, TraitementAssocie } from '../clinical/types';
+import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, Select } from './composants';
+import { DCI_ANTIBIOGRAMME, FOYERS_ENTREE_A, GROUPES_ORGANISMES, LIBELLE_FOYER, LIBELLE_ORGANISME, LIBELLE_TRAITEMENT } from './libelles';
+
+type Modifier = (fn: (d: Dossier) => void) => void;
+
+function pertinent(champ: string, d: Dossier): boolean {
+  const r = REGLES_PERTINENCE.find((x) => x.champ === champ);
+  return r ? r.pertinent(d) : true;
+}
+function pertinentP(champ: string, p: Prelevement, d: Dossier): boolean {
+  const r = REGLES_PERTINENCE_PRELEVEMENT.find((x) => x.champ === champ);
+  return r ? r.pertinent(p, d) : true;
+}
+
+export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
+  const d = dossier;
+  const p = d.patient;
+  return (
+    <>
+      <section className="carte" aria-labelledby="t-entree">
+        <h2 id="t-entree">1. Point d'entrée</h2>
+        <ChoixRadio
+          libelle="Par quoi commencez-vous ?"
+          valeur={d.entree}
+          options={[
+            { v: 'syndrome', l: 'A. Syndrome ou foyer infectieux' },
+            { v: 'microbiologie', l: 'B. Résultat microbiologique' },
+          ]}
+          onChange={(v) =>
+            modifier((x) => {
+              x.entree = v;
+              if (v === 'microbiologie' && x.prelevements.length === 0) x.prelevements.push(nouveauPrelevement('hemoculture'));
+            })
+          }
+        />
+        {d.entree === 'syndrome' && (
+          <Select
+            libelle="Syndrome / foyer"
+            valeur={d.syndrome}
+            options={[{ v: 'non_choisi' as const, l: '— choisir —' }, ...FOYERS_ENTREE_A.map((f) => ({ v: f, l: LIBELLE_FOYER[f] }))]}
+            onChange={(v) => modifier((x) => (x.syndrome = v as FoyerId | 'non_choisi'))}
+          />
+        )}
+        {d.entree === 'syndrome' && d.syndrome !== 'non_choisi' && (
+          <p className="aide">
+            Vous pourrez ajouter les prélèvements (hémocultures, ECBU…) à l'étape 4 ; les propositions probabilistes s'affichent dès maintenant et seront précisées par la microbiologie.
+          </p>
+        )}
+      </section>
+
+      <section className="carte" aria-labelledby="t-patient">
+        <h2 id="t-patient">2. Patient</h2>
+        <div className="grille-2">
+          <ChampNombre libelle="Âge" valeur={p.age} onChange={(v) => modifier((x) => (x.patient.age = v))} unite="ans" min={0} max={120} step={1} />
+          <ChoixRadio libelle="Sexe" valeur={p.sexe} options={[{ v: 'femme', l: 'Femme' }, { v: 'homme', l: 'Homme' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.sexe = v))} />
+          <ChampNombre libelle="Poids (facultatif)" aide="Nécessaire seulement pour les doses pondérales (aminosides, vancomycine…) et pour Cockcroft-Gault." valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={20} max={300} />
+          <ChampNombre libelle="Taille (facultatif)" aide="Permet le poids idéal/ajusté et la désindexation du DFG." valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={100} max={250} />
+        </div>
+        {pertinent('patient.grossesse', d) && (
+          <div className="grille-2">
+            <ChoixTri libelle="Grossesse" valeur={p.grossesse} onChange={(v) => modifier((x) => (x.patient.grossesse = v))} />
+            <ChoixTri libelle="Allaitement" valeur={p.allaitement} onChange={(v) => modifier((x) => (x.patient.allaitement = v))} />
+          </div>
+        )}
+
+        <h3>Fonction rénale</h3>
+        <div className="grille-2">
+          <Champ libelle="Créatininémie" aide="Avec son unité. Elle permet Cockcroft-Gault (méthode des RCP) et CKD-EPI.">
+            <div className="ligne">
+              <input type="number" inputMode="decimal" aria-label="Valeur de la créatininémie" value={p.renal.creatinine?.valeur ?? ''} onChange={(e) => modifier((x) => (x.patient.renal.creatinine = e.target.value === '' ? undefined : { valeur: Number(e.target.value), unite: x.patient.renal.creatinine?.unite ?? 'umol/L', date: x.patient.renal.creatinine?.date }))} />
+              <select aria-label="Unité de la créatininémie" value={p.renal.creatinine?.unite ?? 'umol/L'} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.unite = e.target.value as 'umol/L' | 'mg/dL'; else x.patient.renal.creatinine = { valeur: 0, unite: e.target.value as 'umol/L' | 'mg/dL' }; })}>
+                <option value="umol/L">µmol/L</option>
+                <option value="mg/dL">mg/dL</option>
+              </select>
+              <input type="date" aria-label="Date de la créatininémie" value={p.renal.creatinine?.date ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.date = e.target.value || undefined; })} />
+            </div>
+          </Champ>
+          <Champ libelle="DFG ou clairance déjà calculés (facultatif)" aide="Précisez la méthode : un DFG CKD-EPI (mL/min/1,73 m²) n'est pas une clairance de Cockcroft (mL/min).">
+            <div className="ligne">
+              <input type="number" inputMode="decimal" aria-label="Valeur du DFG" value={p.renal.dfg?.valeur ?? ''} onChange={(e) => modifier((x) => (x.patient.renal.dfg = e.target.value === '' ? undefined : { valeur: Number(e.target.value), methode: x.patient.renal.dfg?.methode ?? 'CKD-EPI' }))} />
+              <select aria-label="Méthode du DFG" value={p.renal.dfg?.methode ?? 'CKD-EPI'} onChange={(e) => modifier((x) => { if (x.patient.renal.dfg) x.patient.renal.dfg.methode = e.target.value as never; })}>
+                <option value="CKD-EPI">CKD-EPI (mL/min/1,73 m²)</option>
+                <option value="MDRD">MDRD (mL/min/1,73 m²)</option>
+                <option value="Cockcroft">Cockcroft-Gault (mL/min)</option>
+                <option value="mesure">Mesuré</option>
+                <option value="inconnue">Méthode inconnue</option>
+              </select>
+            </div>
+          </Champ>
+        </div>
+        <div className="grille-2">
+          <ChoixTri libelle="Insuffisance rénale aiguë en cours ?" valeur={p.renal.insuffisanceRenaleAigue} onChange={(v) => modifier((x) => (x.patient.renal.insuffisanceRenaleAigue = v))} />
+          <ChoixRadio libelle="Dialyse / épuration extrarénale" valeur={p.renal.dialyse} options={[{ v: 'aucune', l: 'Aucune' }, { v: 'hemodialyse_intermittente', l: 'Hémodialyse intermittente' }, { v: 'eer_continue', l: 'EER continue' }, { v: 'dialyse_peritoneale', l: 'Dialyse péritonéale' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.renal.dialyse = v))} />
+        </div>
+        {pertinent('patient.renal.stabilite', d) && (
+          <ChoixRadio libelle="Fonction rénale stable ?" aide="Instable : créatininémie variant nettement sur 24-48 h. Les formules d'estimation ne s'appliquent qu'à l'état d'équilibre." valeur={p.renal.stabilite} options={[{ v: 'stable', l: 'Stable' }, { v: 'instable', l: 'Instable / changeante' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.renal.stabilite = v))} />
+        )}
+        {pertinent('patient.renal.horairesDialyse', d) && <ChampTexte libelle="Jours et horaires des séances de dialyse" aide="Ex. : lundi/mercredi/vendredi 8 h-12 h. Sert à positionner les doses après séance." valeur={p.renal.horairesDialyse} onChange={(v) => modifier((x) => (x.patient.renal.horairesDialyse = v))} />}
+
+        <h3>Terrain</h3>
+        <div className="grille-2">
+          <ChoixTri libelle="Insuffisance hépatique" valeur={p.insuffisanceHepatique} onChange={(v) => modifier((x) => (x.patient.insuffisanceHepatique = v))} />
+          <ChoixTri libelle="Immunodépression" aide="Chimiothérapie, greffe, corticoïdes forte dose, biothérapie, VIH non contrôlé…" valeur={p.immunodepression} onChange={(v) => modifier((x) => (x.patient.immunodepression = v))} />
+          {pertinent('patient.neutropenie', d) && <ChoixTri libelle="Neutropénie (PNN < 500/mm³)" valeur={p.neutropenie} onChange={(v) => modifier((x) => (x.patient.neutropenie = v))} />}
+        </div>
+
+        <h3>Allergies</h3>
+        <ChoixRadio libelle="Allergies médicamenteuses" aide="« Aucune connue » signifie que la question a été posée ; « Inconnu » qu'elle ne l'a pas été." valeur={p.statutAllergie} options={[{ v: 'aucune', l: 'Aucune connue' }, { v: 'presentes', l: 'Oui, à préciser' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => { x.patient.statutAllergie = v; if (v === 'presentes' && x.patient.allergies.length === 0) x.patient.allergies = [{ molecule: '', reaction: 'inconnue' }]; })} />
+        {p.statutAllergie === 'presentes' && <Allergies liste={p.allergies} onChange={(l) => modifier((x) => (x.patient.allergies = l))} />}
+
+        <h3>Traitements associés pertinents</h3>
+        <p className="aide">Cochez ce qui s'applique ; ne cochez rien si aucun traitement pertinent.</p>
+        <div className="cases">
+          {(Object.keys(LIBELLE_TRAITEMENT) as TraitementAssocie[]).map((t) => (
+            <label key={t}>
+              <input type="checkbox" checked={p.traitementsAssocies.includes(t)} onChange={(e) => modifier((x) => { x.patient.traitementsAssocies = e.target.checked ? [...x.patient.traitementsAssocies, t] : x.patient.traitementsAssocies.filter((y) => y !== t); })} />
+              {LIBELLE_TRAITEMENT[t]}
+            </label>
+          ))}
+        </div>
+
+        <h3>Antibiotiques récents ou en cours</h3>
+        <AntibiotiquesRecents liste={p.antibiotiquesRecents} onChange={(l) => modifier((x) => (x.patient.antibiotiquesRecents = l))} />
+
+        <h3>Antécédents microbiologiques</h3>
+        <AntecedentsMicro liste={p.antecedentsMicro} onChange={(l) => modifier((x) => (x.patient.antecedentsMicro = l))} />
+      </section>
+
+      <section className="carte" aria-labelledby="t-contexte">
+        <h2 id="t-contexte">3. Contexte, gravité et matériel</h2>
+        <ChoixRadio libelle="Contexte de l'infection" valeur={p.contexte} options={[{ v: 'communautaire', l: 'Communautaire' }, { v: 'associe_aux_soins', l: 'Associé aux soins' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.contexte = v))} />
+        <ChoixRadio
+          libelle="Gravité"
+          aide="Sepsis : dysfonction d'organe (SOFA ≥ 2 points). Choc septique : vasopresseurs nécessaires pour PAM ≥ 65 mmHg et lactate > 2 mmol/L malgré remplissage (Sepsis-3)."
+          valeur={p.gravite}
+          options={[{ v: 'stable', l: 'Stable, sans dysfonction d\'organe' }, { v: 'sepsis', l: 'Sepsis' }, { v: 'choc_septique', l: 'Choc septique' }, { v: 'inconnu', l: 'Inconnu' }]}
+          onChange={(v) => modifier((x) => (x.patient.gravite = v))}
+        />
+        <div className="grille-2">
+          <ChoixRadio libelle="Valve cardiaque" valeur={p.valve} options={[{ v: 'native', l: 'Native' }, { v: 'prothese_mecanique', l: 'Prothèse mécanique' }, { v: 'prothese_biologique', l: 'Prothèse biologique' }, { v: 'tavi', l: 'TAVI' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.valve = v))} />
+          <ChoixTri libelle="Dispositif intracardiaque (stimulateur, défibrillateur)" valeur={p.dispositifIntracardiaque} onChange={(v) => modifier((x) => (x.patient.dispositifIntracardiaque = v))} />
+          <ChoixTri libelle="Prothèse articulaire ou matériel orthopédique" valeur={p.protheseArticulaire} onChange={(v) => modifier((x) => (x.patient.protheseArticulaire = v))} />
+          {pertinent('patient.protheseArticulaireDetails', d) && (
+            <div className="sous-bloc">
+              <ChampTexte libelle="Site de la prothèse / du matériel" valeur={p.protheseArticulaireDetails?.site} onChange={(v) => modifier((x) => (x.patient.protheseArticulaireDetails = { ...x.patient.protheseArticulaireDetails, site: v }))} />
+              <ChampTexte libelle="Date de pose" type="date" valeur={p.protheseArticulaireDetails?.datePose} onChange={(v) => modifier((x) => (x.patient.protheseArticulaireDetails = { ...x.patient.protheseArticulaireDetails, datePose: v }))} />
+            </div>
+          )}
+          <ChoixRadio libelle="Matériel vasculaire" valeur={p.materielVasculaire} options={[{ v: 'aucun', l: 'Aucun' }, { v: 'cvc', l: 'Cathéter veineux central' }, { v: 'picc', l: 'PICC' }, { v: 'chambre_implantable', l: 'Chambre implantable' }, { v: 'catheter_dialyse', l: 'Cathéter de dialyse' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.materielVasculaire = v))} />
+          {pertinent('patient.materielVasculaireDatePose', d) && <ChampTexte libelle="Date de pose du matériel vasculaire" type="date" valeur={p.materielVasculaireDatePose} onChange={(v) => modifier((x) => (x.patient.materielVasculaireDatePose = v))} />}
+          <ChoixRadio libelle="Matériel urinaire" valeur={p.materielUrinaire} options={[{ v: 'aucun', l: 'Aucun' }, { v: 'sonde_vesicale', l: 'Sonde vésicale' }, { v: 'sonde_jj', l: 'Sonde JJ' }, { v: 'nephrostomie', l: 'Néphrostomie' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.materielUrinaire = v))} />
+        </div>
+        <ChampTexte libelle="Intervention ou geste récent (facultatif)" valeur={p.interventionRecente} onChange={(v) => modifier((x) => (x.patient.interventionRecente = v))} />
+      </section>
+
+      <section className="carte" aria-labelledby="t-micro">
+        <h2 id="t-micro">4. Prélèvements et microbiologie</h2>
+        <div className="liste-objets">
+          {d.prelevements.map((prl, i) => (
+            <FormulairePrelevement key={prl.id} index={i} prl={prl} d={d} modifier={modifier} />
+          ))}
+        </div>
+        <div className="ligne" style={{ marginTop: 8 }}>
+          <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('hemoculture')))}>+ Hémoculture</button>
+          <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('urine')))}>+ ECBU</button>
+          <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('profond')))}>+ Prélèvement profond / opératoire</button>
+          <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('autre')))}>+ Autre</button>
+        </div>
+      </section>
+
+      <section className="carte" aria-labelledby="t-horaires">
+        <h2 id="t-horaires">5. Horaires (pour dater le calendrier)</h2>
+        <p className="aide">Facultatif. Sans horaires, le calendrier reste exprimé en délais relatifs ; aucune date n'est inventée.</p>
+        <div className="grille-2">
+          <ChampTexte libelle="Première dose prévue ou administrée" type="datetime-local" valeur={d.horaires.premiereDoseISO} onChange={(v) => modifier((x) => (x.horaires.premiereDoseISO = v))} />
+          <ChampNombre libelle="Durée de perfusion prévue (aminosides)" valeur={d.horaires.dureePerfusionMin} onChange={(v) => modifier((x) => (x.horaires.dureePerfusionMin = v))} unite="min" min={15} max={240} step={5} />
+        </div>
+      </section>
+    </>
+  );
+}
+
+function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl: Prelevement; d: Dossier; modifier: Modifier }) {
+  const maj = (fn: (p: Prelevement) => void) =>
+    modifier((x) => {
+      const t = x.prelevements.find((y) => y.id === prl.id);
+      if (t) fn(t);
+    });
+  const titre = { hemoculture: 'Hémocultures', urine: 'ECBU', profond: 'Prélèvement profond / opératoire', superficiel: 'Prélèvement superficiel', respiratoire: 'Prélèvement respiratoire', autre: 'Autre prélèvement' }[prl.type];
+  return (
+    <div className="objet">
+      <div className="entete">
+        <strong>
+          Prélèvement {index + 1} — {titre}
+        </strong>
+        <button type="button" className="btn discret" onClick={() => modifier((x) => (x.prelevements = x.prelevements.filter((y) => y.id !== prl.id)))}>
+          Retirer
+        </button>
+      </div>
+      <Select libelle="Type" valeur={prl.type} options={[{ v: 'hemoculture', l: 'Hémoculture' }, { v: 'urine', l: 'Urine (ECBU)' }, { v: 'profond', l: 'Profond / opératoire' }, { v: 'superficiel', l: 'Superficiel' }, { v: 'respiratoire', l: 'Respiratoire' }, { v: 'autre', l: 'Autre' }]} onChange={(v) => maj((p) => { p.type = v; if (v === 'hemoculture' && !p.hemoc) p.hemoc = { origine: 'inconnu', persistance: 'inconnu' }; })} />
+      <ChoixRadio libelle="Stade du résultat" valeur={prl.stade} options={[{ v: 'examen_direct', l: 'Examen direct seulement' }, { v: 'identification', l: 'Identification (espèce / groupe)' }, { v: 'antibiogramme', l: 'Antibiogramme disponible' }]} onChange={(v) => maj((p) => { p.stade = v; p.antibiogrammeDisponible = v === 'antibiogramme' ? 'oui' : v === 'identification' ? 'non' : 'inconnu'; })} />
+      {pertinentP('examenDirect', prl, d) && (
+        <ChoixRadio libelle="Examen direct" valeur={prl.examenDirect ?? 'inconnu'} options={[{ v: 'bgn', l: 'Bacilles à Gram négatif' }, { v: 'cgp_amas', l: 'Cocci à Gram positif en amas' }, { v: 'cgp_chainettes', l: 'Cocci à Gram positif en chaînettes' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => (p.examenDirect = v))} />
+      )}
+      {pertinentP('organisme', prl, d) && (
+        <Champ libelle="Organisme identifié" aide="Choisissez le groupe si l'espèce n'est pas encore connue (ex. « BGN non identifié »).">
+          <select aria-label="Organisme" value={prl.organisme ?? ''} onChange={(e) => maj((p) => (p.organisme = (e.target.value || undefined) as OrganismeId | undefined))}>
+            <option value="">— choisir —</option>
+            {GROUPES_ORGANISMES.map((g) => (
+              <optgroup key={g.titre} label={g.titre}>
+                {g.ids.map((id) => (
+                  <option key={id} value={id}>
+                    {LIBELLE_ORGANISME[id]}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {prl.organisme === 'autre' && <input type="text" aria-label="Précisez l'organisme" placeholder="Précisez l'organisme" value={prl.organismeLibre ?? ''} onChange={(e) => maj((p) => (p.organismeLibre = e.target.value || undefined))} />}
+        </Champ>
+      )}
+      {pertinentP('antibiogramme', prl, d) && <Antibiogramme prl={prl} maj={maj} />}
+      {pertinentP('hemoc', prl, d) && prl.hemoc && (
+        <div className="sous-bloc">
+          <div className="grille-2">
+            <ChampNombre libelle="Séries prélevées" valeur={prl.hemoc.nbSeriesPrelevees} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.nbSeriesPrelevees = v; })} min={0} max={20} step={1} />
+            <ChampNombre libelle="Séries positives" valeur={prl.hemoc.nbSeriesPositives} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.nbSeriesPositives = v; })} min={0} max={20} step={1} />
+            <ChampNombre libelle="Flacons positifs" valeur={prl.hemoc.nbFlaconsPositifs} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.nbFlaconsPositifs = v; })} min={0} max={40} step={1} />
+          </div>
+          <ChoixRadio libelle="Origine des prélèvements positifs" valeur={prl.hemoc.origine} options={[{ v: 'peripherique', l: 'Périphérique' }, { v: 'catheter', l: 'Sur cathéter' }, { v: 'les_deux', l: 'Périphérique et cathéter' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.origine = v; })} />
+          {pertinentP('hemoc.delaiPositiviteDifferentielHeures', prl, d) && (
+            <ChampNombre libelle="Délai de positivité différentiel (cathéter − périphérique)" aide="Positif ≥ 2 h en faveur d'une origine cathéter (si prélèvements simultanés et volumes comparables)." valeur={prl.hemoc.delaiPositiviteDifferentielHeures} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.delaiPositiviteDifferentielHeures = v; })} unite="h" min={-24} max={48} step={0.5} />
+          )}
+          <ChampTexte libelle="Date/heure de la première hémoculture positive" type="datetime-local" valeur={prl.hemoc.datePremierePositiveISO} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.datePremierePositiveISO = v; })} />
+          <ChoixRadio libelle="Hémocultures de contrôle" valeur={prl.hemoc.persistance} options={[{ v: 'non_controlees', l: 'Pas encore contrôlées' }, { v: 'negativees', l: 'Négativées' }, { v: 'persistantes', l: 'Toujours positives' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.persistance = v; })} />
+          {pertinentP('hemoc.dateNegativationISO', prl, d) && <ChampTexte libelle="Date de la première hémoculture négative" type="datetime-local" aide="Point de départ du calcul de durée pour S. aureus et l'endocardite." valeur={prl.hemoc.dateNegativationISO} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.dateNegativationISO = v; })} />}
+        </div>
+      )}
+      <Select libelle="Foyer suspecté ou confirmé" valeur={prl.foyer} options={(Object.keys(LIBELLE_FOYER) as FoyerId[]).map((f) => ({ v: f, l: LIBELLE_FOYER[f] }))} onChange={(v) => maj((p) => (p.foyer = v))} />
+      {prl.foyer !== 'inconnu' && <ChoixRadio libelle="Statut du foyer" valeur={prl.foyerStatut} options={[{ v: 'suspecte', l: 'Suspecté' }, { v: 'confirme', l: 'Confirmé' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => (p.foyerStatut = v))} />}
+      {pertinentP('signesInfectionMateriel', prl, d) && <ChoixTri libelle="Signes d'infection sur le matériel (inflammation au point d'insertion, descellement, douleur de prothèse, végétation sur sonde…)" valeur={prl.signesInfectionMateriel} onChange={(v) => maj((p) => (p.signesInfectionMateriel = v))} />}
+    </div>
+  );
+}
+
+function Antibiogramme({ prl, maj }: { prl: Prelevement; maj: (fn: (p: Prelevement) => void) => void }) {
+  const lignes = prl.antibiogramme ?? [];
+  const mecas: MecanismeResistance[] = ['BLSE', 'carbapenemase', 'cephalosporinase_dereprimee', 'SARM', 'ERV', 'aucun_documente'];
+  const libMeca: Record<MecanismeResistance, string> = { BLSE: 'BLSE', carbapenemase: 'Carbapénémase (EPC)', cephalosporinase_dereprimee: 'Céphalosporinase déréprimée (AmpC)', SARM: 'SARM (résistance à la méticilline)', ERV: 'Entérocoque résistant à la vancomycine', aucun_documente: 'Aucun mécanisme particulier documenté' };
+  return (
+    <div className="sous-bloc">
+      <ChampTexte libelle="Référentiel d'interprétation et version" aide="Ex. CA-SFM/EUCAST 2025 v1.0. La catégorie I signifie « sensible à forte posologie »." valeur={prl.referentiel} onChange={(v) => maj((p) => (p.referentiel = v))} />
+      <Champ libelle="Mécanismes de résistance documentés">
+        <div className="cases">
+          {mecas.map((m) => (
+            <label key={m}>
+              <input type="checkbox" checked={prl.mecanismes?.includes(m) ?? false} onChange={(e) => maj((p) => { const cur = p.mecanismes ?? []; p.mecanismes = e.target.checked ? [...cur, m] : cur.filter((y) => y !== m); })} />
+              {libMeca[m]}
+            </label>
+          ))}
+        </div>
+      </Champ>
+      <Champ libelle="Résultats S / I / R" aide="Ajoutez seulement les molécules rendues. CMI facultative (mg/L).">
+        <div className="liste-objets">
+          {lignes.map((l, i) => (
+            <div key={i} className="ligne">
+              <select aria-label="Antibiotique" value={l.dci} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].dci = e.target.value; })}>
+                {DCI_ANTIBIOGRAMME.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.l}
+                  </option>
+                ))}
+              </select>
+              <div className="boutons-choix" role="radiogroup" aria-label="Catégorie">
+                {(['S', 'I', 'R'] as CategorieSIR[]).map((c) => (
+                  <button key={c} type="button" role="radio" aria-checked={l.categorie === c} className={l.categorie === c ? 'actif' : ''} onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].categorie = c; })}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <input type="number" inputMode="decimal" aria-label="CMI (mg/L)" placeholder="CMI" style={{ width: 90 }} value={l.cmi ?? ''} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].cmi = e.target.value === '' ? undefined : Number(e.target.value); })} />
+              <button type="button" className="btn discret" onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme.splice(i, 1); })}>Retirer</button>
+            </div>
+          ))}
+        </div>
+        <div>
+          <button type="button" className="btn secondaire" onClick={() => maj((p) => { p.antibiogramme = [...(p.antibiogramme ?? []), { dci: 'amoxicilline', categorie: 'S' }]; p.antibiogrammeDisponible = 'oui'; })}>+ Ajouter une molécule</button>
+        </div>
+      </Champ>
+    </div>
+  );
+}
+
+function Allergies({ liste, onChange }: { liste: Allergie[]; onChange: (l: Allergie[]) => void }) {
+  const maj = (i: number, fn: (a: Allergie) => void) => {
+    const copie = liste.map((a) => ({ ...a }));
+    fn(copie[i]);
+    onChange(copie);
+  };
+  return (
+    <div className="liste-objets">
+      {liste.length === 0 && <p className="aide">Aucune allergie déclarée. Si l'information n'est pas connue, laissez vide et précisez-le dans la prise de décision.</p>}
+      {liste.map((a, i) => (
+        <div key={i} className="objet">
+          <div className="entete">
+            <strong>Allergie {i + 1}</strong>
+            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+          </div>
+          <ChampTexte libelle="Molécule ou famille" aide="Ex. amoxicilline, pénicillines, céphalosporines, bêta-lactamine non précisée, vancomycine…" valeur={a.molecule} onChange={(v) => maj(i, (x) => (x.molecule = v ?? ''))} />
+          <ChoixRadio
+            libelle="Type de réaction"
+            aide="Immédiate (< 1 h) : urticaire, angio-œdème, bronchospasme, anaphylaxie. Retardée sévère : DRESS, Stevens-Johnson/Lyell, PEAG, atteinte d'organe. Retardée bénigne : éruption maculo-papuleuse isolée."
+            valeur={a.reaction}
+            options={[{ v: 'immediate', l: 'Immédiate' }, { v: 'retardee_benigne', l: 'Retardée bénigne' }, { v: 'retardee_severe', l: 'Retardée sévère' }, { v: 'intolerance_non_allergique', l: 'Intolérance non allergique' }, { v: 'inconnue', l: 'Inconnue' }]}
+            onChange={(v) => maj(i, (x) => (x.reaction = v))}
+          />
+          <div className="grille-2">
+            <ChoixRadio libelle="Gravité" valeur={a.gravite ?? 'inconnue'} options={[{ v: 'legere', l: 'Légère' }, { v: 'moderee', l: 'Modérée' }, { v: 'severe', l: 'Sévère' }, { v: 'inconnue', l: 'Inconnue' }]} onChange={(v) => maj(i, (x) => (x.gravite = v))} />
+            <ChampTexte libelle="Délai / date" valeur={a.delai} onChange={(v) => maj(i, (x) => (x.delai = v))} />
+          </div>
+          <ChampTexte libelle="Molécules de la même famille tolérées depuis (facultatif)" valeur={a.tolerees?.join(', ')} onChange={(v) => maj(i, (x) => (x.tolerees = v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined))} />
+        </div>
+      ))}
+      <div>
+        <button type="button" className="btn secondaire" onClick={() => onChange([...liste, { molecule: '', reaction: 'inconnue' }])}>+ Déclarer une allergie</button>
+      </div>
+    </div>
+  );
+}
+
+function AntibiotiquesRecents({ liste, onChange }: { liste: AntibiotiqueRecent[]; onChange: (l: AntibiotiqueRecent[]) => void }) {
+  const maj = (i: number, fn: (a: AntibiotiqueRecent) => void) => {
+    const copie = liste.map((a) => ({ ...a }));
+    fn(copie[i]);
+    onChange(copie);
+  };
+  return (
+    <div className="liste-objets">
+      {liste.length === 0 && <p className="aide">Aucun antibiotique récent déclaré (3 derniers mois).</p>}
+      {liste.map((a, i) => (
+        <div key={i} className="objet">
+          <div className="entete">
+            <strong>{a.dci || `Antibiotique ${i + 1}`}</strong>
+            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+          </div>
+          <div className="grille-2">
+            <ChampTexte libelle="DCI" valeur={a.dci} onChange={(v) => maj(i, (x) => (x.dci = v ?? ''))} />
+            <ChoixTri libelle="En cours ?" valeur={a.enCours} onChange={(v) => maj(i, (x) => (x.enCours = v))} />
+            <ChampTexte libelle="Début" type="date" valeur={a.debut} onChange={(v) => maj(i, (x) => (x.debut = v))} />
+            {a.enCours !== 'oui' && <ChampTexte libelle="Fin" type="date" valeur={a.fin} onChange={(v) => maj(i, (x) => (x.fin = v))} />}
+            {a.enCours === 'oui' && <ChampTexte libelle="Dernière dose administrée (date et heure)" type="datetime-local" valeur={a.derniereDoseISO} onChange={(v) => maj(i, (x) => (x.derniereDoseISO = v))} />}
+          </div>
+        </div>
+      ))}
+      <div>
+        <button type="button" className="btn secondaire" onClick={() => onChange([...liste, { dci: '', enCours: 'inconnu' }])}>+ Ajouter un antibiotique</button>
+      </div>
+    </div>
+  );
+}
+
+function AntecedentsMicro({ liste, onChange }: { liste: AntecedentMicrobiologique[]; onChange: (l: AntecedentMicrobiologique[]) => void }) {
+  const maj = (i: number, fn: (a: AntecedentMicrobiologique) => void) => {
+    const copie = liste.map((a) => ({ ...a }));
+    fn(copie[i]);
+    onChange(copie);
+  };
+  return (
+    <div className="liste-objets">
+      {liste.length === 0 && <p className="aide">Aucun antécédent de colonisation ou d'infection à bactérie résistante déclaré.</p>}
+      {liste.map((a, i) => (
+        <div key={i} className="objet">
+          <div className="entete">
+            <strong>Antécédent {i + 1}</strong>
+            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+          </div>
+          <div className="grille-2">
+            <ChampTexte libelle="Organisme" valeur={a.organisme} onChange={(v) => maj(i, (x) => (x.organisme = v ?? ''))} />
+            <Select libelle="Résistance" valeur={a.resistance ?? 'autre'} options={[{ v: 'BLSE', l: 'BLSE' }, { v: 'EPC', l: 'EPC (carbapénémase)' }, { v: 'SARM', l: 'SARM' }, { v: 'ERV', l: 'ERV' }, { v: 'autre', l: 'Autre / non précisée' }]} onChange={(v) => maj(i, (x) => (x.resistance = v))} />
+            <ChampTexte libelle="Date" type="date" valeur={a.date} onChange={(v) => maj(i, (x) => (x.date = v))} />
+          </div>
+        </div>
+      ))}
+      <div>
+        <button type="button" className="btn secondaire" onClick={() => onChange([...liste, { organisme: '', resistance: 'BLSE' }])}>+ Ajouter un antécédent</button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+# Jamais de données patients réelles dans le dépôt
+donnees-patients/

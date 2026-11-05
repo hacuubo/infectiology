@@ -1,0 +1,125 @@
+{
+  "description": "Registre explicite des pages officielles surveillées par la veille mensuelle. Chaque entrée est comparée (empreinte du contenu normalisé + repères de version) à l'état enregistré lors de la dernière veille réussie.",
+  "sources": [
+    {
+      "id": "spilf-recommandations",
+      "organisme": "SPILF",
+      "libelle": "Page des recommandations SPILF",
+      "url": "https://www.infectiologie.com/fr/recommandations-spilf.html",
+      "type": "html",
+      "reperes": ["urinaire", "bactériémie", "endocardite", "ostéo", "aminoside", "vancomycine"]
+    },
+    {
+      "id": "spilf-ium-2026",
+      "organisme": "SPILF",
+      "libelle": "Infections urinaires masculines 2026 (diaporama officiel)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/spilf-groupe-recos-ium.pptx",
+      "type": "binaire"
+    },
+    {
+      "id": "spilf-iu-2015",
+      "organisme": "SPILF",
+      "libelle": "Infections urinaires communautaires 2015 (texte court)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/infections-urinaires-spilf.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "spilf-iuas-2015",
+      "organisme": "SPILF/AFU/SF2H",
+      "libelle": "Infections urinaires associées aux soins 2015",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/2015-rpc-infections-urinaires-associees-aux-soins.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "has-antibiotherapie",
+      "organisme": "HAS",
+      "libelle": "Choix et durées d'antibiothérapie préconisées dans les infections bactériennes courantes",
+      "url": "https://www.has-sante.fr/jcms/p_3278764/fr/",
+      "type": "html",
+      "reperes": ["Mise à jour"]
+    },
+    {
+      "id": "has-pna-femme",
+      "organisme": "HAS",
+      "libelle": "Pyélonéphrite aiguë de la femme",
+      "url": "https://www.has-sante.fr/jcms/c_2722914/fr/pyelonephrite-aigue-de-la-femme",
+      "type": "html",
+      "reperes": ["Mise à jour"]
+    },
+    {
+      "id": "ansm-aminosides-2011",
+      "organisme": "ANSM",
+      "libelle": "Mise au point bon usage des aminosides (2011)",
+      "url": "https://ansm.sante.fr/uploads/2021/02/04/map-aminosides.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "ansm-fluoroquinolones-2023",
+      "organisme": "ANSM",
+      "libelle": "Fluoroquinolones : rappel des restrictions d'utilisation",
+      "url": "https://ansm.sante.fr/informations-de-securite/antibiotiques-de-la-famille-des-fluoroquinolones-administres-par-voie-systemique-ou-inhalee-rappel-des-restrictions-dutilisation",
+      "type": "html"
+    },
+    {
+      "id": "eucast-breakpoints-v16.1",
+      "organisme": "EUCAST",
+      "libelle": "Breakpoint tables v16.1 (PDF en vigueur, contient les définitions S/I/R en note 6)",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/breakpoints/v_16.1_Breakpoint_Tables.pdf",
+      "type": "binaire",
+      "note": "Les pages HTML d'EUCAST (clinical_breakpoints, newsiandr) répondent 404 aux clients automatisés : elles sont vérifiées manuellement (voir PROCEDURE.md)."
+    },
+    {
+      "id": "eucast-breakpoints-v17.0",
+      "organisme": "EUCAST",
+      "libelle": "Sentinelle : parution des Breakpoint tables v17.0 (attendue le 1er janvier 2027)",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/breakpoints/v_17.0_Breakpoint_Tables.pdf",
+      "type": "sentinelle"
+    },
+    {
+      "id": "casfm-2026-v1.0",
+      "organisme": "SFM (CA-SFM/EUCAST)",
+      "libelle": "Référentiel CA-SFM/EUCAST 2026 V1.0 (page de la boutique SFM)",
+      "url": "https://www.sfm-microbiologie.org/boutique/ca-sfm-v1-0-septembre-2026/",
+      "type": "html",
+      "reperes": ["V1.0", "V1.1", "V2.0", "2027"]
+    },
+    {
+      "id": "escmid-guidelines",
+      "organisme": "ESCMID",
+      "libelle": "Guidelines publiées",
+      "url": "https://www.escmid.org/guidelines-journals/guidelines/published-guidelines/",
+      "type": "html"
+    },
+    {
+      "id": "esc-endocardite",
+      "organisme": "ESC",
+      "libelle": "Guidelines endocardite",
+      "url": "https://www.escardio.org/guidelines/clinical-practice-guidelines/all-esc-practice-guidelines/endocarditis/",
+      "type": "html",
+      "reperes": ["2023", "Endocarditis"]
+    },
+    {
+      "id": "eau-urological-infections",
+      "organisme": "EAU",
+      "libelle": "Guidelines on Urological Infections",
+      "url": "https://uroweb.org/guidelines/urological-infections",
+      "type": "html",
+      "reperes": ["2026", "2027", "Limited update"]
+    },
+    {
+      "id": "crat",
+      "organisme": "CRAT",
+      "libelle": "Centre de référence sur les agents tératogènes (page d'accueil des antibiotiques)",
+      "url": "https://www.lecrat.fr/",
+      "type": "html"
+    },
+    {
+      "id": "github-actions-schedule",
+      "organisme": "GitHub",
+      "libelle": "Documentation des déclencheurs planifiés (fiabilité de la veille elle-même)",
+      "url": "https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows",
+      "type": "html",
+      "reperes": ["schedule", "UTC"]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "2026.11.0-brouillon",
+  "dateValidationHumaine": null,
+  "statutGlobal": "verifiee_ia",
+  "derniereVeilleReussie": "2026-11-05",
+  "derniereVeilleTentee": "2026-11-05",
+  "perimetreSurveille": [
+    "SPILF — recommandations (infectiologie.com)",
+    "HAS — fiches antibiothérapie et infections urinaires",
+    "ANSM — RCP (base de données publique des médicaments) et mises au point aminosides",
+    "EUCAST — Clinical Breakpoint Tables, définitions S/I/R, expert rules",
+    "CA-SFM/EUCAST — référentiel annuel",
+    "ESCMID — guidelines publiées",
+    "ESC — endocardite (2023) et mises à jour",
+    "IDSA — bactériémie à S. aureus, infections de cathéter (en l'absence de texte européen)",
+    "CRAT — grossesse/allaitement",
+    "GitHub Actions — documentation schedule (fiabilité de la veille)"
+  ],
+  "changementsEnAttente": [],
+  "obsolescence": {
+    "alerte": false,
+    "texte": "Aucune veille réussie encore enregistrée : la base reflète les sources consultées le 2026-11-04."
+  }
+}
