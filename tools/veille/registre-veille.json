@@ -7,7 +7,14 @@
       "libelle": "Page des recommandations SPILF",
       "url": "https://www.infectiologie.com/fr/recommandations-spilf.html",
       "type": "html",
-      "reperes": ["urinaire", "bactériémie", "endocardite", "ostéo", "aminoside", "vancomycine"]
+      "reperes": [
+        "urinaire",
+        "bactériémie",
+        "endocardite",
+        "ostéo",
+        "aminoside",
+        "vancomycine"
+      ]
     },
     {
       "id": "spilf-ium-2026",
@@ -36,7 +43,9 @@
       "libelle": "Choix et durées d'antibiothérapie préconisées dans les infections bactériennes courantes",
       "url": "https://www.has-sante.fr/jcms/p_3278764/fr/",
       "type": "html",
-      "reperes": ["Mise à jour"]
+      "reperes": [
+        "Mise à jour"
+      ]
     },
     {
       "id": "has-pna-femme",
@@ -44,7 +53,9 @@
       "libelle": "Pyélonéphrite aiguë de la femme",
       "url": "https://www.has-sante.fr/jcms/c_2722914/fr/pyelonephrite-aigue-de-la-femme",
       "type": "html",
-      "reperes": ["Mise à jour"]
+      "reperes": [
+        "Mise à jour"
+      ]
     },
     {
       "id": "ansm-aminosides-2011",
@@ -81,7 +92,16 @@
       "libelle": "Référentiel CA-SFM/EUCAST 2026 V1.0 (page de la boutique SFM)",
       "url": "https://www.sfm-microbiologie.org/boutique/ca-sfm-v1-0-septembre-2026/",
       "type": "html",
-      "reperes": ["V1.0", "V1.1", "V2.0", "2027"]
+      "reperes": [
+        "V1.0",
+        "V1.1",
+        "V2.0",
+        "2027"
+      ],
+      "couperApres": [
+        "Related products",
+        "Produits similaires"
+      ]
     },
     {
       "id": "escmid-guidelines",
@@ -96,7 +116,10 @@
       "libelle": "Guidelines endocardite",
       "url": "https://www.escardio.org/guidelines/clinical-practice-guidelines/all-esc-practice-guidelines/endocarditis/",
       "type": "html",
-      "reperes": ["2023", "Endocarditis"]
+      "reperes": [
+        "2023",
+        "Endocarditis"
+      ]
     },
     {
       "id": "eau-urological-infections",
@@ -104,7 +127,11 @@
       "libelle": "Guidelines on Urological Infections",
       "url": "https://uroweb.org/guidelines/urological-infections",
       "type": "html",
-      "reperes": ["2026", "2027", "Limited update"]
+      "reperes": [
+        "2026",
+        "2027",
+        "Limited update"
+      ]
     },
     {
       "id": "crat",
@@ -119,7 +146,105 @@
       "libelle": "Documentation des déclencheurs planifiés (fiabilité de la veille elle-même)",
       "url": "https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows",
       "type": "html",
-      "reperes": ["schedule", "UTC"]
+      "reperes": [
+        "schedule",
+        "UTC"
+      ]
+    },
+    {
+      "id": "afu-ecbu-geste-2026",
+      "organisme": "AFU / CIAFU / SPILF",
+      "libelle": "ECBU avant geste urologique et traitement de la colonisation (synthèse 2026)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/reco-ecbu-synthese-04032026-mel.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "spilf-iu-2015-argumentaire",
+      "organisme": "SPILF",
+      "libelle": "Infections urinaires communautaires 2015 (argumentaire : prélèvement, contamination)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/infections-urinaires-spilf-argumentaire.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "has-femme-enceinte-iu",
+      "organisme": "HAS",
+      "libelle": "Femme enceinte : colonisation urinaire et cystite",
+      "url": "https://www.has-sante.fr/jcms/c_2722927/fr/femme-enceinte-colonisation-urinaire-et-cystite",
+      "type": "html",
+      "reperes": [
+        "Mis à jour",
+        "colonisation"
+      ]
+    },
+    {
+      "id": "has-cystite-femme",
+      "organisme": "HAS",
+      "libelle": "Cystite aiguë simple, à risque de complication ou récidivante, de la femme",
+      "url": "https://www.has-sante.fr/jcms/c_2722827/fr/cystite-aigue-simple-a-risque-de-complication-ou-recidivante-de-la-femme",
+      "type": "html",
+      "reperes": [
+        "Mis à jour"
+      ]
+    },
+    {
+      "id": "has-infections-cutanees-2019",
+      "organisme": "HAS / SPILF / SFD",
+      "libelle": "Infections cutanées bactériennes courantes (plaies chroniques)",
+      "url": "https://www.has-sante.fr/jcms/c_2911550/fr/prise-en-charge-des-infections-cutanees-bacteriennes-courantes",
+      "type": "html",
+      "reperes": [
+        "Mis à jour"
+      ]
+    },
+    {
+      "id": "iwgdf-idsa-2023",
+      "organisme": "IWGDF / IDSA",
+      "libelle": "Infection du pied diabétique (2023)",
+      "url": "https://iwgdfguidelines.org/wp-content/uploads/2023/07/IWGDF-2023-04-Infection-Guideline.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "idsa-bacteriurie-2019",
+      "organisme": "IDSA",
+      "libelle": "Bactériurie asymptomatique (2019)",
+      "url": "https://www.idsociety.org/practice-guideline/asymptomatic-bacteriuria/",
+      "type": "html",
+      "reperes": [
+        "Updated",
+        "Published"
+      ]
+    },
+    {
+      "id": "idsa-escmid-sab-2026",
+      "organisme": "IDSA / ESCMID",
+      "libelle": "Bactériémie à S. aureus — consensus 2026 (définitions)",
+      "url": "https://www.idsociety.org/practice-guideline/staphylococcus-aureus-bacteremia/",
+      "type": "html",
+      "reperes": [
+        "Updated",
+        "Published"
+      ]
+    },
+    {
+      "id": "eucast-erp-v1.2",
+      "organisme": "EUCAST",
+      "libelle": "Expected Resistant Phenotypes v1.2",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Resistant_Phenotypes_v1.2_20230113.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "eucast-esp-v1.1",
+      "organisme": "EUCAST",
+      "libelle": "Expected Susceptible Phenotypes v1.1",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Susceptible_Phenotypes_Tables_v1.1_20220325.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "eucast-detection-v2.01",
+      "organisme": "EUCAST",
+      "libelle": "Détection des mécanismes de résistance v2.01",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/eucast_guidelines/EUCAST_detection_of_resistance_mechanisms_170711.pdf",
+      "type": "binaire"
     }
   ]
 }

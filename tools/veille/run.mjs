@@ -57,8 +57,21 @@ function normaliser(texte, type) {
     .replace(/\b(csrf|nonce|token|session|_ga|timestamp)[^"'\s]*/gi, '')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z]+;/gi, ' ')
+    // Jetons encodés générés à chaque requête (ex. pages HAS) : sans valeur documentaire, ils créaient de faux changements.
+    .replace(/[A-Za-z0-9+/=_-]{60,}/g, ' ')
+    .replace(/\b(?=[A-Za-z0-9+/=_-]*\d)(?=[A-Za-z0-9+/=_-]*[A-Z])[A-Za-z0-9+/=_-]{16,}/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** Coupe le texte au premier repère indiqué (ex. « Related products » tirés au hasard sur une page boutique). */
+function couper(texte, reperes) {
+  let t = texte;
+  for (const r of reperes ?? []) {
+    const i = t.indexOf(r);
+    if (i >= 0) t = t.slice(0, i);
+  }
+  return t;
 }
 
 function empreinte(s) {
@@ -152,7 +165,7 @@ async function main() {
       } else {
         const estBinaire = s.type === 'binaire' || !/text|html|xml|json/i.test(r.type);
         const contenu = estBinaire ? r.buf.toString('base64') : r.buf.toString('utf8');
-        const norm = normaliser(contenu, estBinaire ? 'binaire' : 'html');
+        const norm = estBinaire ? normaliser(contenu, 'binaire') : couper(normaliser(contenu, 'html'), s.couperApres);
         const h = empreinte(norm);
         const reperes = estBinaire ? {} : extraireReperes(norm, s.reperes);
         ligne.empreinte = h;

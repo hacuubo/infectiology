@@ -1,4 +1,6 @@
 import { useId } from 'react';
+import type { Dossier } from '../engine/etat';
+import { CarteIndication, EtapesParcours, LIBELLE_DECISION, LectureMicrobiologique, SyntheseDecision } from './Indication';
 import type { Alerte, NiveauUrgence, OptionTherapeutique, Plan, PrescriptionProposee } from '../clinical/types';
 import { Badge, BadgeStatut, ListeSources, RefsInline } from './composants';
 import { formaterDate, type EvenementFriseDetaille } from '../schedule/frise';
@@ -211,7 +213,9 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
   );
 }
 
-export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (id: string) => void }) {
+export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier }) {
+  const ind = plan.indication;
+  const conclusionSansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
   const niveau = plan.urgence.niveau;
   const premieres = plan.options.filter((o) => o.rang === 'premiere_ligne');
   const autres = plan.options.filter((o) => o.rang !== 'premiere_ligne');
@@ -225,7 +229,7 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
   return (
     <section className={`carte fiche ${niveau === 'immediate' ? 'urgence' : niveau === 'elevee' ? 'attention' : ''}`} aria-labelledby="t-fiche">
       <p className="sr-only" role="status" aria-live="polite">
-        Fiche recalculée : {LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
+        Fiche recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
         {urgentes.length ? ` ; ${urgentes.length} alerte(s) urgente(s)` : ''}.
       </p>
       <h2 id="t-fiche">
@@ -240,6 +244,9 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
         </p>
       )}
 
+      {dossier && <EtapesParcours plan={plan} dossier={dossier} />}
+      <SyntheseDecision plan={plan} />
+
       <div className="fiche-section">
         <h3>
           A. Situation retenue <Badge type={typeUrgence(niveau)}>{LIBELLE_URGENCE[niveau]}</Badge>
@@ -248,6 +255,7 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
           <strong>{plan.situation.libelle}</strong>
         </p>
         <p className="aide">{plan.situation.description}</p>
+        <LectureMicrobiologique plan={plan} />
         {urgentes.length > 0 && (
           <p className="aide">
             {urgentes.length} alerte{urgentes.length > 1 ? 's' : ''} urgente{urgentes.length > 1 ? 's' : ''} affichée{urgentes.length > 1 ? 's' : ''} en permanence en haut de l'écran.
@@ -275,8 +283,17 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
       </div>
 
       <div className="fiche-section">
-        <h3>B. Traitement proposé</h3>
-        {plan.options.length === 0 && <p className="aide">Aucune proposition thérapeutique ne peut être formulée avec les données actuelles. Voir les informations manquantes et les critères d'avis spécialisé.</p>}
+        <h3>B. {conclusionSansTraitement ? 'Conclusion sur l\'indication' : 'Traitement proposé'}</h3>
+        {ind && (conclusionSansTraitement || ind.decision === 'urgence' || ind.actions.length > 0 || plan.options.length === 0) && <CarteIndication indication={ind} />}
+        {(plan.indicationsSecondaires?.length ?? 0) > 0 && (
+          <details open>
+            <summary>Autres conclusions ({plan.indicationsSecondaires!.length})</summary>
+            {plan.indicationsSecondaires!.map((i) => (
+              <CarteIndication key={`${i.regleId}-${i.titre}`} indication={i} />
+            ))}
+          </details>
+        )}
+        {plan.options.length === 0 && !conclusionSansTraitement && <p className="aide">Aucune proposition thérapeutique ne peut être formulée avec les données actuelles. Voir les informations manquantes et les critères d'avis spécialisé.</p>}
         {plan.options.length > 0 && premieres.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les options conditionnelles ci-dessous et les informations manquantes.</p>}
         {communs.length > 0 && (
           <div className="alerte attention avert-communs">
@@ -325,8 +342,15 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
               : 'Aucun horaire saisi : moments relatifs (aucune date inventée). Saisir l\'heure de la 1re dose (étape 5) pour dater le calendrier.'}
           </p>
         )}
+        {conclusionSansTraitement && ind && (ind.surveillance.length > 0 || ind.actions.length > 0) && (
+          <ul className="manquants">
+            {[...ind.actions, ...ind.surveillance].map((x) => (
+              <li key={x}>{x}</li>
+            ))}
+          </ul>
+        )}
         {frise.length === 0 ? (
-          <p className="aide">Aucun calendrier ne peut être établi sans proposition thérapeutique.</p>
+          <p className="aide">{conclusionSansTraitement ? 'Pas de calendrier de surveillance d’antibiotique : aucun traitement n’est proposé.' : 'Aucun calendrier ne peut être établi sans proposition thérapeutique.'}</p>
         ) : (
           <table className="frise">
             <caption className="sr-only">Calendrier de surveillance et de contrôles</caption>

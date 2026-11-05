@@ -26,4 +26,17 @@ Principe : on ne fusionne pas des recommandations incompatibles. Pour chaque div
 | Durée de l'IU masculine | SPILF 2026 : selon la forme (PNA 7-10 j, prostatite 14 j, orchi-épididymite 10 j) | forme clinique demandée ; sans elle, aucune durée n'est fixée | évite d'appliquer 14 j par défaut |
 | Résiduelle d'aminoside en insuffisance rénale | ANSM 2011 et RCP : pas de réinjection tant que la résiduelle dépasse le seuil | dosage avant la 2e injection puis avant chaque réinjection | corrigé par l'audit documentaire |
 
+| Durée du traitement d'une colonisation avant geste urologique | IDSA 2019 : 1 ou 2 doses ; AFU 2026 : de 48 h avant à 48 h après le geste au plus (3 à 5 jours) | AFU 2026 affichée, divergence signalée | texte français le plus récent, propre aux gestes urologiques |
+| Fièvre sans signe urinaire ni autre foyer, avec bactériurie | IDSA 2019 (remarque, question V) : antibiothérapie couvrant sources urinaires et non urinaires ; SPILF 2026 : surveillance sans antibiotique si signes généraux non spécifiques sans sepsis | « traiter », spectre non modélisé, avis SMIT (brouillon) | les deux textes visent des situations voisines mais non identiques |
+| Changement de sonde JJ ou de néphrostomie | AFU 2026 tableau 6 : ECBU indiqué ; légende du même texte : cité parmi les situations sans consensus ; IUAS 2015 R.30 : dépister et traiter | « traiter avant le geste », brouillon | incohérence interne du texte AFU signalée |
+| Seuil de leucocyturie | SPILF 2026 (homme) : 30 × 10³/mL ; SPILF 2015, IUAS 2015, HAS : 10⁴/mL | non utilisé pour décider | une anomalie biologique isolée ne prouve pas l'infection ; la clinique prime |
+| Seuil de bactériurie sur sonde | IUAS 2015 : ≥ 10⁵ UFC/mL ; EAU 2026 : ≥ 10³ UFC/mL | non utilisé pour décider | la définition retenue est clinique (IUAS R.1) |
+| Résistance aux C3G sans mécanisme rapporté | EUCAST règle 7 : « le plus souvent une BLSE » ; CA-SFM : BLSE affirmée par un test de synergie | pas d'inférence de BLSE ; conduite des entérobactéries résistantes aux C3G, sans céfoxitine | ne pas déduire un mécanisme non rapporté |
+| Endocardite à streptocoque : seuils de CMI | SPILF/AEPEI 2025 (d'après ESC 2023) : amoxicilline ≤ 0,5 ; 0,5-2 ; > 2 mg/L ; ESC 2023 : texte non accessible (403) | SPILF/AEPEI 2025 | seule source lue |
+| Grossesse à rechercher devant une bactériurie | aucune source ne fixe d'âge | demandée jusqu'à 50 ans | **choix applicatif non sourcé**, à valider |
+| Signes non spécifiques du sujet âgé hospitalisé | IUAS 2015 R.3 : évoquer une IUAS ; IDSA 2019 V et SPILF 2026 : rechercher une autre cause, surveiller sans antibiotique | « ne pas traiter », divergence affichée en contexte de soins | recommandations plus récentes |
+| Bactériurie et neutropénie | IDSA 2019 IX : aucune recommandation (haut risque) ; IUAS 2015 R.28 : ne pas dépister ni traiter (autres immunodéprimés) | avis SMIT | divergence non résolue |
+| Céfoxitine et Proteus BLSE | SPILF 2026 : admise ; SPILF 2023 : E. coli seulement ; CA-SFM 2026 : catégorisation validée pour E. coli seulement | E. coli : option documentée ; Proteus : option conditionnelle en brouillon | prudence |
+| Témocilline hors voie urinaire | SPILF : foyer urinaire seulement ; CA-SFM 2026 : ligne « autres infections » ; EUCAST : urinaire seulement | non proposée hors voie urinaire | recommandations thérapeutiques françaises |
+
 Une publication de recherche (essai BALANCE 2024 : 7 j vs 14 j) n'est pas transformée en recommandation : elle est citée comme contexte seulement.

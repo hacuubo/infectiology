@@ -143,6 +143,50 @@ export interface Patient {
   interventionRecente?: string;
 }
 
+/**
+ * Geste urologique prévu : tous les gestes ne sont pas équivalents vis-à-vis
+ * d'une colonisation urinaire (AFU/CIAFU/SPILF 2026).
+ */
+export type GesteUrologique =
+  | 'aucun'
+  // ECBU et traitement d'une colonisation recommandés (AFU 2026)
+  | 'ablation_endoscopique_hbp'
+  | 'urethroplastie'
+  | 'ureteroscopie'
+  | 'nlpc'
+  | 'rtuv'
+  | 'bilan_urodynamique'
+  | 'sonde_jj_nephrostomie'
+  // Pas de dépistage (AFU 2026)
+  | 'cystoscopie'
+  | 'prostatectomie_totale'
+  | 'enucleation_voie_haute'
+  | 'cystectomie'
+  | 'nephrectomie'
+  | 'instillations_toxine'
+  | 'sphincter_implant_prothese'
+  | 'biopsies_prostate'
+  | 'changement_ablation_sonde_vesicale'
+  // Pas de recommandation possible (AFU 2026)
+  | 'sans_recommandation'
+  | 'autre'
+  | 'inconnu';
+
+/** Éléments cliniques de l'épisode, utiles pour décider s'il faut traiter. */
+export interface Clinique {
+  /** Fièvre ≥ 38 °C ou hypothermie < 36 °C. */
+  fievre: TriState;
+  /** Signes fonctionnels urinaires (brûlures, pollakiurie, impériosité, douleur sus-pubienne, lombaire ou pelvienne). */
+  signesUrinaires: 'nouveaux' | 'chroniques_inchanges' | 'absents' | 'inconnu';
+  /** Signes non spécifiques : confusion, chute, perte d'autonomie, altération de l'état général. */
+  signesNonSpecifiques: TriState;
+  /** Un autre foyer infectieux peut-il expliquer les signes ? */
+  autreFoyer: 'identifie' | 'recherche_negative' | 'non_recherche';
+  gesteUrologique: GesteUrologique;
+  /** Prélèvement superficiel (plaie) : signes cliniques d'infection locale (pus, dermohypodermite, abcès…). */
+  signesInfectionLocale: TriState;
+}
+
 /* ------------------------------------------------------------------ */
 /* Microbiologie                                                       */
 /* ------------------------------------------------------------------ */
@@ -175,19 +219,56 @@ export type OrganismeId =
   | 'enterocoque_non_identifie'
   | 'autre';
 
+/** « NT » : non testé, en attente ou non renseigné — jamais interprété comme sensible. */
+export type CategorieSaisie = CategorieSIR | 'NT';
+
 export interface ResultatAntibiogramme {
   dci: string;
-  categorie: CategorieSIR;
+  categorie: CategorieSaisie;
   cmi?: number; // mg/L
 }
 
-export type MecanismeResistance =
-  | 'BLSE'
-  | 'carbapenemase'
-  | 'cephalosporinase_dereprimee'
-  | 'SARM'
-  | 'ERV'
-  | 'aucun_documente';
+/**
+ * Phénotype ou mécanisme de résistance explicitement rapporté par le laboratoire.
+ * « non_rapporte » (non recherché ou non renseigné) n'est jamais lu comme « absent ».
+ */
+export type PhenotypeId = 'BLSE' | 'ampc' | 'carbapenemase' | 'SARM' | 'ERV' | 'hnr_gentamicine';
+export type EtatPhenotype = 'present' | 'absent' | 'non_rapporte';
+
+/** Données propres à un isolat : chaque antibiogramme reste rattaché à son germe. */
+export interface DonneesIsolat {
+  organisme?: OrganismeId;
+  organismeLibre?: string;
+  antibiogramme?: ResultatAntibiogramme[];
+  phenotypes?: Partial<Record<PhenotypeId, EtatPhenotype>>;
+  /** Germe pour lequel les résultats ont été saisis : si le germe change, ils sont effacés. */
+  antibiogrammePour?: OrganismeId;
+}
+
+export interface Isolat extends DonneesIsolat {
+  id: string;
+}
+
+/** Raison de la réalisation de l'ECBU. */
+export type MotifECBU =
+  | 'signes_urinaires'
+  | 'fievre'
+  | 'signes_non_specifiques'
+  | 'depistage_grossesse'
+  | 'avant_geste_urologique'
+  | 'systematique'
+  | 'controle_apres_traitement'
+  | 'autre'
+  | 'inconnu';
+
+export type RecueilUrine = 'mi_jet' | 'sondage_aller_retour' | 'sonde_a_demeure' | 'collecteur' | 'nephrostomie_ou_derivation' | 'inconnu';
+
+export interface ContexteECBU {
+  motif: MotifECBU;
+  recueil: RecueilUrine;
+  /** Nombre d'espèces rapportées par le laboratoire. */
+  nbEspeces: 'une' | 'deux' | 'trois_ou_plus' | 'inconnu';
+}
 
 export type FoyerId =
   | 'inconnu'
@@ -201,18 +282,18 @@ export type FoyerId =
   | 'digestif'
   | 'autre';
 
-export interface Prelevement {
+export interface Prelevement extends DonneesIsolat {
   id: string;
   type: TypePrelevement;
   stade: StadeIdentification;
   /** Résultat de l'examen direct, si seul disponible. */
   examenDirect?: 'bgn' | 'cgp_amas' | 'cgp_chainettes' | 'autre' | 'inconnu';
-  organisme?: OrganismeId;
-  organismeLibre?: string;
   antibiogrammeDisponible: TriState;
-  antibiogramme?: ResultatAntibiogramme[];
-  mecanismes?: MecanismeResistance[];
-  referentiel?: string; // ex. "CA-SFM/EUCAST 2025 v1.0"
+  referentiel?: string; // ex. "CA-SFM/EUCAST 2026 v1.0"
+  /** Autres germes du même prélèvement (prélèvement polymicrobien), chacun avec son antibiogramme. */
+  isolatsSupplementaires?: Isolat[];
+  /** ECBU : raison, mode de recueil, nombre d'espèces. */
+  urine?: ContexteECBU;
   /** Hémocultures. */
   hemoc?: {
     nbSeriesPrelevees?: number;
@@ -506,8 +587,47 @@ export interface RegleAppliquee {
   sources: SourceRef[];
 }
 
+/** Décision sur l'indication d'antibiothérapie : distincte du choix de la molécule. */
+export type DecisionIndication = 'traiter' | 'urgence' | 'ne_pas_traiter' | 'informations_insuffisantes' | 'attendre_resultat';
+export type QualificationCulture = 'infection' | 'infection_probable' | 'colonisation' | 'contamination_possible' | 'indeterminee';
+
+export interface IndicationPlan {
+  decision: DecisionIndication;
+  qualification: QualificationCulture;
+  titre: string;
+  raison: string;
+  /** Conditions qui justifient la conclusion (ce qui a été renseigné). */
+  conditions: string[];
+  /** Exceptions recherchées ou à rechercher avant de conclure. */
+  exceptions: string[];
+  actions: string[];
+  surveillance: string[];
+  /** Éléments qui doivent faire reconsidérer la décision. */
+  reconsiderer: string[];
+  /** Questions dont la réponse permettrait de conclure (décision « informations insuffisantes »). */
+  questions: string[];
+  sources: SourceRef[];
+  statut: StatutValidation;
+  regleId: string;
+}
+
+/** Synthèse microbiologique d'un isolat : ce qui compte pour la décision. */
+export interface SyntheseIsolat {
+  prelevementId: string;
+  isolatId: string;
+  germe: string;
+  determinants: { texte: string; sources: SourceRef[] }[];
+  inconnues: { texte: string; pourquoi: string }[];
+  incoherences: { texte: string; sources: SourceRef[] }[];
+  sensiblesNonRetenues: { dci: string; raison: string; sources: SourceRef[] }[];
+}
+
 export interface Plan {
   versionClinique: string;
+  indication?: IndicationPlan;
+  /** Autres conclusions (ex. SCN sur une seule série alors qu'un autre foyer est traité). */
+  indicationsSecondaires?: IndicationPlan[];
+  microbiologie: SyntheseIsolat[];
   situation: {
     id: string;
     libelle: string;

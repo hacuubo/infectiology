@@ -6,6 +6,8 @@ import type { Dossier } from './etat';
 import type { Famille, FoyerId, OrganismeId, Prelevement, SourceRef, TriState } from '../clinical/types';
 import { estimerFonctionRenale, type EstimationRenale } from '../calc/renal';
 import { MOLECULES } from '../clinical/molecules';
+import { evaluerECBU, type EvaluationECBU } from '../clinical/indication/ecbu';
+import { cliniqueParDefaut } from './etat';
 
 export interface AnalyseAllergie {
   /** Familles à éviter d'emblée (réaction sévère ou immédiate documentée). */
@@ -187,6 +189,10 @@ export interface ContexteDecision {
   /** Antécédent de BLSE/EPC ou antibiothérapie récente (facteurs de risque de résistance). */
   risqueBLSE: { present: boolean; raisons: string[] };
   maintenant: Date;
+  /** Évaluation de l'indication devant un ECBU positif sans hémoculture positive. */
+  evaluationECBU?: EvaluationECBU;
+  /** Vrai si le foyer urinaire a été déduit de l'évaluation de l'ECBU (et non déclaré). */
+  foyerDeduit: boolean;
 }
 
 export function construireContexte(d: Dossier, maintenant: Date = new Date()): ContexteDecision {
@@ -226,8 +232,10 @@ export function construireContexte(d: Dossier, maintenant: Date = new Date()): C
   const materielPresent =
     materielVasculairePresent || protheseValvulaire || p.dispositifIntracardiaque === 'oui' || p.protheseArticulaire === 'oui' || !['aucun', 'inconnu'].includes(p.materielUrinaire);
 
-  return {
-    dossier: d,
+  // Pas d'écriture dans le dossier (appelé pendant le rendu) : copie si la clinique manque.
+  const dd: Dossier = d.clinique ? d : { ...d, clinique: cliniqueParDefaut() };
+  const ctx: ContexteDecision = {
+    dossier: dd,
     renal,
     allergie: analyserAllergies(d),
     prelevementPrincipal: principal,
@@ -245,7 +253,16 @@ export function construireContexte(d: Dossier, maintenant: Date = new Date()): C
     antibiogrammeDisponible: principal?.stade === 'antibiogramme' && (principal.antibiogramme?.length ?? 0) > 0,
     risqueBLSE: { present: risques.length > 0, raisons: risques },
     maintenant,
+    foyerDeduit: false,
   };
+  // Indication devant un ECBU positif : le foyer urinaire n'est retenu que si l'infection est établie ou probable.
+  ctx.evaluationECBU = evaluerECBU(ctx);
+  if (ctx.evaluationECBU?.foyerUrinaire && ctx.foyer === 'inconnu') {
+    ctx.foyer = 'urinaire';
+    ctx.foyerStatut = 'suspecte';
+    ctx.foyerDeduit = true;
+  }
+  return ctx;
 }
 
 export function tri(v: TriState | undefined): 'oui' | 'non' | 'inconnu' {

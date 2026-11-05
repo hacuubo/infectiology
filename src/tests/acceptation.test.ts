@@ -208,7 +208,7 @@ describe('Catégorie EUCAST I', () => {
 
   test('BLSE : C3G rendue S interprétée R (CA-SFM 2026)', () => {
     const d = clonerDossier(CAS_ECOLI_I);
-    d.prelevements[0].mecanismes = ['BLSE'];
+    d.prelevements[0].phenotypes = { BLSE: 'present' };
     d.prelevements[0].antibiogramme = [{ dci: 'ceftriaxone', categorie: 'S' }, { dci: 'temocilline', categorie: 'I' }, { dci: 'piperacilline_tazobactam', categorie: 'S' }];
     const p = plan(d);
     expect(dcis(p)).not.toContain('ceftriaxone');

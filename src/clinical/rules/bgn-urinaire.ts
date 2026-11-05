@@ -5,7 +5,7 @@
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { OptionTherapeutique, Prelevement, SourceRef } from '../types';
-import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, utilisable, type DureeDecidee } from './outils';
+import { Fiche, S, adulte, bacteriemie, germePrincipal, groupe, lireAntibiogramme, utilisable, type DureeDecidee, pireC3G } from './outils';
 
 /* ------------------------------------------------------------------ */
 /* Choix documenté sur antibiogramme                                   */
@@ -32,7 +32,7 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
     if (utilisable(s('ciprofloxacine')) && site === 'urinaire') f.alerte('info', 'P. aeruginosa sensible à la ciprofloxacine : relais oral possible (IUAS 2015 R.49) mais uniquement à forte posologie (750 mg toutes les 12 h per os ou 400 mg toutes les 8 h IV, SPILF/SFPT/CA-SFM) ; la posologie standard de 500 mg × 2 est inadaptée. À discuter avec l\'infectiologue.', [S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'P. aeruginosa « piperacilline-tazobactam, ceftazidime, ciprofloxacine »', 'choix'), S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (ciprofloxacine, p. 168 de la version 2025)', 'forte : 0,75 g per os toutes les 12 h ; 0,4 g iv toutes les 8 h ; Pseudomonas […] forte posologie uniquement', 'posologie')]);
     return;
   }
-  if (atb.meca('cephalosporinase_dereprimee') || org === 'enterobacter_cloacae') {
+  if (atb.meca('ampc') || org === 'enterobacter_cloacae') {
     const ok = utilisable(s('cefepime'));
     f.alerte('info', 'Entérobactérie du groupe 3 (céphalosporinase inductible/déréprimée) : monothérapie par C3G ou pipéracilline-tazobactam déconseillée ; céfépime privilégié.', [S('CASFM-2026-V1.0', 'ch. 5.1 (groupe 3)', 'privilégier l\'utilisation des céphalosporines de 4e génération (céfépime)', 'choix'), S('SPILF-2023-BGN-MDR-diapo', 'diapo 10', 'Céfépime est le traitement de référence', 'choix')]);
     if (ok) f.option({ id: 'doc-ampc-cefepime', libelle: 'Céfépime', type: doc, rang: 'premiere_ligne', items: [{ m: 'cefepime', r: 'cefepime-2g8h' }], duree, sources: [S('SPILF-2023-BGN-MDR-diapo', 'diapo 10', 'Céfépime est le traitement de référence', 'choix')] });
@@ -40,13 +40,23 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
     relaisOral(f, s, site, duree, !ok);
     return;
   }
-  if (atb.meca('BLSE')) {
+  // La C3G la plus défavorable : un céfotaxime R n'est pas masqué par une ceftriaxone S (CA-SFM 2026 p. 50).
+  const c3gBrut = pireC3G(s);
+  const blseDoc = atb.meca('BLSE');
+  // Une résistance aux C3G n'est pas assimilée à une BLSE : même conduite que pour les entérobactéries résistantes
+  // aux C3G (SPILF 2023 d'après ESCMID 2022), mais sans les options réservées à la BLSE documentée.
+  const c3gRInexpliquee = !blseDoc && c3gBrut === 'R';
+  if (c3gRInexpliquee) {
+    f.alerte('attention', 'Résistance aux C3G sans mécanisme rapporté : elle ne prouve pas une BLSE. Conduite des entérobactéries résistantes aux C3G ; céfoxitine non proposée (réservée aux BLSE documentées) ; pipéracilline-tazobactam seulement si le laboratoire exclut une céphalosporinase hyperproduite. Demander le mécanisme au laboratoire.', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 5-6', undefined, 'choix'), S('CASFM-2026-V1.0', 'ch. 5.1, p. 50', 'en l\'absence de synergie… évocatrice d\'une souche hyperproductrice de céphalosporinase chromosomique (groupe 3 et E. coli) ou d\'une céphalosporinase plasmidique', 'definition')]);
+    f.manque('mécanisme de la résistance aux C3G (BLSE, céphalosporinase)', 'la céfoxitine et la pipéracilline-tazobactam n\'ont de place que selon le mécanisme', 'affine');
+  }
+  if (blseDoc || c3gRInexpliquee) {
     if (grave || site === 'autre') {
       const meroForte = s('meropeneme') === 'I';
       f.option({ id: 'doc-blse-carba', libelle: 'Carbapénème (méropénème)', type: doc, rang: 'premiere_ligne', items: [{ m: 'meropeneme', r: meroForte ? 'meropeneme-2g8h' : 'meropeneme-1g8h' }], duree, sources: [S('SPILF-2023-BGN-MDR-diapo', grave ? 'diapo 5' : 'diapo 6', grave ? 'Carbapénème: Imipénème ou Méropénème' : 'infections autres qu\'urinaires/biliaires : Carbapénème : imipénème ou méropénème', 'choix')], commentaire: 'Désescalade de bonne pratique dès qu\'il n\'y a plus de risque vital (pipéracilline-tazobactam si CMI ≤ 8 mg/L, FQ, cotrimoxazole…).' });
-      if (site === 'urinaire') blseUrinaireNonGrave(f, s, org, duree, 'alternative');
+      if (site === 'urinaire') blseUrinaireNonGrave(f, s, org, duree, 'alternative', blseDoc);
     } else {
-      blseUrinaireNonGrave(f, s, org, duree, 'premiere_ligne');
+      blseUrinaireNonGrave(f, s, org, duree, 'premiere_ligne', blseDoc);
     }
     relaisOral(f, s, site, duree, false, true);
     return;
@@ -62,9 +72,16 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
   if (utilisable(amox)) {
     f.option({ id: 'doc-amox-iv', libelle: `Amoxicilline IV${amox === 'I' ? ' (forte posologie : souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'amoxicilline', r: amox === 'I' ? 'amoxicilline-iv-fort' : 'amoxicilline-iv-std' }], duree, sources: [S('SPILF-2015-IU', 'p. 19', 'amoxicilline (à privilégier sur souche sensible)', 'choix'), S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (amoxicilline)', undefined, 'posologie')], commentaire: 'Spectre le plus étroit actif.' });
   }
-  const c3g = s('ceftriaxone') ?? s('cefotaxime');
-  if (utilisable(c3g)) {
-    f.option({ id: 'doc-c3g', libelle: `C3G (ceftriaxone)${c3g === 'I' ? ' — forte posologie (souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'ceftriaxone', r: c3g === 'I' ? 'ceftriaxone-2g12h' : grave || site === 'autre' ? 'ceftriaxone-2g' : 'ceftriaxone-1g' }], duree, sources: [S('SPILF-2018-IU-Caron', 'p. 336', 'injectable 3GCs should be preferred', 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'Entérobactéries : amoxicilline, amoxicilline-acide clavulanique, cotrimoxazole, fluoroquinolones, cefotaxime, ceftriaxone', 'choix'), ...(c3g === 'I' ? [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (ceftriaxone, p. 165 de la version 2025)', 'forte posologie : 2 g toutes les 12 h', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Ceftriaxone 2 g x 1 iv [standard] ; 2 g x 2 iv ou 4 g x 1 iv [high]', 'posologie')] : [])] });
+  // Pas d'extrapolation céfotaxime → ceftriaxone : la molécule proposée est celle dont le résultat est connu.
+  const ctri = s('ceftriaxone');
+  const ctx3 = s('cefotaxime');
+  const c3g = ctri ?? ctx3;
+  if (utilisable(ctx3) && !utilisable(ctri)) {
+    f.option({ id: 'doc-c3g-cefotaxime', libelle: `C3G (céfotaxime)${ctx3 === 'I' ? ' — forte posologie (souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'cefotaxime', r: ctx3 === 'I' || grave || site === 'autre' ? 'cefotaxime-fort' : 'cefotaxime-std' }], duree, sources: [S('SPILF-2018-IU-Caron', 'p. 336', 'injectable 3GCs should be preferred', 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'Entérobactéries : amoxicilline, amoxicilline-acide clavulanique, cotrimoxazole, fluoroquinolones, cefotaxime, ceftriaxone', 'choix')] });
+    if (ctri === undefined) f.alerte('info', 'Seul le céfotaxime est renseigné : la ceftriaxone n\'est pas déduite de ce résultat.');
+  }
+  if (utilisable(ctri)) {
+    f.option({ id: 'doc-c3g', libelle: `C3G (ceftriaxone)${ctri === 'I' ? ' — forte posologie (souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'ceftriaxone', r: ctri === 'I' ? 'ceftriaxone-2g12h' : grave || site === 'autre' ? 'ceftriaxone-2g' : 'ceftriaxone-1g' }], duree, sources: [S('SPILF-2018-IU-Caron', 'p. 336', 'injectable 3GCs should be preferred', 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'Entérobactéries : amoxicilline, amoxicilline-acide clavulanique, cotrimoxazole, fluoroquinolones, cefotaxime, ceftriaxone', 'choix'), ...(ctri === 'I' ? [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (ceftriaxone, p. 165 de la version 2025)', 'forte posologie : 2 g toutes les 12 h', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Ceftriaxone 2 g x 1 iv [standard] ; 2 g x 2 iv ou 4 g x 1 iv [high]', 'posologie')] : [])] });
   }
   if (!utilisable(amox) && !utilisable(c3g)) {
     f.avis('Aucune bêta-lactamine de référence rendue S/I : avis infectiologique.', true, []);
@@ -73,7 +90,7 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
   relaisOral(f, s, site, duree, false);
 }
 
-function blseUrinaireNonGrave(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | undefined, org: string | undefined, duree: DureeDecidee, rang0: 'premiere_ligne' | 'alternative') {
+function blseUrinaireNonGrave(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | undefined, org: string | undefined, duree: DureeDecidee, rang0: 'premiere_ligne' | 'alternative', blseDocumentee: boolean) {
   const src: SourceRef[] = [S('SPILF-2026-IUM', 'diapo 17, 24', 'BLSE 1er choix « céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus) OU pipéracilline-tazobactam IV 12 g/jour OU témocilline IV 6 g/jour »', 'choix'), S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', 'IU bactériémiques ou non après contrôle de la source : Cotrimoxazole, Fluoroquinolone, Pipéracilline-tazobactam, Témocilline, Céfoxitine uniquement pour E. coli producteur de BLSE… Amikacine', 'choix')];
   let rang = rang0;
   const next = () => {
@@ -81,11 +98,15 @@ function blseUrinaireNonGrave(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | unde
     rang = 'alternative';
     return r;
   };
-  if (utilisable(s('temocilline'))) f.option({ id: 'doc-blse-temo', libelle: 'Témocilline (BLSE, foyer urinaire)', type: 'documente', rang: next(), items: [{ m: 'temocilline', r: 'temocilline-2g8h' }], duree, sources: src });
+  if (utilisable(s('temocilline'))) f.option({ id: 'doc-blse-temo', libelle: `Témocilline (${blseDocumentee ? 'BLSE' : 'résistance aux C3G'}, foyer urinaire)`, type: 'documente', rang: next(), items: [{ m: 'temocilline', r: 'temocilline-2g8h' }], duree, sources: src });
   // Audit relecteur 2 : souche I → forte posologie (4 g/6 h en 3 h) au lieu du schéma standard.
   const ptz = s('piperacilline_tazobactam');
-  if (utilisable(ptz)) f.option({ id: 'doc-blse-piptazo', libelle: `Pipéracilline-tazobactam (BLSE, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: next(), items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
-  if ((org === 'escherichia_coli' || org === 'proteus_mirabilis') && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine', libelle: 'Céfoxitine (E. coli / Proteus BLSE)', type: 'documente', rang: next(), items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: src });
+  if (utilisable(ptz) && !blseDocumentee) f.option({ id: 'doc-c3gr-piptazo', libelle: `Pipéracilline-tazobactam (résistance aux C3G, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: 'conditionnelle', condition: 'seulement si le laboratoire exclut une céphalosporinase hyperproduite (qui rendrait la pipéracilline-tazobactam R)', items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
+  if (utilisable(ptz) && blseDocumentee) f.option({ id: 'doc-blse-piptazo', libelle: `Pipéracilline-tazobactam (BLSE, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: next(), items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
+  // Céfoxitine : catégorisation CA-SFM validée pour E. coli seulement (p. 51) ; SPILF 2026 l'admet aussi pour Proteus, SPILF 2023 non.
+  const srcCefoxitine = [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'choix'), S('CASFM-2026-V1.0', 'ch. 5.1, p. 51', 'valeurs critiques thérapeutiques validées que pour E. coli', 'definition')];
+  if (blseDocumentee && org === 'escherichia_coli' && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine', libelle: 'Céfoxitine (E. coli BLSE)', type: 'documente', rang: next(), items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: [...srcCefoxitine, S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', 'Céfoxitine uniquement pour E. coli producteur de BLSE', 'choix')] });
+  if (blseDocumentee && org === 'proteus_mirabilis' && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine-proteus', libelle: 'Céfoxitine (Proteus BLSE)', type: 'documente', rang: 'conditionnelle', condition: 'catégorisation CA-SFM non validée pour Proteus ; divergence SPILF 2026 (admise) / SPILF 2023 (E. coli seulement) : avis SMIT', statut: 'brouillon', items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: srcCefoxitine });
   if (rang === rang0) {
     f.option({ id: 'doc-blse-carba-defaut', libelle: 'Carbapénème (à défaut d\'alternative)', type: 'documente', rang: next(), items: [{ m: 'meropeneme', r: 'meropeneme-1g8h' }], duree, sources: [S('SPILF-2026-IUM', 'diapo 17', 'à défaut « ertapénème IV 1 g/jour OU imipénème IV 3 g/jour OU méropénème IV 3 g/jour »', 'choix')] });
   }
@@ -167,6 +188,27 @@ function dureeIU(ctx: ContexteDecision, cadre: Cadre): DureeDecidee {
   };
 }
 
+/**
+ * Germe pris en compte pour l'infection urinaire : bacille à Gram négatif des hémocultures ou de l'ECBU.
+ * Un prélèvement superficiel ou un SCN sur une seule série (contamination possible) ne bloque pas la règle ;
+ * une bactériémie significative à un autre germe la bloque (« autre »).
+ */
+function germeUrinaire(ctx: ContexteDecision): { prl?: Prelevement; g: 'bgn' | 'aucun' | 'autre' } {
+  const significative = (h: Prelevement) => {
+    const g = groupe(h);
+    if (g === 'aucun' || g === 'bgn') return false;
+    if (g === 'scn') return (h.hemoc?.nbSeriesPositives ?? 2) >= 2;
+    return true;
+  };
+  const hemoBGN = ctx.hemocultures.find((h) => groupe(h) === 'bgn');
+  if (hemoBGN) return { prl: hemoBGN, g: 'bgn' };
+  if (ctx.hemocultures.some(significative)) return { g: 'autre' };
+  const urineBGN = ctx.urines.find((u) => groupe(u) === 'bgn');
+  if (urineBGN) return { prl: urineBGN, g: 'bgn' };
+  if (ctx.urines.some((u) => groupe(u) !== 'aucun')) return { g: 'autre' };
+  return { g: 'aucun' };
+}
+
 export const R_IU_FEBRILE: Regle = {
   id: 'R-IU-FEBRILE',
   libelle: 'Infection urinaire fébrile (pyélonéphrite, IU masculine, IU associée aux soins), avec ou sans bactériémie',
@@ -176,7 +218,12 @@ export const R_IU_FEBRILE: Regle = {
   sources: [S('SPILF-2015-IU', 'texte court 2015', undefined, 'choix'), S('SPILF-2026-IUM', 'diaporama 20/06/2026', undefined, 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'RPC 2015', undefined, 'choix')],
   sApplique: (ctx) => {
     if (!adulte(ctx) || ctx.foyer !== 'urinaire') return false;
-    const g = germePrincipal(ctx).g;
+    // La cystite, la colonisation gravidique ou avant geste et la forme non précisée relèvent de R-INDICATION-ECBU.
+    const forme = ctx.evaluationECBU?.forme;
+    const decisionECBU = ctx.evaluationECBU?.decision;
+    if (decisionECBU === 'ne_pas_traiter' || decisionECBU === 'attendre_resultat' || decisionECBU === 'informations_insuffisantes') return false;
+    if (forme === 'cystite' || forme === 'colonisation_gravidique' || forme === 'colonisation_avant_geste' || forme === 'a_preciser') return false;
+    const g = germeUrinaire(ctx).g;
     return g === 'aucun' || g === 'bgn';
   },
   appliquer: (ctx) => {
@@ -189,11 +236,11 @@ export const R_IU_FEBRILE: Regle = {
     const cadre = cadreIU(ctx);
     if (hommeImmuno) f.alerte('attention', 'Homme immunodéprimé : exclu du périmètre de SPILF 2026 (IU masculines) ; le chapitre masculin de SPILF 2015 est remplacé. Les options sont extrapolées (brouillon) : avis infectiologique.', [S('SPILF-2026-IUM', 'diapo 3', 'patient immunodéprimé (exclusion du périmètre)', 'autre')]);
     const duree = dureeIU(ctx, cadre);
-    const { prl } = germePrincipal(ctx);
+    const { prl } = germeUrinaire(ctx);
     const grave = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
     const choc = p.gravite === 'choc_septique';
     const libCadre = { homme_spilf2026: 'IU masculine fébrile (SPILF 2026)', femme_spilf2015: 'Pyélonéphrite aiguë (SPILF 2015/2018)', iuas: 'IU associée aux soins / sur matériel (SPILF/AFU/SF2H 2015)' }[cadre];
-    f.situation('iu-febrile', `${libCadre}${bacteriemie(ctx) ? ' avec bactériémie à BGN' : ''}`, 'couverte', `${p.age !== undefined && p.age > 75 ? 'Patient de plus de 75 ans : IU à risque de complication. ' : ''}${grave ? 'Forme grave (sepsis/choc). ' : ''}La bactériémie ne modifie ni le choix ni la durée lorsque l\'évolution est simple.`);
+    f.situation('iu-febrile', `${libCadre}${bacteriemie(ctx) ? ' avec bactériémie à BGN' : ''}`, 'couverte', `${p.age !== undefined && p.age > 75 ? 'Patient de plus de 75 ans : IU à risque de complication. ' : ''}${grave ? 'Forme grave (sepsis/choc). ' : ''}${bacteriemie(ctx) ? 'La bactériémie ne modifie ni le choix ni la durée lorsque l\'évolution est simple.' : ''}${ctx.foyerDeduit ? 'Foyer urinaire retenu d\'après les signes cliniques renseignés.' : ''}`);
     if (p.sexe === 'inconnu') f.manque('sexe', 'cadre IU masculine (SPILF 2026) ou féminine (SPILF 2015)', 'bloque_decision');
     if (cadre === 'homme_spilf2026' && (p.formeIUMasculine ?? 'inconnu') === 'inconnu') f.manque('forme clinique de l\'IU masculine (PNA, prostatite, orchi-épididymite)', 'durée de traitement et imagerie (SPILF 2026)', 'bloque_decision');
     if (p.materielUrinaire === 'inconnu') f.manque('matériel urinaire (sonde, JJ, néphrostomie)', 'cadre IU associée aux soins, changement de sonde', 'bloque_decision');

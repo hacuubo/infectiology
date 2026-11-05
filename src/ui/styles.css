@@ -185,6 +185,32 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 [hidden] { display: none !important; }
 
+/* Indication de traitement et antibiogramme guidé */
+.etapes { list-style: none; padding: 0; margin: 0 0 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; }
+.etapes li { border: 1px solid var(--bord); border-radius: 6px; padding: 6px 8px; font-size: 0.9rem; background: var(--surface); }
+.etapes li.fait { border-color: var(--ok); background: var(--ok-clair); }
+.etapes li.a-faire { border-style: dashed; }
+.etapes .num { display: inline-block; min-width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--texte-2); color: #fff; text-align: center; font-size: 0.8rem; line-height: 1.4em; }
+.etapes li.fait .num { background: var(--ok); }
+.synthese-dl { display: grid; grid-template-columns: minmax(130px, max-content) 1fr; gap: 4px 12px; margin: 0; }
+.synthese-dl dt { font-weight: 600; color: var(--texte-2); }
+.synthese-dl dd { margin: 0; }
+.synthese-dl ul { margin: 0; }
+.carte-indication { border-width: 2px; }
+.carte-indication.decision-ne_pas_traiter { border-color: var(--ok); background: var(--ok-clair); }
+.carte-indication.decision-urgence { border-color: var(--urgence); background: var(--urgence-clair); }
+.carte-indication.decision-informations_insuffisantes, .carte-indication.decision-attendre_resultat { border-color: var(--attention); background: var(--attention-clair); }
+.carte-indication .bloc-liste { margin-top: 6px; }
+.groupe-questions { border: 1px solid var(--bord); border-radius: 6px; padding: 6px 10px 10px; margin: 8px 0; display: grid; gap: 8px; }
+.groupe-questions legend { font-weight: 600; padding: 0 4px; }
+.carte-question { border: 1px solid var(--bord); border-radius: 6px; padding: 8px 10px; background: var(--surface); display: grid; gap: 4px; }
+.carte-question .q-titre { font-weight: 600; }
+.lecture-micro { margin: 6px 0; }
+@media (max-width: 600px) {
+  .synthese-dl { grid-template-columns: 1fr; }
+  .synthese-dl dt { margin-top: 4px; }
+}
+
 @media print {
   .app { height: auto; }
   .colonne-saisie, .onglets, .bouton-resume { display: none !important; }

@@ -1,29 +1,6 @@
 import type { FoyerId, OrganismeId, TraitementAssocie } from '../clinical/types';
 
-export const LIBELLE_ORGANISME: Record<OrganismeId, string> = {
-  bgn_non_identifie: 'Bacille à Gram négatif non identifié',
-  enterobacterie_non_identifiee: 'Entérobactérie (espèce non précisée)',
-  escherichia_coli: 'Escherichia coli',
-  klebsiella_pneumoniae: 'Klebsiella pneumoniae',
-  enterobacter_cloacae: 'Enterobacter cloacae complex',
-  proteus_mirabilis: 'Proteus mirabilis',
-  pseudomonas_aeruginosa: 'Pseudomonas aeruginosa',
-  cgp_non_identifie: 'Cocci à Gram positif non identifié',
-  staphylococcus_aureus: 'Staphylococcus aureus',
-  staphylocoque_coagulase_negative: 'Staphylocoque à coagulase négative (espèce non précisée)',
-  staphylococcus_epidermidis: 'Staphylococcus epidermidis',
-  staphylococcus_lugdunensis: 'Staphylococcus lugdunensis',
-  streptococcus_pneumoniae: 'Streptococcus pneumoniae',
-  streptococcus_pyogenes: 'Streptococcus pyogenes (groupe A)',
-  streptococcus_agalactiae: 'Streptococcus agalactiae (groupe B)',
-  streptocoque_groupe_c_g: 'Streptocoque des groupes C/G (S. dysgalactiae)',
-  streptocoque_viridans: 'Streptocoque du groupe viridans (oraux)',
-  streptococcus_gallolyticus: 'Streptococcus gallolyticus (ex-bovis)',
-  enterococcus_faecalis: 'Enterococcus faecalis',
-  enterococcus_faecium: 'Enterococcus faecium',
-  enterocoque_non_identifie: 'Entérocoque (espèce non précisée)',
-  autre: 'Autre organisme',
-};
+export { LIBELLE_ORGANISME } from '../clinical/microbiologie/germes';
 
 export const GROUPES_ORGANISMES: { titre: string; ids: OrganismeId[] }[] = [
   { titre: 'Bacilles à Gram négatif', ids: ['bgn_non_identifie', 'enterobacterie_non_identifiee', 'escherichia_coli', 'klebsiella_pneumoniae', 'enterobacter_cloacae', 'proteus_mirabilis', 'pseudomonas_aeruginosa'] },
@@ -65,40 +42,6 @@ export const LIBELLE_TRAITEMENT: Record<TraitementAssocie, string> = {
   autre: 'Autre traitement à vérifier',
 };
 
-export const DCI_ANTIBIOGRAMME: { id: string; l: string }[] = [
-  { id: 'amoxicilline', l: 'Amoxicilline / ampicilline' },
-  { id: 'amoxicilline_clavulanate', l: 'Amoxicilline-acide clavulanique' },
-  { id: 'piperacilline_tazobactam', l: 'Pipéracilline-tazobactam' },
-  { id: 'temocilline', l: 'Témocilline' },
-  { id: 'cefazoline', l: 'Céfazoline' },
-  { id: 'cefoxitine', l: 'Céfoxitine (dépistage SARM)' },
-  { id: 'cefotaxime', l: 'Céfotaxime' },
-  { id: 'ceftriaxone', l: 'Ceftriaxone' },
-  { id: 'ceftazidime', l: 'Ceftazidime' },
-  { id: 'cefepime', l: 'Céfépime' },
-  { id: 'cefixime', l: 'Céfixime' },
-  { id: 'aztreonam', l: 'Aztréonam' },
-  { id: 'ertapeneme', l: 'Ertapénème' },
-  { id: 'meropeneme', l: 'Méropénème' },
-  { id: 'imipeneme', l: 'Imipénème' },
-  { id: 'gentamicine', l: 'Gentamicine' },
-  { id: 'amikacine', l: 'Amikacine' },
-  { id: 'ciprofloxacine', l: 'Ciprofloxacine' },
-  { id: 'levofloxacine', l: 'Lévofloxacine' },
-  { id: 'cotrimoxazole', l: 'Cotrimoxazole' },
-  { id: 'fosfomycine', l: 'Fosfomycine' },
-  { id: 'nitrofurantoine', l: 'Nitrofurantoïne' },
-  { id: 'oxacilline', l: 'Oxacilline / cloxacilline' },
-  { id: 'penicilline_g', l: 'Pénicilline G' },
-  { id: 'vancomycine', l: 'Vancomycine' },
-  { id: 'teicoplanine', l: 'Téicoplanine' },
-  { id: 'daptomycine', l: 'Daptomycine' },
-  { id: 'linezolide', l: 'Linézolide' },
-  { id: 'rifampicine', l: 'Rifampicine' },
-  { id: 'clindamycine', l: 'Clindamycine' },
-  { id: 'gentamicine_haut_niveau', l: 'Gentamicine haut niveau (entérocoques)' },
-];
-
 /* Libellés lisibles (accents, termes cliniques) des valeurs codées, pour le résumé patient. */
 export const LIBELLE_VALEUR: Record<string, string> = {
   femme: 'femme',
@@ -139,11 +82,9 @@ export const LIBELLE_VALEUR: Record<string, string> = {
   cgp_chainettes: 'CGP en chaînettes',
   BLSE: 'BLSE',
   carbapenemase: 'carbapénémase',
-  cephalosporinase_dereprimee: 'céphalosporinase déréprimée',
   SARM: 'SARM',
   ERV: 'ERV',
   EPC: 'EPC',
-  aucun_documente: 'aucun mécanisme documenté',
 };
 
 export function libelle(v: string | undefined): string {

@@ -36,7 +36,7 @@
       "date": "2026-11-05"
     },
     "has-antibiotherapie": {
-      "empreinte": "2185bbf230a31594609003033101532f13bf92fa4276a010fc193077b9d2ac65",
+      "empreinte": "5c1b09f75c1897f58f8f8c9fdfdad16b2c6ee0aa59778b979ab803b4b8555642",
       "taille": 113123,
       "reperes": {
         "Mise à jour": null
@@ -44,8 +44,8 @@
       "date": "2026-11-05"
     },
     "has-pna-femme": {
-      "empreinte": "a2419cb8d72d0c27d1e28a8710a4e5a222857820e787ad6f0e31cd6ead175cd1",
-      "taille": 92337,
+      "empreinte": "dbc4d4f7dbf161a10ef4820854dae9df4f302db26e3768348e9ffad682b32ba2",
+      "taille": 92341,
       "reperes": {
         "Mise à jour": null
       },
@@ -76,8 +76,8 @@
       "date": "2026-11-05"
     },
     "casfm-2026-v1.0": {
-      "empreinte": "b20bfb37056a8f2c534bff54404284fd2a80803f9e68efdf901141e0be900fb7",
-      "taille": 231240,
+      "empreinte": "5cac1f6ebbbd301f73d4f931330143433e61e9835288d904d69a60e06953de4f",
+      "taille": 231664,
       "reperes": {
         "2027": "da Microbes 2026 AMP 2026 Pseudomonas 2026 Virus et Greffes 2027 GEFH 2027 Virus à ADN 2027 ÉMERGENCES 2027 Journée BUD Webi",
         "V1.0": "Addendum 2026 _Comité de l’Antibiogramme de la SFM (CA-SFM) V1.0 Septembre 2026 🆕 Gratuit La version 2026 du communiqué du ",
@@ -125,6 +125,91 @@
         "schedule": "ls to issues Close inactive issues Add comments with labels Schedule issue creation Store and share data Use containerized servi",
         "UTC": "n at specific times. By default, scheduled workflows run in UTC. You can optionally specify a timezone using an IANA timezo"
       },
+      "date": "2026-11-05"
+    },
+    "afu-ecbu-geste-2026": {
+      "empreinte": "cb301fc30618185c5fb4db169571d690137c36d7957ee7cf8eae230ec78d5c27",
+      "taille": 934914,
+      "reperes": {},
+      "derniereModif": "Tue, 24 Mar 2026 21:20:19 GMT",
+      "date": "2026-11-05"
+    },
+    "spilf-iu-2015-argumentaire": {
+      "empreinte": "15ca35aa4621bc652c8225b0137224dada751156be144c5afd431622b1e85420",
+      "taille": 1158095,
+      "reperes": {},
+      "derniereModif": "Fri, 11 Dec 2015 11:05:09 GMT",
+      "date": "2026-11-05"
+    },
+    "has-femme-enceinte-iu": {
+      "empreinte": "aa8f9b7e48a80da7d91542ea310cac79ed9183f88788897730d4e58233ab2f47",
+      "taille": 90529,
+      "reperes": {
+        "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist",
+        "colonisation": "nté - Choix et durées d'antibiothérapies : Femme enceinte : colonisation urinaire et cystite Recherche Menu principal Contenu princi"
+      },
+      "date": "2026-11-05"
+    },
+    "has-cystite-femme": {
+      "empreinte": "7c97051c91ce0eac991caf7363246ec5f22917f8dd7c6551832c5e7c872977a4",
+      "taille": 96846,
+      "reperes": {
+        "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist"
+      },
+      "date": "2026-11-05"
+    },
+    "has-infections-cutanees-2019": {
+      "empreinte": "eb41d3bdd881d33863f88d19328015c8941834105c620ab1a6a97a5f10d18b2b",
+      "taille": 88892,
+      "reperes": {
+        "Mis à jour": null
+      },
+      "date": "2026-11-05"
+    },
+    "iwgdf-idsa-2023": {
+      "empreinte": "27172ebc3f2f91790010160945c9c84c45222cdf3f499530afae83f3f53da3f3",
+      "taille": 2083490,
+      "reperes": {},
+      "derniereModif": "Thu, 13 Jul 2023 18:42:25 GMT",
+      "date": "2026-11-05"
+    },
+    "idsa-bacteriurie-2019": {
+      "empreinte": "aadeaa852c1f2e8fa1e76bbc35dd879c213c0d16ba406177e406810c1f29adae",
+      "taille": 236746,
+      "reperes": {
+        "Updated": " implementation of nontreatment recommendations. Thus, this updated guideline also addresses the clinical presentation of sympt",
+        "Published": "ymptomatic Bacteriuria Download PDF View Citation Copy Link Published March 21, 2019 Clinical Infectious Diseases , Volume 68, Is"
+      },
+      "date": "2026-11-05"
+    },
+    "idsa-escmid-sab-2026": {
+      "empreinte": "06be51cc89bd78c7d7cc48030972296f9152ebbfa57fa974310f75d736ca44f3",
+      "taille": 164088,
+      "reperes": {
+        "Updated": "ts and Children Copy Link Published September 09, 2026 Last Updated September 09, 2026 Update History This is Part 1 of new con",
+        "Published": "Evaluation, and Management of Adults and Children Copy Link Published September 09, 2026 Last Updated September 09, 2026 Update H"
+      },
+      "date": "2026-11-05"
+    },
+    "eucast-erp-v1.2": {
+      "empreinte": "ff6af7af00345793e2527982a49f8607281afab5adc789fd91d2de3a18d873e3",
+      "taille": 411304,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:34:51 GMT",
+      "date": "2026-11-05"
+    },
+    "eucast-esp-v1.1": {
+      "empreinte": "175b2e4b7407d23d45b63825129950fbeeb96b02e5d8791553d31c12a59f9a35",
+      "taille": 223044,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:39:27 GMT",
+      "date": "2026-11-05"
+    },
+    "eucast-detection-v2.01": {
+      "empreinte": "a1f2f71bd28ffdb7a81ce10bba58802aec64908eaade1bd35bd0ac5f2613222b",
+      "taille": 928254,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:05:52 GMT",
       "date": "2026-11-05"
     }
   }

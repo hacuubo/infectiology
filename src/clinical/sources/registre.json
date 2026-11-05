@@ -11,7 +11,7 @@
     "dateConsultation": "2026-11-04",
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur",
-    "notes": "Ne traite pas du choix des antibiotiques (Partie 2 annoncée). Consensus d'experts, non GRADE."
+    "notes": "Ne traite pas du choix des antibiotiques (Partie 2 annoncée). Consensus d'experts, non GRADE. Table 1 (définitions) : https://www.idsociety.org/globalassets/idsa/practice-guidelines/sab/table-of-definitions-08.17.2026.pdf"
   },
   {
     "id": "IDSA-2011-SARM",
@@ -1051,5 +1051,115 @@
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur",
     "notes": "Clé timezone documentée (changelog GitHub du 19 mars 2026)."
+  },
+  {
+    "id": "SPILF-2015-IU-argumentaire",
+    "organisme": "SPILF",
+    "titre": "Diagnostic et antibiothérapie des infections urinaires bactériennes communautaires de l'adulte — Mise au point — Argumentaire",
+    "annee": 2015,
+    "type": "recommandation",
+    "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/infections-urinaires-spilf-argumentaire.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Lu p. 22-24 (prélèvement, leucocyturie, contamination, groupes d’espèces)."
+  },
+  {
+    "id": "HAS-2021-femme-enceinte-IU",
+    "organisme": "HAS (avec SPILF, GPIP)",
+    "titre": "Choix et durées d'antibiothérapies : Femme enceinte : colonisation urinaire et cystite",
+    "annee": 2021,
+    "version": "mise à jour du 13/05/2025",
+    "type": "recommandation",
+    "url": "https://www.has-sante.fr/jcms/c_2722927/fr/femme-enceinte-colonisation-urinaire-et-cystite",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "HAS-2021-cystite-femme",
+    "organisme": "HAS (avec SPILF)",
+    "titre": "Choix et durées d'antibiothérapies : Cystite aiguë simple, à risque de complication ou récidivante, de la femme",
+    "annee": 2021,
+    "version": "mise à jour affichée 2024",
+    "type": "recommandation",
+    "url": "https://www.has-sante.fr/jcms/c_2722827/fr/cystite-aigue-simple-a-risque-de-complication-ou-recidivante-de-la-femme",
+    "dateConsultation": "2026-11-04",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "HAS-2019-infections-cutanees",
+    "organisme": "SPILF / SFD / HAS",
+    "titre": "Prise en charge des infections cutanées bactériennes courantes — Recommandations",
+    "annee": 2019,
+    "type": "recommandation",
+    "url": "https://www.has-sante.fr/jcms/c_2911550/fr/prise-en-charge-des-infections-cutanees-bacteriennes-courantes",
+    "urlPdf": "https://www.has-sante.fr/upload/docs/application/pdf/2019-04/prise_en_charge_des_infections_cutanees_bacteriennes_courantes_recommandations.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "§ 3 plaies chroniques (hors pied diabétique), p. 18-20."
+  },
+  {
+    "id": "IWGDF-IDSA-2023-pied-diabetique",
+    "organisme": "IWGDF / IDSA",
+    "titre": "Guidelines on the diagnosis and treatment of foot infection in persons with diabetes (IWGDF/IDSA 2023)",
+    "annee": 2023,
+    "type": "recommandation",
+    "url": "https://iwgdfguidelines.org/wp-content/uploads/2023/07/IWGDF-2023-04-Infection-Guideline.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "DOERN-2019-contamination",
+    "organisme": "ASM (Doern GV et al.)",
+    "titre": "Practical Guidance for Clinical Microbiology Laboratories: A Comprehensive Update on the Problem of Blood Culture Contamination",
+    "annee": 2019,
+    "type": "revue",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6822992/",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Revue de guidance, non gradée. Clin Microbiol Rev 2019;33(1):e00009-19."
+  },
+  {
+    "id": "EUCAST-ERP-v1.2",
+    "organisme": "EUCAST",
+    "titre": "Expected Resistant Phenotypes",
+    "annee": 2023,
+    "version": "v1.2 (13/01/2023)",
+    "type": "referentiel",
+    "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Resistant_Phenotypes_v1.2_20230113.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Tableaux relus colonne par colonne (positions des « R »)."
+  },
+  {
+    "id": "EUCAST-ESP-v1.1",
+    "organisme": "EUCAST",
+    "titre": "Expected Susceptible Phenotypes (unusual phenotypes)",
+    "annee": 2022,
+    "version": "v1.1 (25/03/2022)",
+    "type": "referentiel",
+    "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Susceptible_Phenotypes_Tables_v1.1_20220325.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "EUCAST-detection-v2.01",
+    "organisme": "EUCAST",
+    "titre": "Guidelines for detection of resistance mechanisms and specific resistances of clinical and/or epidemiological importance",
+    "annee": 2017,
+    "version": "v2.01 (juillet 2017)",
+    "type": "referentiel",
+    "url": "https://www.eucast.org/fileadmin/eucast/pdf/eucast_guidelines/EUCAST_detection_of_resistance_mechanisms_170711.pdf",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Toujours listé par EUCAST au 2026-11-05."
   }
 ]
