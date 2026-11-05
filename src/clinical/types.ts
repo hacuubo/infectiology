@@ -63,7 +63,7 @@ export interface SourceRef {
 
 export type Sexe = 'femme' | 'homme' | 'inconnu';
 export type UniteCreatinine = 'umol/L' | 'mg/dL';
-export type MethodeDFG = 'CKD-EPI' | 'MDRD' | 'Cockcroft' | 'mesure' | 'inconnue';
+export type MethodeDFG = 'CKD-EPI' | 'EKFC' | 'MDRD' | 'Cockcroft' | 'mesure' | 'inconnue';
 export type Dialyse = 'aucune' | 'hemodialyse_intermittente' | 'eer_continue' | 'dialyse_peritoneale' | 'inconnu';
 export type Contexte = 'communautaire' | 'associe_aux_soins' | 'inconnu';
 export type Gravite = 'stable' | 'sepsis' | 'choc_septique' | 'inconnu';
@@ -112,8 +112,14 @@ export interface Patient {
   grossesse: TriState;
   allaitement: TriState;
   renal: {
-    creatinine?: { valeur: number; unite: UniteCreatinine; date?: string };
-    dfg?: { valeur: number; methode: MethodeDFG; date?: string };
+    /** Unité explicite : jamais déduite de la valeur. Absente = valeur non utilisée. */
+    creatinine?: { valeur: number; unite?: UniteCreatinine; date?: string; heure?: string };
+    /** Valeur rendue par le laboratoire (ou déjà calculée) : méthode, unité et date conservées. */
+    dfg?: { valeur: number; methode: MethodeDFG; unite?: 'mL/min/1,73 m²' | 'mL/min'; date?: string };
+    /** Équation du DFG estimé (défaut : CKD-EPI 2009 sans coefficient racial ; choisir celle du laboratoire). */
+    equationDfg?: 'ckd_epi_2009' | 'ckd_epi_2021' | 'ekfc';
+    /** Poids utilisé dans Cockcroft-Gault (défaut : réel, comme la formule des RCP). */
+    poidsCockcroft?: 'reel' | 'ideal' | 'ajuste';
     stabilite: 'stable' | 'instable' | 'inconnu';
     insuffisanceRenaleAigue: TriState;
     dialyse: Dialyse;
@@ -506,10 +512,19 @@ export interface Alerte {
   sources?: SourceRef[];
 }
 
+/**
+ * Rôle d'une donnée manquante : empêche le choix d'un antibiotique (bloque_decision), seulement le calcul
+ * de la dose (bloque_dose), seulement la durée (bloque_duree), seulement la personnalisation de la
+ * surveillance (bloque_surveillance), ou affinerait la proposition (affine).
+ */
+export type ImpactManquant = 'bloque_decision' | 'bloque_dose' | 'bloque_duree' | 'bloque_surveillance' | 'affine';
+
 export interface DonneeManquante {
   champ: string;
   pourquoi: string;
-  impact: 'bloque_dose' | 'bloque_surveillance' | 'bloque_decision' | 'affine';
+  impact: ImpactManquant;
+  /** Champ de saisie à compléter (chemin dans le dossier), pour y accéder directement depuis la fiche. */
+  cible?: string;
 }
 
 export interface PrescriptionProposee {
@@ -609,6 +624,8 @@ export interface IndicationPlan {
   sources: SourceRef[];
   statut: StatutValidation;
   regleId: string;
+  /** Point que les sources lues ne tranchent pas (ou divergent) : aucune proposition automatisée. */
+  pointNonResolu?: string;
 }
 
 /** Synthèse microbiologique d'un isolat : ce qui compte pour la décision. */
@@ -648,4 +665,72 @@ export interface Plan {
   contientReglesNonValidees: boolean;
   /** Option dont le calendrier est affiché (retenue par le prescripteur ou 1re ligne). */
   optionRetenueId?: string;
+  /** État de sortie explicite : pourquoi la proposition est complète, partielle ou absente. */
+  sortie: EtatSortie;
+}
+
+/* ------------------------------------------------------------------ */
+/* État de sortie : jamais une zone thérapeutique vide sans explication */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A non_indiquee ; B informations_manquantes ; C microbiologie_insuffisante ; D non_couverte ;
+ * E contraintes (aucune option de la base ne satisfait les contraintes) ; F non_validee (règle non validée
+ * ou recommandations contradictoires) ; G incoherence (données à vérifier) ; H erreur_technique.
+ */
+export type TypeMotifSortie =
+  | 'non_indiquee'
+  | 'informations_manquantes'
+  | 'microbiologie_insuffisante'
+  | 'non_couverte'
+  | 'contraintes'
+  | 'non_validee'
+  | 'incoherence'
+  | 'erreur_technique';
+
+export interface ElementACompleter {
+  texte: string;
+  /** Rôle de la donnée dans la décision. */
+  role: string;
+  impact: ImpactManquant;
+  cible?: string;
+}
+
+export interface MotifSortie {
+  type: TypeMotifSortie;
+  /** Rang d'affichage : le plus petit change le plus immédiatement la prise en charge. */
+  rang: number;
+  /** Statut : pourquoi aucun traitement complet n'est affiché. */
+  statut: string;
+  /** Explication tirée des règles évaluées et des données du patient. */
+  motif: string;
+  /** Éléments vérifiés (exceptions recherchées, conditions renseignées). */
+  verifie: string[];
+  dejaPropose: string[];
+  aCompleter: ElementACompleter[];
+  prochaineAction: string;
+  sources: SourceRef[];
+  /** Limite de couverture de l'application, quand c'est elle qui explique l'absence de proposition. */
+  limite?: string;
+  /** Identifiants des règles (ou contrôles) du moteur dont provient ce motif. */
+  origine: string[];
+}
+
+/** Proposition écartée par le moteur, avec une raison structurée et vérifiable. */
+export interface PropositionEcartee {
+  libelle: string;
+  type: 'allergie' | 'resistance' | 'contre_indication' | 'non_validee' | 'source_retiree' | 'inadaptee';
+  raison: string;
+  sources: SourceRef[];
+  origine: string;
+}
+
+export interface EtatSortie {
+  /** complet : option de 1re ligne sans donnée bloquante ; partiel : proposition affichée mais incomplète ; aucun : pas de proposition. */
+  traitement: 'complet' | 'partiel' | 'aucun';
+  /** Urgence : l'absence de proposition ne doit jamais faire attendre. */
+  urgence: boolean;
+  actionsUrgentes: { texte: string; sources: SourceRef[] }[];
+  motifs: MotifSortie[];
+  ecartees: PropositionEcartee[];
 }

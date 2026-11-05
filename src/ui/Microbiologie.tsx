@@ -6,6 +6,7 @@ import { useId } from 'react';
 import type { CategorieSaisie, DonneesIsolat, EtatPhenotype, Isolat, OrganismeId, Prelevement } from '../clinical/types';
 import type { Dossier } from '../engine/etat';
 import { contexteUI } from './contexte-ui';
+import { GardeLocale } from './Explication';
 import { nouvelIsolat } from '../engine/etat';
 import { contexteGuide } from '../clinical/microbiologie/analyse';
 import { AIDE_I, categorieDe, etatPhenotype, guideAntibiogramme, type QuestionMicro } from '../clinical/microbiologie/guide';
@@ -266,7 +267,11 @@ export function IsolatsSupplementaires({ prl, dossier, majPrl }: { prl: Prelevem
             </button>
           </div>
           <SelectOrganisme libelle={`Germe ${n + 2}`} valeur={iso.organisme} libre={iso.organismeLibre} onChange={(v) => majIso(iso.id)((i) => (i.organisme = v))} onLibre={(v) => majIso(iso.id)((i) => (i.organismeLibre = v))} />
-          {prl.stade === 'antibiogramme' && iso.organisme && <AntibiogrammeGuide iso={iso} prl={prl} dossier={dossier} maj={majIso(iso.id)} />}
+          {prl.stade === 'antibiogramme' && iso.organisme && (
+            <GardeLocale nom="antibiogramme guidé" cle={dossier}>
+              <AntibiogrammeGuide iso={iso} prl={prl} dossier={dossier} maj={majIso(iso.id)} />
+            </GardeLocale>
+          )}
         </div>
       ))}
       {prl.stade !== 'examen_direct' && (

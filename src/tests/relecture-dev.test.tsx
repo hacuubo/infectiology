@@ -69,10 +69,8 @@ describe('Calculs physiologiques (contrôle indépendant)', () => {
 
   test('créatininémie nulle : aucune valeur NaN propagée, donnée signalée manquante', () => {
     const r = estimerFonctionRenale({ ageAns: 70, poidsKg: 70, sexe: 'homme', creatinine: { valeur: 0, unite: 'mg/dL' }, stabilite: 'stable', insuffisanceRenaleAigue: 'non', dialyse: 'aucune' });
-    expect(r.valeurPourPosologie).toBeUndefined();
-    expect(r.ckdEpi2021).toBeUndefined();
-    expect(r.cockcroftMlMin).toBeUndefined();
-    expect(r.manquants.join(' ')).toMatch(/créatininémie valide/);
+    expect(r.estimations.every((e) => !e.calculable && e.valeur === undefined)).toBe(true);
+    expect(r.incoherences.map((i) => i.texte).join(' ')).toMatch(/Créatininémie non utilisée/);
   });
 
   test('unité incohérente (1,2 « µmol/L ») : valeur non utilisée au lieu d\'une clairance aberrante', () => {
@@ -80,13 +78,13 @@ describe('Calculs physiologiques (contrôle indépendant)', () => {
     expect(creatininePlausible(1.2, 'mg/dL').plausible).toBe(true);
     expect(creatininePlausible(106, 'mg/dL').plausible).toBe(false);
     const r = estimerFonctionRenale({ ageAns: 70, poidsKg: 70, sexe: 'homme', creatinine: { valeur: 1.2, unite: 'umol/L' }, stabilite: 'stable', insuffisanceRenaleAigue: 'non', dialyse: 'aucune' });
-    expect(r.valeurPourPosologie).toBeUndefined();
-    expect(r.limites.join(' ')).toMatch(/mg\/dL/);
+    expect(r.estimations.some((e) => e.calculable)).toBe(false);
+    expect(r.incoherences.map((i) => i.texte).join(' ')).toMatch(/mg\/dL/);
   });
 
   test('DFG saisi nul ou négatif ignoré', () => {
     const r = estimerFonctionRenale({ sexe: 'inconnu', dfg: { valeur: 0, methode: 'CKD-EPI' }, stabilite: 'stable', insuffisanceRenaleAigue: 'non', dialyse: 'aucune' });
-    expect(r.valeurPourPosologie).toBeUndefined();
+    expect(r.labo).toBeUndefined();
   });
 });
 
@@ -256,7 +254,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
   test('groupes radio : un seul arrêt de tabulation, flèches pour changer de choix', async () => {
     const u = userEvent.setup();
     render(<App />);
-    const groupe = screen.getByRole('radiogroup', { name: 'Sexe' });
+    const groupe = screen.getByRole('radiogroup', { name: /^Sexe/ });
     const radios = within(groupe).getAllByRole('radio');
     expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
     radios[0].focus();
@@ -288,9 +286,8 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     expect(within(barre).getByText(/urgence immédiate/)).toBeInTheDocument();
     expect(within(barre).getByText(/Sepsis : antibiothérapie IV immédiate/)).toBeInTheDocument();
     expect(screen.getAllByText(/Sepsis : antibiothérapie IV immédiate/)).toHaveLength(1);
-    // « Sujet âgé : les formules sont moins fiables » concerne les 2 molécules : affiché une seule fois
-    expect(screen.getAllByText(/Sujet âgé : les formules sont moins fiables/)).toHaveLength(1);
-    expect(screen.getByText(/Avertissements communs à plusieurs molécules/)).toBeInTheDocument();
+    // IRA : aucune estimation ne personnalise la dose ; chaque molécule l'explique (méropénème, amikacine).
+    expect(screen.getAllByText(/Adaptation rénale non calculée/).length).toBeGreaterThanOrEqual(2);
   });
 
   test('résumé lisible : libellés accentués, pas de valeur codée brute', async () => {
@@ -300,7 +297,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     const resume = screen.getByLabelText('Résumé du patient');
     expect(resume).toHaveTextContent(/pas encore contrôlées/);
     expect(resume).toHaveTextContent(/foyer confirmé/);
-    expect(resume).toHaveTextContent(/Retenu pour les doses/);
+    expect(resume).toHaveTextContent(/non utilisées pour les doses/);
     expect(resume).not.toHaveTextContent(/controlees|confirme :|_/);
   });
 
@@ -315,9 +312,9 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     expect(screen.getByLabelText('Syndrome / foyer')).toHaveValue('urinaire');
 
     await u.type(screen.getByLabelText('Âge'), '30');
-    await u.click(within(screen.getByRole('radiogroup', { name: 'Sexe' })).getByRole('radio', { name: 'Femme' }));
+    await u.click(within(screen.getByRole('radiogroup', { name: /^Sexe/ })).getByRole('radio', { name: 'Femme' }));
     await u.click(within(screen.getByRole('radiogroup', { name: 'Grossesse' })).getByRole('radio', { name: 'Oui' }));
-    await u.click(within(screen.getByRole('radiogroup', { name: 'Sexe' })).getByRole('radio', { name: 'Homme' }));
+    await u.click(within(screen.getByRole('radiogroup', { name: /^Sexe/ })).getByRole('radio', { name: 'Homme' }));
     expect(screen.getByText(/« Grossesse » n'est plus pertinent/)).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'Grossesse' })).toBeNull();
   });

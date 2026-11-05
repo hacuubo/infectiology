@@ -48,6 +48,8 @@ npm run veille
 5. **Décision « faut-il traiter ? »** avant le choix de la molécule. Une culture positive ne déclenche jamais, seule, une proposition d'antibiotique. Cinq conclusions distinctes : traiter, urgence, pas d'antibiothérapie indiquée, informations insuffisantes, attendre un résultat. La conclusion « pas d'antibiothérapie indiquée » est présentée en entier : raison, conditions, exceptions recherchées, actions, surveillance, éléments qui feraient reconsidérer, sources.
 6. **Antibiogramme guidé** par le germe et le contexte : seules les questions qui changent la décision sont posées, les autres restent dans « Ajouter d'autres résultats ». Les mécanismes rapportés se saisissent en présent / absent / non rapporté, les molécules en S / I / R / non testé. Chaque antibiogramme reste rattaché à son isolat.
 7. **Parcours en quatre étapes**, sans ordre imposé : indication, foyer et germe, résultats déterminants, prise en charge. Une synthèse résume l'ensemble en tête de fiche.
+8. **Fonction rénale calculée** dès que les données nécessaires sont là : DFG estimé indexé (mL/min/1,73 m²), DFG désindexé (mL/min) et clairance de Cockcroft-Gault (mL/min), jamais présentés comme interchangeables. Chaque estimation affiche sa formule, sa version, la date de la créatinine, les données utilisées, ses limites et le détail du calcul. Chaque adaptation posologique dit quelle estimation elle utilise et pourquoi. En cas d'instabilité, d'IRA ou de dialyse, aucune adaptation automatique.
+9. **Aucune fiche sans explication** : quand le traitement n'est pas complet, un panneau dit pourquoi (statut, motif, ce qui peut déjà être proposé, ce qu'il faut compléter avec un accès direct au champ, prochaine action, source ou limite). Une panne du moteur est affichée comme erreur technique, jamais comme une conclusion médicale.
 
 ## Architecture
 
@@ -57,7 +59,8 @@ npm run veille
 | Moteur déterministe | `src/engine/` | contexte, posologie, décision, invalidation |
 | Indication de traitement | `src/clinical/indication/`, `src/clinical/rules/indication.ts` | ECBU, sepsis sans foyer, prélèvement superficiel |
 | Microbiologie guidée | `src/clinical/microbiologie/` | familles de germes, questions d'antibiogramme, résistances attendues, incohérences |
-| Calculs physiologiques | `src/calc/renal.ts` | Cockcroft-Gault, CKD-EPI 2021, Du Bois, poids idéal/ajusté |
+| Fonction rénale | `src/calc/renal.ts`, `src/clinical/molecules/reference-renale.ts` | CKD-EPI 2009/2021, EKFC, Du Bois, Cockcroft-Gault, choix de l'estimation par molécule |
+| États de sortie | `src/engine/sortie.ts`, `src/ui/Explication.tsx` | motifs A à H, propositions écartées, erreur technique |
 | Calendrier | `src/schedule/frise.ts` | frise relative ou datée selon les horaires connus |
 | Base clinique versionnée | `src/clinical/molecules/`, `src/clinical/rules/`, `src/clinical/etat-base.json` | molécules, régimes, adaptation rénale, surveillance, STP ; règles par situation |
 | Registre des sources | `src/clinical/sources/registre.json` | organisme, titre, année, version, URL, date de consultation, statut d'accès et de vigueur |

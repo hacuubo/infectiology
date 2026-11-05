@@ -245,6 +245,48 @@
       "libelle": "Détection des mécanismes de résistance v2.01",
       "url": "https://www.eucast.org/fileadmin/eucast/pdf/eucast_guidelines/EUCAST_detection_of_resistance_mechanisms_170711.pdf",
       "type": "binaire"
+    },
+    {
+      "id": "has-guide-mrc",
+      "organisme": "HAS",
+      "libelle": "Guide du parcours de soins MRC de l'adulte (CKD-EPI, désindexation, posologie)",
+      "url": "https://has-sante.fr/upload/docs/application/pdf/2021-09/guide__mrc.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "has-mrc-7-messages",
+      "organisme": "HAS",
+      "libelle": "MRC : 7 messages clés (CKD-EPI pour adapter les posologies)",
+      "url": "https://has-sante.fr/upload/docs/application/pdf/2021-09/fiche__mrc.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "kdigo-ckd-2024",
+      "organisme": "KDIGO",
+      "libelle": "KDIGO 2024 CKD Guideline (équations du DFG, posologie)",
+      "url": "https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf",
+      "type": "binaire"
+    },
+    {
+      "id": "nkf-ckd-epi-2021",
+      "organisme": "NKF",
+      "libelle": "CKD-EPI 2021 : formule",
+      "url": "https://www.kidney.org/professionals/kdoqi/gfr_calculator/formula",
+      "type": "html"
+    },
+    {
+      "id": "fda-pk-renal-2024",
+      "organisme": "FDA",
+      "libelle": "Pharmacokinetics in Patients with Impaired Renal Function (2024)",
+      "url": "https://www.fda.gov/media/78573/download",
+      "type": "binaire"
+    },
+    {
+      "id": "ema-pk-renal",
+      "organisme": "EMA",
+      "libelle": "Guideline PK in decreased renal function (EMA/CHMP/83874/2014)",
+      "url": "https://www.ema.europa.eu/en/documents/scientific-guideline/guideline-evaluation-pharmacokinetics-medicinal-products-patients-decreased-renal-function_en.pdf",
+      "type": "binaire"
     }
   ]
 }

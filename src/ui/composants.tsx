@@ -2,11 +2,11 @@ import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { SourceRef, StatutValidation, TriState } from '../clinical/types';
 import { SOURCES_PAR_ID } from '../clinical/sources';
 
-export function Champ({ libelle, aide, children, id, libelleId }: { libelle: string; aide?: string; children: ReactNode; id?: string; libelleId?: string }) {
+export function Champ({ libelle, aide, children, id, libelleId, cible }: { libelle: string; aide?: string; children: ReactNode; id?: string; libelleId?: string; cible?: string }) {
   // L'aide est reliée au contrôle par aria-describedby (identifiant dérivé de celui du contrôle).
   const aideId = id ? `${id}-aide` : libelleId ? `${libelleId}-aide` : undefined;
   return (
-    <div className="champ">
+    <div className="champ" data-champ={cible}>
       {id ? (
         <label htmlFor={id} id={libelleId}>
           {libelle}
@@ -115,10 +115,10 @@ export function GroupeRadio<T extends string>({
 
 const classeInconnu = (v: string) => (v === 'inconnu' || v === 'inconnue' ? 'inconnu' : '');
 
-export function ChoixTri({ libelle, aide, valeur, onChange, ouiLibelle = 'Oui', nonLibelle = 'Non' }: { libelle: string; aide?: string; valeur: TriState; onChange: (v: TriState) => void; ouiLibelle?: string; nonLibelle?: string }) {
+export function ChoixTri({ libelle, aide, valeur, onChange, ouiLibelle = 'Oui', nonLibelle = 'Non', cible }: { libelle: string; aide?: string; valeur: TriState; onChange: (v: TriState) => void; ouiLibelle?: string; nonLibelle?: string; cible?: string }) {
   const id = useId();
   return (
-    <Champ libelle={libelle} aide={aide} libelleId={id}>
+    <Champ libelle={libelle} aide={aide} libelleId={id} cible={cible}>
       <GroupeRadio
         libelle={libelle}
         libelleId={id}
@@ -136,20 +136,20 @@ export function ChoixTri({ libelle, aide, valeur, onChange, ouiLibelle = 'Oui', 
   );
 }
 
-export function ChoixRadio<T extends string>({ libelle, aide, valeur, options, onChange }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string; aide?: string }[]; onChange: (v: T) => void }) {
+export function ChoixRadio<T extends string>({ libelle, aide, valeur, options, onChange, cible }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string; aide?: string }[]; onChange: (v: T) => void; cible?: string }) {
   const id = useId();
   return (
-    <Champ libelle={libelle} aide={aide} libelleId={id}>
+    <Champ libelle={libelle} aide={aide} libelleId={id} cible={cible}>
       <GroupeRadio libelle={libelle} libelleId={id} valeur={valeur} options={options} onChange={onChange} classeOption={classeInconnu} decritPar={aide ? `${id}-aide` : undefined} />
     </Champ>
   );
 }
 
-export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, step }: { libelle: string; aide?: string; valeur: number | undefined; onChange: (v: number | undefined) => void; unite?: string; min?: number; max?: number; step?: number }) {
+export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, step, cible }: { libelle: string; aide?: string; valeur: number | undefined; onChange: (v: number | undefined) => void; unite?: string; min?: number; max?: number; step?: number; cible?: string }) {
   const id = useId();
   const horsBornes = valeur !== undefined && ((min !== undefined && valeur < min) || (max !== undefined && valeur > max));
   return (
-    <Champ libelle={libelle} aide={aide} id={id}>
+    <Champ libelle={libelle} aide={aide} id={id} cible={cible}>
       <div className="ligne">
         <input
           id={id}
@@ -177,19 +177,19 @@ export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, 
   );
 }
 
-export function ChampTexte({ libelle, aide, valeur, onChange, type = 'text' }: { libelle: string; aide?: string; valeur: string | undefined; onChange: (v: string | undefined) => void; type?: 'text' | 'datetime-local' | 'date' }) {
+export function ChampTexte({ libelle, aide, valeur, onChange, type = 'text', cible }: { libelle: string; aide?: string; valeur: string | undefined; onChange: (v: string | undefined) => void; type?: 'text' | 'datetime-local' | 'date' | 'time'; cible?: string }) {
   const id = useId();
   return (
-    <Champ libelle={libelle} aide={aide} id={id}>
+    <Champ libelle={libelle} aide={aide} id={id} cible={cible}>
       <input id={id} type={type} aria-describedby={aide ? `${id}-aide` : undefined} value={valeur ?? ''} onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)} />
     </Champ>
   );
 }
 
-export function Select<T extends string>({ libelle, aide, valeur, options, onChange }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string }[]; onChange: (v: T) => void }) {
+export function Select<T extends string>({ libelle, aide, valeur, options, onChange, cible }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string }[]; onChange: (v: T) => void; cible?: string }) {
   const id = useId();
   return (
-    <Champ libelle={libelle} aide={aide} id={id}>
+    <Champ libelle={libelle} aide={aide} id={id} cible={cible}>
       <select id={id} aria-describedby={aide ? `${id}-aide` : undefined} value={valeur} onChange={(e) => onChange(e.target.value as T)}>
         {options.map((o) => (
           <option key={o.v} value={o.v}>

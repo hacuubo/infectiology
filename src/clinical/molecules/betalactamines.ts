@@ -240,8 +240,8 @@ export const amoxicilline: Molecule = {
     statut: 'verifiee_ia',
     texteGeneral: 'Paliers du RCP exprimés en DFG (mL/min).',
     paliers: [
-      { clcrMin: 30, texte: 'DFG > 30 mL/min : pas d\'adaptation.', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '> 30 : pas d\'adaptation', 'adaptation_renale')] },
-      { clcrMin: 10, clcrMax: 30, texte: 'DFG 10-30 mL/min : 1 g immédiatement, puis 500 mg à 1 g deux fois par jour.', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '10-30 : « 1 g immédiatement, puis 500 mg à 1 g deux fois par jour »', 'adaptation_renale')] },
+      { clcrMin: 30.01, texte: 'DFG > 30 mL/min : pas d\'adaptation.', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '> 30 : pas d\'adaptation', 'adaptation_renale')] },
+      { clcrMin: 10, clcrMax: 30.01, texte: 'DFG 10-30 mL/min : 1 g immédiatement, puis 500 mg à 1 g deux fois par jour.', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '10-30 : « 1 g immédiatement, puis 500 mg à 1 g deux fois par jour »', 'adaptation_renale')] },
       { clcrMax: 10, texte: 'DFG < 10 mL/min : 1 g immédiatement, puis 500 mg/jour.', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '< 10 : « 1 g immédiatement, puis 500 mg/jour »', 'adaptation_renale')] },
     ],
     hemodialyse: { texte: '1 g en fin de dialyse, puis 500 mg toutes les 24 h.', sources: [S('RCP-amoxicilline', '§4.2', 'hémodialyse : « 1 g en fin de dialyse, puis 500 mg toutes les 24 heures »', 'adaptation_renale')] },
@@ -297,8 +297,8 @@ export const amoxicillineClavulanate: Molecule = {
     methode: 'Cockcroft',
     statut: 'verifiee_ia',
     paliers: [
-      { clcrMin: 30, texte: 'ClCr > 30 mL/min : pas d\'adaptation.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', 'ClCr > 30 : pas d\'adaptation', 'adaptation_renale')] },
-      { clcrMin: 10, clcrMax: 30, texte: 'ClCr 10-30 mL/min : 1 g/200 mg puis 500 mg/100 mg deux fois par jour.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', '10-30 : 1 g/200 mg puis « 500 mg/100 mg deux fois par jour »', 'adaptation_renale')] },
+      { clcrMin: 30.01, texte: 'ClCr > 30 mL/min : pas d\'adaptation.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', 'ClCr > 30 : pas d\'adaptation', 'adaptation_renale')] },
+      { clcrMin: 10, clcrMax: 30.01, texte: 'ClCr 10-30 mL/min : 1 g/200 mg puis 500 mg/100 mg deux fois par jour.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', '10-30 : 1 g/200 mg puis « 500 mg/100 mg deux fois par jour »', 'adaptation_renale')] },
       { clcrMax: 10, texte: 'ClCr < 10 mL/min : 1 g/200 mg puis 500 mg/100 mg toutes les 24 h.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', '< 10 : 1 g/200 mg puis « 500 mg/100 mg toutes les 24 heures »', 'adaptation_renale')] },
     ],
     hemodialyse: { texte: 'Schéma ClCr < 10 mL/min + une dose de 500 mg/100 mg à la fin de la dialyse.', sources: [S('RCP-amoxicilline-clavulanate', '§4.2', '« une dose de 500 mg/100 mg à la fin de la dialyse »', 'adaptation_renale')] },

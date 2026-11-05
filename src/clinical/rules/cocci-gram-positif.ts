@@ -92,7 +92,7 @@ export const R_SAB: Regle = {
       dureePrevueJours: 14,
       sources: [S(IDSA26, 'CS6', 'the panel suggests an antibiotic treatment duration of 14 days rather than longer or shorter courses (consensus)', 'duree'), S(IDSA26, 'CS7', '>14 days of antibiotic therapy should be considered in select patients with prolonged bacteremia', 'duree'), S(IDSA26, 'CS2', 'The day of blood culture clearance should be used as the start date', 'duree')],
     };
-    if (!dateClear) f.manque('date de la 1re hémoculture négative', 'point de départ de la durée (14 jours à compter de la clairance)', 'affine');
+    if (!dateClear) f.manque('date de la 1re hémoculture négative', 'point de départ de la durée (14 jours à compter de la clairance)', 'bloque_duree');
 
     const atb = lireAntibiogramme(prl);
     for (const n of atb.notes) f.alerte('info', n.texte, n.sources);
@@ -253,6 +253,7 @@ export const R_ENTERO: Regle = {
     const duree: DureeDecidee = { texte: '7 jours pour une bactériémie non compliquée (SPILF 2021) ; 7 à 14 jours (IDSA 2009, infection de cathéter) — divergence.', pointDeDepart: 'premier jour de traitement efficace ; après ablation du cathéter et 1re hémoculture négative si cathéter', dureePrevueJours: 7, sources: [S('SPILF-GPIP-2021-durees', 'diapo 19, 21', 'Streptocoque, entérocoque, et bacilles à Gram négatif : 7 jours', 'duree'), S('IDSA-2009-Mermel-ILC', 'rec. 93', 'A 7–14-day course of therapy is recommended', 'duree')] };
     if (atb.meca('ERV') || vanco === 'R') {
       f.plafond('non_couverte').urgence('elevee').avis('Entérocoque résistant aux glycopeptides (ERV/ERG) : avis infectiologique immédiat et mesures BHRe.', true, [S('HCSP-2019-BHRe', 'définitions', 'ERG = E. faecium vanA/vanB', 'definition')]);
+      f.ecarter('Vancomycine', 'resistance', 'entérocoque résistant aux glycopeptides (ERV/ERG) : les molécules actives ne sont pas modélisées pour ce germe.', [S('HCSP-2019-BHRe', 'définitions', 'ERG = E. faecium vanA/vanB', 'definition')]);
     } else if (amox === 'R' || (org === 'enterococcus_faecium' && amox === undefined)) {
       f.option({ id: 'entero-vanco', libelle: 'Vancomycine (entérocoque résistant à l\'amoxicilline)', type: amox ? 'documente' : 'probabiliste', rang: 'premiere_ligne', items: [{ m: 'vancomycine', r: 'vancomycine-continu' }], duree, sources: [S('IDSA-2009-Mermel-ILC', 'rec. 91', 'Ampicillin is preferred for susceptible strains; use vancomycin if resistant (A-III)', 'choix')] });
     } else {

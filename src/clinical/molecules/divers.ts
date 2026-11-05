@@ -75,9 +75,9 @@ export const ciprofloxacine: Molecule = {
     // Audit relecteur 2 : paliers lus dans le RCP de la forme IV (Ciflox 200 mg/100 mL) ; ceux de la forme orale n'ont pas été lus.
     texteGeneral: 'Paliers du RCP de la forme injectable (mL/min/1,73 m²) ; paliers de la forme orale non vérifiés (RCP oral non lu).',
     paliers: [
-      { clcrMin: 60, texte: 'ClCr ≥ 60 mL/min : pas d\'adaptation.', sources: [S('RCP-ciprofloxacine', '§4.2', 'ClCr 30-60 mL/min/1,73 m² : 200-400 mg toutes les 12 h', 'adaptation_renale')] },
-      { clcrMin: 30, clcrMax: 60, texte: 'ClCr 30-60 mL/min : 200-400 mg toutes les 12 h (IV).', sources: [S('RCP-ciprofloxacine', '§4.2', '« 200-400 mg toutes les 12 h »', 'adaptation_renale')] },
-      { clcrMax: 30, texte: 'ClCr < 30 mL/min : 200-400 mg toutes les 24 h (IV).', sources: [S('RCP-ciprofloxacine', '§4.2', '< 30 : « 200-400 mg toutes les 24 h »', 'adaptation_renale')] },
+      { clcrMin: 60, texte: 'ClCr ≥ 60 mL/min/1,73 m² : pas d\'adaptation.', sources: [S('RCP-ciprofloxacine', '§4.2', 'ClCr 30-60 mL/min/1,73 m² : 200-400 mg toutes les 12 h', 'adaptation_renale')] },
+      { clcrMin: 30, clcrMax: 60, texte: 'ClCr 30-60 mL/min/1,73 m² : 200-400 mg toutes les 12 h (IV).', sources: [S('RCP-ciprofloxacine', '§4.2', '« 200-400 mg toutes les 12 h »', 'adaptation_renale')] },
+      { clcrMax: 30, texte: 'ClCr < 30 mL/min/1,73 m² : 200-400 mg toutes les 24 h (IV).', sources: [S('RCP-ciprofloxacine', '§4.2', '< 30 : « 200-400 mg toutes les 24 h »', 'adaptation_renale')] },
     ],
     hemodialyse: { texte: 'Administrer après la dialyse.', sources: [S('RCP-ciprofloxacine', '§4.2', 'hémodialyse : « après la dialyse »', 'adaptation_renale')] },
   },
@@ -152,8 +152,8 @@ export const cotrimoxazole: Molecule = {
     methode: 'Cockcroft',
     statut: 'verifiee_ia',
     paliers: [
-      { clcrMin: 30, texte: 'ClCr > 30 mL/min : posologie normale.', sources: [S('RCP-cotrimoxazole', '§4.2', 'Clairance de la créatinine > 30 ml/min : posologie normale', 'adaptation_renale')] },
-      { clcrMin: 15, clcrMax: 30, texte: 'ClCr 15-30 mL/min : demi-dose, en 1 prise par jour.', sources: [S('RCP-cotrimoxazole', '§4.2', '15-30 : demi-dose, 1 perfusion/jour', 'adaptation_renale')] },
+      { clcrMin: 30.01, texte: 'ClCr > 30 mL/min : posologie normale.', sources: [S('RCP-cotrimoxazole', '§4.2', 'Clairance de la créatinine > 30 ml/min : posologie normale', 'adaptation_renale')] },
+      { clcrMin: 15, clcrMax: 30.01, texte: 'ClCr 15-30 mL/min : demi-dose, en 1 prise par jour.', sources: [S('RCP-cotrimoxazole', '§4.2', '15-30 : demi-dose, 1 perfusion/jour', 'adaptation_renale')] },
       { clcrMax: 15, texte: 'ClCr < 15 mL/min hors dialyse : ne pas utiliser.', sources: [S('RCP-cotrimoxazole', '§4.2', '< 15 hors dialyse : ne pas utiliser', 'adaptation_renale')] },
     ],
     hemodialyse: { texte: 'Demi-dose après la dialyse ; sulfaméthoxazolémie tous les trois jours.', sources: [S('RCP-cotrimoxazole', '§4.2', 'hémodialyse : demi-dose après dialyse, sulfaméthoxazolémie « tous les trois jours »', 'adaptation_renale')] },

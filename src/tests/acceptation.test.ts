@@ -57,9 +57,9 @@ describe('90 ans, fièvre, insuffisance rénale, bactériémie à BGN', () => {
     expect(p.controles.find((c) => c.id === 'ctl-iu-hc-controle')?.categorie).toBe('non_systematique');
     // Sepsis : urgence immédiate (SSC 2026)
     expect(p.urgence.niveau).toBe('immediate');
-    // IRA : l'estimation de la fonction rénale est signalée comme indicative
+    // IRA : les estimations ne sont pas utilisées pour personnaliser la dose ; la limite est affichée
     const ceftri = premiere(p)[0].prescriptions[0];
-    expect(ceftri.avertissements.join(' ')).toMatch(/instable|IRA/);
+    expect(ceftri.adaptations.join(' ')).toMatch(/Adaptation rénale non calculée : fonction rénale instable ou insuffisance rénale aiguë/);
     // Durée : 10 j si évolution rapidement favorable (SPILF 2018) ; bactériémie sans prolongation (SPILF 2015)
     expect(ceftri.duree.texte).toMatch(/10 jours/);
     expect(ceftri.duree.texte).toMatch(/ne modifie ni le choix ni la durée/);
@@ -186,11 +186,13 @@ describe('Poids, fonction rénale, dialyse', () => {
     expect(vanco.doseAffichee).toMatch(/Dose de référence/);
   });
 
-  test('IRA : estimation signalée comme indicative et adaptation du méropénème selon le palier RCP', () => {
+  test('IRA : aucune estimation ne personnalise la dose du méropénème ; avis et réévaluation quotidienne', () => {
     const p = plan(CAS_BLSE_AMIKACINE);
     const mero = premiere(p)[0].prescriptions.find((x) => x.moleculeId === 'meropeneme')!;
-    expect(mero.adaptations.join(' ')).toMatch(/10-25 mL\/min : moitié de la dose unitaire toutes les 12 h/);
-    expect(mero.avertissements.join(' ')).toMatch(/instable/);
+    expect(mero.adaptations.join(' ')).toMatch(/Adaptation rénale non calculée/);
+    expect(mero.adaptations.join(' ')).toMatch(/Avis pharmacologique ou néphrologique/);
+    expect(mero.adaptations.join(' ')).not.toMatch(/10-25 mL\/min/);
+    expect(mero.doseAffichee).toMatch(/Dose de référence/);
   });
 });
 

@@ -61,7 +61,7 @@
       "url": "https://www.has-sante.fr/jcms/p_3278764/fr/",
       "statut": "inchangee",
       "empreinte": "5c1b09f75c1897f58f8f8c9fdfdad16b2c6ee0aa59778b979ab803b4b8555642",
-      "taille": 113123,
+      "taille": 116715,
       "reperes": {
         "Mise à jour": null
       }
@@ -73,7 +73,7 @@
       "url": "https://www.has-sante.fr/jcms/c_2722914/fr/pyelonephrite-aigue-de-la-femme",
       "statut": "inchangee",
       "empreinte": "dbc4d4f7dbf161a10ef4820854dae9df4f302db26e3768348e9ffad682b32ba2",
-      "taille": 92341,
+      "taille": 95838,
       "reperes": {
         "Mise à jour": null
       }
@@ -95,7 +95,7 @@
       "libelle": "Fluoroquinolones : rappel des restrictions d'utilisation",
       "url": "https://ansm.sante.fr/informations-de-securite/antibiotiques-de-la-famille-des-fluoroquinolones-administres-par-voie-systemique-ou-inhalee-rappel-des-restrictions-dutilisation",
       "statut": "inchangee",
-      "empreinte": "2ee51cbf4d117371edf0a443705d4727960bc1ed7181f082ecee094f27043f72",
+      "empreinte": "f665024c181a36430465ec901a6f0dabb7dbc5cc2441c3dced3b45728940ef06",
       "taille": 107225,
       "reperes": {}
     },
@@ -124,8 +124,8 @@
       "libelle": "Référentiel CA-SFM/EUCAST 2026 V1.0 (page de la boutique SFM)",
       "url": "https://www.sfm-microbiologie.org/boutique/ca-sfm-v1-0-septembre-2026/",
       "statut": "inchangee",
-      "empreinte": "5cac1f6ebbbd301f73d4f931330143433e61e9835288d904d69a60e06953de4f",
-      "taille": 231664,
+      "empreinte": "80c0c1941e6e72752da8d4adee2d8a1b5eb0df04468a3669712b2128502a9dc8",
+      "taille": 230221,
       "reperes": {
         "2027": "da Microbes 2026 AMP 2026 Pseudomonas 2026 Virus et Greffes 2027 GEFH 2027 Virus à ADN 2027 ÉMERGENCES 2027 Journée BUD Webi",
         "V1.0": "Addendum 2026 _Comité de l’Antibiogramme de la SFM (CA-SFM) V1.0 Septembre 2026 🆕 Gratuit La version 2026 du communiqué du ",
@@ -163,7 +163,7 @@
       "libelle": "Guidelines on Urological Infections",
       "url": "https://uroweb.org/guidelines/urological-infections",
       "statut": "inchangee",
-      "empreinte": "882cc65f4ac0768fa37640a63e902c3f2e9b59149a5769d47202da51faf82a65",
+      "empreinte": "5122ce9a4980c8d4326feca6e20066d1b7324c81adc42324c4f569bd4f96b7df",
       "taille": 1328932,
       "reperes": {
         "2026": "al Infections Guidelines were first published in 2001. This 2026 document presents a limited update of the 2025 publication.",
@@ -223,7 +223,7 @@
       "url": "https://www.has-sante.fr/jcms/c_2722927/fr/femme-enceinte-colonisation-urinaire-et-cystite",
       "statut": "inchangee",
       "empreinte": "aa8f9b7e48a80da7d91542ea310cac79ed9183f88788897730d4e58233ab2f47",
-      "taille": 90529,
+      "taille": 94026,
       "reperes": {
         "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist",
         "colonisation": "nté - Choix et durées d'antibiothérapies : Femme enceinte : colonisation urinaire et cystite Recherche Menu principal Contenu princi"
@@ -236,7 +236,7 @@
       "url": "https://www.has-sante.fr/jcms/c_2722827/fr/cystite-aigue-simple-a-risque-de-complication-ou-recidivante-de-la-femme",
       "statut": "inchangee",
       "empreinte": "7c97051c91ce0eac991caf7363246ec5f22917f8dd7c6551832c5e7c872977a4",
-      "taille": 96846,
+      "taille": 100339,
       "reperes": {
         "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist"
       }
@@ -248,7 +248,7 @@
       "url": "https://www.has-sante.fr/jcms/c_2911550/fr/prise-en-charge-des-infections-cutanees-bacteriennes-courantes",
       "statut": "inchangee",
       "empreinte": "eb41d3bdd881d33863f88d19328015c8941834105c620ab1a6a97a5f10d18b2b",
-      "taille": 88892,
+      "taille": 92480,
       "reperes": {
         "Mis à jour": null
       }
@@ -322,6 +322,72 @@
       "taille": 928254,
       "reperes": {},
       "derniereModif": "Wed, 02 Jul 2025 15:05:52 GMT"
+    },
+    {
+      "id": "has-guide-mrc",
+      "organisme": "HAS",
+      "libelle": "Guide du parcours de soins MRC de l'adulte (CKD-EPI, désindexation, posologie)",
+      "url": "https://has-sante.fr/upload/docs/application/pdf/2021-09/guide__mrc.pdf",
+      "statut": "inchangee",
+      "empreinte": "7bd20ec40ff2d521c7f6467d258badf0c8d4ea1ba36163266dd9eaea5b193920",
+      "taille": 1893546,
+      "reperes": {},
+      "derniereModif": "Thu, 28 Sep 2023 13:24:15 GMT"
+    },
+    {
+      "id": "has-mrc-7-messages",
+      "organisme": "HAS",
+      "libelle": "MRC : 7 messages clés (CKD-EPI pour adapter les posologies)",
+      "url": "https://has-sante.fr/upload/docs/application/pdf/2021-09/fiche__mrc.pdf",
+      "statut": "inchangee",
+      "empreinte": "715ba26e467b3d81c24baab51f61e60ca1c91b4735e0827e0baabf2e650381e7",
+      "taille": 246994,
+      "reperes": {},
+      "derniereModif": "Thu, 28 Sep 2023 13:25:18 GMT"
+    },
+    {
+      "id": "kdigo-ckd-2024",
+      "organisme": "KDIGO",
+      "libelle": "KDIGO 2024 CKD Guideline (équations du DFG, posologie)",
+      "url": "https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf",
+      "statut": "inchangee",
+      "empreinte": "dfdfdbf04fdf1a0696492a1f494282051c3b92dcd7c067e7cb93063915b27bdc",
+      "taille": 5966902,
+      "reperes": {},
+      "derniereModif": "Wed, 13 Mar 2024 07:57:00 GMT"
+    },
+    {
+      "id": "nkf-ckd-epi-2021",
+      "organisme": "NKF",
+      "libelle": "CKD-EPI 2021 : formule",
+      "url": "https://www.kidney.org/professionals/kdoqi/gfr_calculator/formula",
+      "statut": "inchangee",
+      "empreinte": "86f61b1939ae7275b7feb338f36f7fb34b8143248fc850b299b43f6925911f6b",
+      "taille": 182691,
+      "reperes": {},
+      "derniereModif": "Thu, 05 Nov 2026 17:55:03 GMT"
+    },
+    {
+      "id": "fda-pk-renal-2024",
+      "organisme": "FDA",
+      "libelle": "Pharmacokinetics in Patients with Impaired Renal Function (2024)",
+      "url": "https://www.fda.gov/media/78573/download",
+      "statut": "inchangee",
+      "empreinte": "5e5c54fe080374b4989fc283a4222fa1ccc9df5f3fb1b12d0b9cd706bdada289",
+      "taille": 373171,
+      "reperes": {},
+      "derniereModif": "Mon, 18 Mar 2024 19:11:32 GMT"
+    },
+    {
+      "id": "ema-pk-renal",
+      "organisme": "EMA",
+      "libelle": "Guideline PK in decreased renal function (EMA/CHMP/83874/2014)",
+      "url": "https://www.ema.europa.eu/en/documents/scientific-guideline/guideline-evaluation-pharmacokinetics-medicinal-products-patients-decreased-renal-function_en.pdf",
+      "statut": "inchangee",
+      "empreinte": "83f727c50fec97571f028e4d94ae6d49776fc7b60ae803d2266aef2f6ba3946f",
+      "taille": 184958,
+      "reperes": {},
+      "derniereModif": "Fri, 21 Sep 2018 08:47:48 GMT"
     }
   ]
 }

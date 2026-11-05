@@ -204,10 +204,15 @@ export function construireContexte(d: Dossier, maintenant: Date = new Date()): C
     tailleCm: p.tailleCm,
     sexe,
     creatinine: p.renal.creatinine,
-    dfg: p.renal.dfg ? { valeur: p.renal.dfg.valeur, methode: p.renal.dfg.methode } : undefined,
+    dfg: p.renal.dfg,
     stabilite: p.renal.stabilite,
     insuffisanceRenaleAigue: p.renal.insuffisanceRenaleAigue,
     dialyse: p.renal.dialyse,
+    equation: p.renal.equationDfg,
+    poidsCockcroft: p.renal.poidsCockcroft,
+    infectionGrave: p.gravite === 'sepsis' || p.gravite === 'choc_septique',
+    grossesse: p.grossesse === 'oui',
+    maintenant,
   });
   const hemocultures = d.prelevements.filter((x) => x.type === 'hemoculture');
   const urines = d.prelevements.filter((x) => x.type === 'urine');
