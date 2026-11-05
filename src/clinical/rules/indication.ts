@@ -23,6 +23,7 @@ export function indicationDepuis(ev: Omit<EvaluationECBU, 'foyerUrinaire' | 'for
     sources: ev.sources,
     statut: ev.statut,
     regleId,
+    ...(ev.pointNonResolu ? { pointNonResolu: ev.pointNonResolu } : {}),
   };
 }
 

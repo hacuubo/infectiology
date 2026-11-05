@@ -26,18 +26,17 @@ export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, 
   ]);
   if (p.sexe !== 'homme' && (p.age === undefined || p.age <= 55)) lignes.push(['Grossesse', tri(p.grossesse)]);
   const renalTxt: string[] = [];
-  if (p.renal.creatinine) renalTxt.push(`créat. ${nombreFr(p.renal.creatinine.valeur, 2)} ${p.renal.creatinine.unite === 'umol/L' ? 'µmol/L' : 'mg/dL'}`);
-  if (r.cockcroftMlMin !== undefined && Number.isFinite(r.cockcroftMlMin)) renalTxt.push(`Cockcroft ≈ ${nombreFr(r.cockcroftMlMin)} mL/min`);
-  if (r.ckdEpi2021 !== undefined && Number.isFinite(r.ckdEpi2021)) renalTxt.push(`CKD-EPI 2021 ≈ ${nombreFr(r.ckdEpi2021)} mL/min/1,73 m²`);
-  if (p.renal.dfg) renalTxt.push(`${p.renal.dfg.methode} saisi ${nombreFr(p.renal.dfg.valeur, 1)}`);
+  const u = p.renal.creatinine?.unite;
+  if (p.renal.creatinine) renalTxt.push(`créat. ${nombreFr(p.renal.creatinine.valeur, 2)} ${u === 'umol/L' ? 'µmol/L' : u === 'mg/dL' ? 'mg/dL' : '(unité ?)'}${p.renal.creatinine.date ? ` du ${p.renal.creatinine.date}` : ''}`);
+  // Les trois estimations restent distinctes : nom de la formule et unité toujours affichés.
+  for (const e of r.estimations) if (e.calculable) renalTxt.push(`${e.libelle} (${e.id === 'clairance_cg' ? 'Cockcroft-Gault' : `${e.formule.split(' × ')[0].replace(' créatinine', '')} ${e.version.split(/[ ,(;]/)[0]}`}) ≈ ${nombreFr(e.valeur!)} ${e.unite}`);
+  if (p.renal.dfg) renalTxt.push(`valeur fournie (${p.renal.dfg.methode}) ${nombreFr(p.renal.dfg.valeur, 1)} ${p.renal.dfg.unite ?? '(unité ?)'}`);
   if (p.renal.dialyse !== 'aucune' && p.renal.dialyse !== 'inconnu') renalTxt.push(libelle(p.renal.dialyse));
   if (p.renal.insuffisanceRenaleAigue === 'oui') renalTxt.push('IRA');
   if (p.renal.stabilite === 'instable') renalTxt.push('instable');
-  if (r.manquants.some((m) => m.startsWith('créatininémie valide'))) renalTxt.push('créatininémie non utilisée (valeur ou unité à vérifier)');
+  if (r.incoherences.some((i) => i.cible === 'patient.renal.creatinine')) renalTxt.push('créatininémie non utilisée (valeur, unité ou date à vérifier)');
   lignes.push(['Rein', renalTxt.length ? renalTxt.join(' ; ') : 'non renseigné']);
-  if (r.valeurPourPosologie && p.renal.dialyse !== 'hemodialyse_intermittente' && p.renal.dialyse !== 'eer_continue' && p.renal.dialyse !== 'dialyse_peritoneale') {
-    lignes.push(['Retenu pour les doses', `${nombreFr(r.valeurPourPosologie.valeur)} mL/min (${r.valeurPourPosologie.methode})${r.applicable ? '' : ' — indicatif seulement'}`]);
-  }
+  if (!r.applicable && r.raisonNonApplicable && r.etat !== 'dialyse') lignes.push(['Estimations', `non utilisées pour les doses : ${r.raisonNonApplicable}`]);
   lignes.push([
     'Allergies',
     p.statutAllergie === 'inconnu' ? 'non renseigné' : p.allergies.length ? p.allergies.map((a) => `${a.molecule || '?'} (${libelle(a.reaction)}${a.gravite && a.gravite !== 'inconnue' ? `, ${a.gravite === 'severe' ? 'sévère' : a.gravite === 'moderee' ? 'modérée' : 'légère'}` : ''})`).join(' ; ') : 'aucune connue',

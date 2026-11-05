@@ -1,5 +1,5 @@
 {
-  "version": "2026.11.1-brouillon",
+  "version": "2026.11.2-brouillon",
   "dateValidationHumaine": null,
   "statutGlobal": "verifiee_ia",
   "derniereVeilleReussie": "2026-11-05",
@@ -14,6 +14,7 @@
     "EUCAST — Clinical Breakpoint Tables, définitions S/I/R, expert rules",
     "EUCAST — phénotypes de résistance attendus et inhabituels, détection des mécanismes",
     "GitHub Actions — documentation schedule (fiabilité de la veille)",
+    "HAS (MRC), KDIGO 2024, NKF, FDA 2024, EMA — estimation de la fonction rénale et posologie",
     "HAS — femme enceinte (colonisation urinaire), cystite, infections cutanées 2019",
     "HAS — fiches antibiothérapie et infections urinaires",
     "IDSA — bactériurie asymptomatique 2019 ; IDSA/ESCMID — S. aureus 2026",
@@ -30,6 +31,11 @@
     {
       "id": "EVOL-2026-11-05-INDICATION-ANTIBIOGRAMME",
       "resume": "Nouvelles règles à valider par un médecin : décision traiter / ne pas traiter (R-INDICATION-ECBU, R-SEPSIS-FOYER-INCONNU, R-PRELEVEMENT-SUPERFICIEL, indications S. aureus et SCN) et antibiogramme guidé (questions par germe, résistances attendues, phénotypes inhabituels, statut méticilline). Sources : docs/sources/recherche-indication.md, docs/sources/recherche-antibiogramme-guide.md ; relectures : docs/relectures/v2-*.md",
+      "date": "2026-11-05"
+    },
+    {
+      "id": "EVOL-2026-11-05-RENAL-SORTIES",
+      "resume": "À valider par un médecin : calcul de la fonction rénale (CKD-EPI 2009 sans coefficient racial par défaut, CKD-EPI 2021 ou EKFC au choix ; désindexation Du Bois ; Cockcroft-Gault, poids au choix), choix de l'estimation selon la référence posologique de chaque molécule, refus d'adaptation automatique en cas d'instabilité, d'IRA ou de dialyse ; états de sortie explicites (A à H) du moteur. Sources : docs/sources/recherche-fonction-renale.md ; relectures : docs/relectures/v3-*.md",
       "date": "2026-11-05"
     }
   ],

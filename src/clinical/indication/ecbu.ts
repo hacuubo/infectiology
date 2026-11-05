@@ -26,6 +26,8 @@ export interface EvaluationECBU {
   questions: string[];
   sources: SourceRef[];
   statut: StatutValidation;
+  /** Point que les sources lues ne tranchent pas : aucune proposition automatisée. */
+  pointNonResolu?: string;
   /** Le foyer urinaire peut être retenu pour le choix du traitement. */
   foyerUrinaire: boolean;
   /** Forme retenue quand l'infection est probable. */
@@ -231,6 +233,7 @@ function evaluerBrut(ctx: ContexteDecision, ignorerContamination: boolean): Eval
         titre: 'ECBU polymicrobien avant geste urologique : pas de consensus',
         raison: 'Avant un geste urologique, l’AFU 2026 ne recommande ni ne déconseille de refaire un ECBU à trois espèces ou plus, et ne formule pas de recommandation de traitement : décision avec l’urologue.',
         actions: ['Discussion avec l’urologue'],
+        pointNonResolu: 'ECBU à trois espèces ou plus avant un geste urologique : l’AFU 2026 ne formule pas de recommandation.',
         sources: [...srcContamination, SRC.afuPolymicrobien],
       });
     return ev({
@@ -262,6 +265,7 @@ function evaluerBrut(ctx: ContexteDecision, ignorerContamination: boolean): Eval
         actions: ['Avis urologique ou SMIT'],
         reconsiderer: ['Fièvre, hypothermie, hypotension, altération de l’état mental'],
         sources: [SRC.iuasR1],
+        pointNonResolu: 'Signes urinaires isolés sur dispositif endo-urinaire : situation non couverte par les sources lues (IUAS R.1 exige des signes systémiques).',
         statut: 'brouillon',
       });
     if (signes) {
@@ -402,6 +406,7 @@ function evaluerBrut(ctx: ContexteDecision, ignorerContamination: boolean): Eval
       actions: ['Hémocultures', 'Surveillance clinique rapprochée', 'Avis SMIT'],
       reconsiderer: ['Apparition de signes urinaires ou lombaires', 'Sepsis : traiter sans attendre', 'Résultat des hémocultures'],
       sources: [SRC.spilf26Indeterminee, SRC.idsaFievreSansFoyer, SRC.iuasR3, SRC.iuasR4],
+      pointNonResolu: 'Fièvre sans sepsis, sans signe urinaire ni autre foyer, avec bactériurie : aucune source lue ne tranche (IDSA 2019, SPILF 2026 et IUAS 2015 portent sur des situations voisines).',
       statut: 'brouillon',
     });
   }
@@ -513,6 +518,7 @@ function exceptions(ctx: ContexteDecision, u: Prelevement): EvaluationECBU | und
       titre: 'Colonisation et geste sans recommandation établie',
       raison: `Pour ce geste (${g.libelle.toLowerCase()}), les recommandations AFU 2026 ne permettent pas de trancher (« pas de recommandation possible ») : décision avec l'urologue et le SMIT.`,
       actions: ['Discussion avec l’urologue et le SMIT'],
+      pointNonResolu: `Colonisation avant ${g.libelle.toLowerCase()} : « pas de recommandation possible » (AFU 2026).`,
       sources: g.sources,
     };
   if (g.conduite === 'traiter_avant') {

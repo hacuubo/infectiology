@@ -217,3 +217,34 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
   .colonne-resultat { overflow: visible; display: flex !important; }
   .contenu { grid-template-columns: 1fr; }
 }
+
+/* États de sortie : explication de toute absence de proposition complète */
+.explication-sortie { display: grid; gap: 10px; margin: 8px 0 12px; }
+.explication-sortie h4 { margin: 0; }
+.motif-sortie { border: 2px solid var(--attention); background: var(--attention-clair); border-radius: var(--rayon); padding: 10px 12px; }
+.motif-sortie.motif-non_indiquee { border-color: var(--ok); background: var(--ok-clair); }
+.motif-sortie.motif-incoherence, .motif-sortie.motif-erreur_technique { border-color: var(--urgence); background: var(--urgence-clair); }
+.motif-sortie .titre { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.motif-dl { display: grid; grid-template-columns: minmax(9rem, 13rem) 1fr; gap: 4px 12px; margin: 0; }
+.motif-dl dt { font-weight: 600; }
+.motif-dl dd { margin: 0; overflow-wrap: anywhere; }
+.motif-dl ul { margin: 0; padding-left: 1.1rem; }
+.motif-sortie .limite { margin: 0 0 4px; font-weight: 600; }
+.motif-sortie .origine { margin: 6px 0 0; }
+.a-completer li { margin-bottom: 4px; }
+.pourquoi-ecartees { margin: 8px 0; }
+.erreur-technique { border: 2px solid var(--urgence); }
+.changements ul { margin: 4px 0 0; }
+.surbrillance { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 4px; transition: outline-color 0.3s; }
+
+/* Fonction rénale */
+.apercu-renal, .carte-renale { border: 1px solid var(--bord); border-radius: var(--rayon); padding: 8px 10px; margin: 8px 0; background: var(--surface); }
+.carte-renale summary { cursor: pointer; font-weight: 600; }
+.estimations, .apercu-renal ul { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.estimation .valeur { font-weight: 700; font-size: 1.05em; }
+.estimation.non-calculable { opacity: 0.85; }
+.labo { margin: 6px 0; }
+@media (max-width: 600px) {
+  .motif-dl { grid-template-columns: 1fr; }
+  .motif-dl dt { margin-top: 4px; }
+}

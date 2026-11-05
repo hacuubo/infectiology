@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { clonerDossier, dossierParDefaut, nettoyerDossier, type Dossier, type Invalidation } from '../engine/etat';
-import { decider } from '../engine/decider';
+import { deciderSansPanne } from '../engine/decider';
+import { comparerPlans } from '../engine/comparaison';
+import type { Plan } from '../clinical/types';
+import { GardeErreur, PanneauErreurTechnique } from './Explication';
 import { construireContexte } from '../engine/contexte';
 import { FormulaireDossier } from './FormulaireDossier';
 import { ResumePatient } from './ResumePatient';
@@ -26,11 +29,45 @@ export function App() {
     });
   };
 
-  const ctx = useMemo(() => construireContexte(dossier), [dossier]);
-  const plan = useMemo(() => decider(dossier, { modeUsageClinique: modeClinique }), [dossier, modeClinique]);
+  const [essai, setEssai] = useState(0);
+  const ctx = useMemo(() => {
+    try {
+      return construireContexte(dossier);
+    } catch {
+      return undefined;
+    }
+  }, [dossier]);
+  // Appel protégé : une panne du moteur est une erreur technique, jamais une conclusion médicale.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const resultat = useMemo(() => deciderSansPanne(dossier, { modeUsageClinique: modeClinique }), [dossier, modeClinique, essai]);
+  const plan: Plan | undefined = resultat.ok ? resultat.plan : undefined;
+  // Modifications de la saisie qui changent la proposition thérapeutique.
+  const precedent = useRef<Plan | undefined>(undefined);
+  const changements = useMemo(() => {
+    const c = plan ? comparerPlans(precedent.current, plan) : [];
+    if (plan) precedent.current = plan;
+    return c;
+  }, [plan]);
   const obsolete = estObsolete(VERSION_CLINIQUE);
-  const urgentes = alertesUrgentes(plan);
-  const niveau = plan.urgence.niveau;
+  const urgentes = plan ? alertesUrgentes(plan) : [];
+  const niveau = plan?.urgence.niveau ?? 'standard';
+
+  /** Mène directement au champ à compléter (onglet Saisie sur écran étroit), sans refaire le parcours. */
+  const allerAuChamp = useCallback((cible: string) => {
+    setOnglet('saisie');
+    window.setTimeout(() => {
+      const el = trouverChamp(cible);
+      if (!el) return;
+      el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+      const focusable = el.querySelector<HTMLElement>('input:not([disabled]), select, textarea, [role="radio"][tabindex="0"], button') ?? (el.matches('h2, h3') ? el : null);
+      if (focusable) {
+        if (focusable.matches('h2, h3')) focusable.setAttribute('tabindex', '-1');
+        focusable.focus({ preventScroll: true });
+      }
+      el.classList.add('surbrillance');
+      window.setTimeout(() => el.classList.remove('surbrillance'), 2500);
+    }, 0);
+  }, []);
 
   return (
     <div className="app">
@@ -81,7 +118,7 @@ export function App() {
           </button>
         </div>
         <div id="resume-patient" hidden={resumeReduit}>
-          <ResumePatient dossier={dossier} ctx={ctx} />
+          {ctx && <ResumePatient dossier={dossier} ctx={ctx} />}
         </div>
       </div>
 
@@ -149,7 +186,13 @@ export function App() {
           <FormulaireDossier dossier={dossier} modifier={modifier} />
         </div>
         <div className={`colonne-resultat ${onglet === 'saisie' ? 'masque-etroit' : ''}`}>
-          <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} />
+          {resultat.ok && plan ? (
+            <GardeErreur cle={plan} rendu={(message, reessayer) => <PanneauErreurTechnique sortie={{ traitement: 'aucun', urgence: false, actionsUrgentes: [], ecartees: [], motifs: [{ type: 'erreur_technique', rang: 0, statut: 'Erreur technique d’affichage — ce n’est pas une conclusion médicale', motif: `L’affichage de la fiche a échoué (${message}).`, verifie: [], dejaPropose: [], aCompleter: [], prochaineAction: 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.', sources: [], origine: ['interface'] }] }} onReessayer={reessayer} />}>
+              <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} allerAuChamp={allerAuChamp} changements={changements} />
+            </GardeErreur>
+          ) : (
+            !resultat.ok && <PanneauErreurTechnique sortie={resultat.sortie} onReessayer={() => setEssai((n) => n + 1)} />
+          )}
           <footer className="pied">
             Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
           </footer>
@@ -157,4 +200,28 @@ export function App() {
       </main>
     </div>
   );
+}
+
+/** Champ de saisie ciblé ; à défaut (champ masqué car non pertinent), la section qui le contient. */
+const SECTIONS: [string, string][] = [
+  ['entree', 't-entree'],
+  ['patient.renal', 't-renal'],
+  ['patient.gravite', 't-contexte'],
+  ['patient.contexte', 't-contexte'],
+  ['patient.materiel', 't-contexte'],
+  ['patient.valve', 't-contexte'],
+  ['patient.formeIUMasculine', 't-contexte'],
+  ['patient.', 't-patient'],
+  ['prelevements', 't-micro'],
+  ['clinique', 't-indication'],
+  ['horaires', 't-horaires'],
+];
+
+export function trouverChamp(cible: string): HTMLElement | null {
+  const exact = document.querySelector<HTMLElement>(`[data-champ="${cible}"]`);
+  if (exact) return exact;
+  const parent = cible.includes('.') ? document.querySelector<HTMLElement>(`[data-champ="${cible.split('.').slice(0, -1).join('.')}"]`) : null;
+  if (parent) return parent;
+  for (const [prefixe, id] of SECTIONS) if (cible.startsWith(prefixe)) return document.getElementById(id) ?? (id === 't-indication' ? document.getElementById('t-micro') : null);
+  return null;
 }

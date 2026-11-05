@@ -21,6 +21,7 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
   if (atb.meca('carbapenemase')) {
     f.plafond('non_couverte').urgence('elevee').alerte('urgence', 'Entérobactérie productrice de carbapénémase : hors périmètre ; avis infectiologique immédiat (nouvelles associations réservées) et mesures BHRe.', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 11', 'OXA 48… : Ceftazidime-avibactam est recommandé', 'choix'), S('HCSP-2019-BHRe', 'définitions', undefined, 'definition')]);
     f.avis('Avis infectiologique immédiat (EPC) et équipe d\'hygiène.', true, [S('HCSP-2019-BHRe', 'définitions', undefined, 'definition')]);
+    f.ecarter('Bêta-lactamines de la base, carbapénèmes compris', 'resistance', 'carbapénémase rapportée : carbapénèmes interprétés résistants (CA-SFM 2026) ; les associations réservées (ceftazidime-avibactam…) ne sont pas modélisées.', [S('CASFM-2026-V1.0', 'avant-propos p. 5', 'interpréter comme "résistants" les carbapénèmes', 'definition')]);
     return;
   }
   if (org === 'pseudomonas_aeruginosa') {
@@ -36,7 +37,10 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
     const ok = utilisable(s('cefepime'));
     f.alerte('info', 'Entérobactérie du groupe 3 (céphalosporinase inductible/déréprimée) : monothérapie par C3G ou pipéracilline-tazobactam déconseillée ; céfépime privilégié.', [S('CASFM-2026-V1.0', 'ch. 5.1 (groupe 3)', 'privilégier l\'utilisation des céphalosporines de 4e génération (céfépime)', 'choix'), S('SPILF-2023-BGN-MDR-diapo', 'diapo 10', 'Céfépime est le traitement de référence', 'choix')]);
     if (ok) f.option({ id: 'doc-ampc-cefepime', libelle: 'Céfépime', type: doc, rang: 'premiere_ligne', items: [{ m: 'cefepime', r: 'cefepime-2g8h' }], duree, sources: [S('SPILF-2023-BGN-MDR-diapo', 'diapo 10', 'Céfépime est le traitement de référence', 'choix')] });
-    else f.avis('Céfépime non utilisable : avis infectiologique.', true, []);
+    else {
+      f.avis('Céfépime non utilisable : avis infectiologique.', true, []);
+      f.ecarter('Céfépime', 'resistance', s('cefepime') === 'R' ? 'céfépime rendu R sur l’antibiogramme.' : 'céfépime non testé : la molécule de référence du groupe 3 ne peut pas être proposée sans résultat.');
+    }
     relaisOral(f, s, site, duree, !ok);
     return;
   }
@@ -85,6 +89,8 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
   }
   if (!utilisable(amox) && !utilisable(c3g)) {
     f.avis('Aucune bêta-lactamine de référence rendue S/I : avis infectiologique.', true, []);
+    f.ecarter('Amoxicilline', 'resistance', amox === 'R' ? 'rendue R sur l’antibiogramme.' : 'non testée ou non rendue : pas de résultat utilisable.');
+    f.ecarter('C3G (ceftriaxone, céfotaxime)', 'resistance', c3g === 'R' ? 'rendue R sur l’antibiogramme.' : 'non testée ou non rendue : pas de résultat utilisable.');
     f.plafond('partielle');
   }
   relaisOral(f, s, site, duree, false);
@@ -152,7 +158,9 @@ type Cadre = 'homme_spilf2026' | 'femme_spilf2015' | 'iuas';
  */
 function risqueComplicationSpilf2015(ctx: ContexteDecision): boolean {
   const p = ctx.dossier.patient;
-  const clcr = ctx.renal.valeurPourPosologie?.valeur;
+  // « Clairance < 30 mL/min » (SPILF 2015) : toute estimation recevable en mL/min (Cockcroft-Gault ou DFG désindexé).
+  const valeurs = ctx.renal.applicable ? ctx.renal.estimations.filter((e) => e.unite === 'mL/min' && e.calculable).map((e) => e.valeur!) : [];
+  const clcr = valeurs.length ? Math.min(...valeurs) : undefined;
   return (p.age !== undefined && p.age > 75) || p.immunodepression === 'oui' || p.grossesse === 'oui' || (clcr !== undefined && clcr < 30 && p.renal.insuffisanceRenaleAigue !== 'oui');
 }
 

@@ -5,6 +5,8 @@ import type { Alerte, NiveauUrgence, OptionTherapeutique, Plan, PrescriptionProp
 import { Badge, BadgeStatut, ListeSources, RefsInline } from './composants';
 import { formaterDate, type EvenementFriseDetaille } from '../schedule/frise';
 import { dedupSources } from '../engine/decider';
+import { ExplicationSortie, PourquoiNonDisponible, type AllerAuChamp } from './Explication';
+import { CarteFonctionRenale } from './FonctionRenale';
 
 export const LIBELLE_URGENCE: Record<NiveauUrgence, string> = {
   immediate: 'urgence immédiate',
@@ -213,7 +215,7 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
   );
 }
 
-export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier }) {
+export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, changements = [] }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier; allerAuChamp?: AllerAuChamp; changements?: string[] }) {
   const ind = plan.indication;
   const conclusionSansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
   const niveau = plan.urgence.niveau;
@@ -244,6 +246,16 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
         </p>
       )}
 
+      {changements.length > 0 && (
+        <div className="alerte attention changements" role="status">
+          <strong>Votre dernière modification change la proposition :</strong>
+          <ul>
+            {changements.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {dossier && <EtapesParcours plan={plan} dossier={dossier} />}
       <SyntheseDecision plan={plan} />
 
@@ -256,6 +268,7 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
         </p>
         <p className="aide">{plan.situation.description}</p>
         <LectureMicrobiologique plan={plan} />
+        {dossier && <CarteFonctionRenale dossier={dossier} plan={plan} allerAuChamp={allerAuChamp} />}
         {urgentes.length > 0 && (
           <p className="aide">
             {urgentes.length} alerte{urgentes.length > 1 ? 's' : ''} urgente{urgentes.length > 1 ? 's' : ''} affichée{urgentes.length > 1 ? 's' : ''} en permanence en haut de l'écran.
@@ -273,8 +286,13 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
             <ul className="manquants">
               {plan.donneesManquantes.map((m, i) => (
                 <li key={i} className={`impact-${m.impact}`}>
-                  <Badge type={m.impact === 'affine' ? undefined : 'attention'}>{m.impact === 'bloque_dose' ? 'bloque le calcul de dose' : m.impact === 'bloque_surveillance' ? 'conditionne la surveillance' : m.impact === 'bloque_decision' ? 'conditionne la décision' : 'affinerait la proposition'}</Badge>{' '}
-                  <strong>{m.champ}</strong> — {m.pourquoi}
+                  <Badge type={m.impact === 'affine' ? undefined : 'attention'}>{m.impact === 'bloque_dose' ? 'bloque le calcul de dose' : m.impact === 'bloque_duree' ? 'bloque la durée' : m.impact === 'bloque_surveillance' ? 'conditionne la surveillance' : m.impact === 'bloque_decision' ? 'conditionne la décision' : 'affinerait la proposition'}</Badge>{' '}
+                  <strong>{m.champ}</strong> — {m.pourquoi}{' '}
+                  {m.cible && allerAuChamp && (
+                    <button type="button" className="btn discret" onClick={() => allerAuChamp(m.cible!)}>
+                      Compléter
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -284,6 +302,7 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
 
       <div className="fiche-section">
         <h3>B. {conclusionSansTraitement ? 'Conclusion sur l\'indication' : 'Traitement proposé'}</h3>
+        {plan.sortie.traitement !== 'complet' && <ExplicationSortie sortie={plan.sortie} allerAuChamp={allerAuChamp} />}
         {ind && (conclusionSansTraitement || ind.decision === 'urgence' || ind.actions.length > 0 || plan.options.length === 0) && <CarteIndication indication={ind} />}
         {(plan.indicationsSecondaires?.length ?? 0) > 0 && (
           <details open>
@@ -293,8 +312,7 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
             ))}
           </details>
         )}
-        {plan.options.length === 0 && !conclusionSansTraitement && <p className="aide">Aucune proposition thérapeutique ne peut être formulée avec les données actuelles. Voir les informations manquantes et les critères d'avis spécialisé.</p>}
-        {plan.options.length > 0 && premieres.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les options conditionnelles ci-dessous et les informations manquantes.</p>}
+        {plan.options.length > 0 && premieres.length === 0 && plan.sortie.motifs.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les options conditionnelles ci-dessous et les informations manquantes.</p>}
         {communs.length > 0 && (
           <div className="alerte attention avert-communs">
             <strong>Avertissements communs à plusieurs molécules</strong>
@@ -318,6 +336,7 @@ export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRe
             ))}
           </details>
         )}
+        <PourquoiNonDisponible ecartees={plan.sortie.ecartees} />
         {plan.gestes.length > 0 && (
           <>
             <h4>Contrôle du foyer et gestes</h4>

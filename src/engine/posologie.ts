@@ -15,10 +15,25 @@ import type {
   SourceRef,
   SpecSTP,
 } from '../clinical/types';
-import { arrondi, poidsAjuste, poidsIdealDevine, poidsIdealLorentz } from '../calc/renal';
+import { arrondi, choisirEstimation, estimation, poidsAjuste, poidsIdealDevine, poidsIdealLorentz, type IdEstimation } from '../calc/renal';
+import { referenceRenale } from '../clinical/molecules/reference-renale';
 import { formaterDose, nombreFr } from '../calc/format';
 import { moleculeEvitee, type ContexteDecision } from './contexte';
 import { resoudreCalendrier } from '../schedule/frise';
+
+function estimationValeur(ctx: ContexteDecision, id: IdEstimation): number {
+  return estimation(ctx.renal, id).valeur ?? NaN;
+}
+
+/** Champ à compléter pour une donnée rénale manquante. */
+function cibleRenale(manquants: string[]): string {
+  const t = manquants.join(' ');
+  if (/taille/.test(t) && !/poids|âge|créatinin|sexe/.test(t)) return 'patient.tailleCm';
+  if (/poids/.test(t) && !/âge|créatinin|sexe/.test(t)) return 'patient.poidsKg';
+  if (/âge/.test(t)) return 'patient.age';
+  if (/sexe/.test(t)) return 'patient.sexe';
+  return 'patient.renal.creatinine';
+}
 
 const SANS_ADAPTATION = /pas d'adaptation|pas d'ajustement|dose normale|schéma habituel|posologie normale|dose unique journalière habituelle|pas de réduction/i;
 
@@ -101,10 +116,12 @@ function poidsPourDose(
   return { poids: p.poidsKg, type: `poids réel (poids réel/PI ≤ ${nombreFr(seuil, 2)} : pas d'obésité selon le seuil du régime)` };
 }
 
-export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecision, opts: { dureePrevueJours?: number; coPrescriptions: string[]; continue?: boolean }): boolean | 'inconnu' {
+export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecision, opts: { dureePrevueJours?: number; coPrescriptions: string[]; continue?: boolean; moleculeId?: string }): boolean | 'inconnu' {
   if (!id) return true;
   const p = ctx.dossier.patient;
-  const clcr = ctx.renal.valeurPourPosologie?.valeur;
+  // Seuil « insuffisance rénale » des surveillances : estimation propre à la molécule si connue.
+  const choixIR = choisirEstimation(ctx.renal, referenceRenale(opts.moleculeId ?? ''));
+  const clcr = choixIR.valeur;
   switch (id) {
     case 'duree_sup_3j':
       return opts.dureePrevueJours === undefined ? 'inconnu' : opts.dureePrevueJours > 3;
@@ -182,7 +199,7 @@ export function surveillancePourMolecule(
   const elements: (ElementSurveillance | SpecSTP)[] = [...m.surveillance, ...(m.stp ?? [])];
   for (const e of elements) {
     if (e.statut === 'retiree') continue;
-    const cond = evaluerCondition(e.conditionId, ctx, opts);
+    const cond = evaluerCondition(e.conditionId, ctx, { ...opts, moleculeId: m.id });
     if (cond === false) continue;
     const t = texteCalendrier(e, ctx);
     let texte = t.texte;
@@ -273,13 +290,32 @@ export function calculerPrescription(args: {
     } else if (p.renal.dialyse === 'dialyse_peritoneale') {
       adaptations.push(`Dialyse péritonéale : posologie non déterminable à partir de la base pour ${m.dci} — avis pharmacologique/néphrologique requis.`);
     } else {
-      const v = ctx.renal.valeurPourPosologie;
-      if (!v) {
-        adaptations.push(`Adaptation rénale non évaluable : ${ctx.renal.manquants.join(', ') || 'données rénales manquantes'}.`);
-        manquants.push({ champ: 'fonction rénale (créatininémie avec unité, âge, poids, sexe)', pourquoi: `adaptation posologique de ${m.dci} (méthode ${ar.methode})`, impact: m.famille === 'aminoside' || m.famille === 'glycopeptide' ? 'bloque_dose' : 'affine' });
+      // Estimation choisie selon la grandeur exigée par la référence posologique de CETTE molécule.
+      const refM = referenceRenale(m.id);
+      const palierDe = (v: number) => ar.paliers.findIndex((pl) => (pl.clcrMin === undefined || v >= pl.clcrMin) && (pl.clcrMax === undefined || v < pl.clcrMax));
+      const choix = choisirEstimation(ctx.renal, refM, palierDe);
+      const palierAvecAdaptation = ar.paliers.some((pl) => !SANS_ADAPTATION.test(pl.texte));
+      const impactRenal: DonneeManquante['impact'] = palierAvecAdaptation || m.famille === 'aminoside' || m.famille === 'glycopeptide' ? 'bloque_dose' : 'affine';
+      sources.push(...choix.sources);
+      if (choix.valeur === undefined) {
+        if (palierAvecAdaptation) adaptationRequise = true;
+        if (!ctx.renal.applicable) {
+          adaptations.push(`Adaptation rénale non calculée : ${choix.refus} Avis pharmacologique ou néphrologique${m.stp?.length ? ' ; dosage plasmatique (voir surveillance)' : ''} ; réévaluer la fonction rénale chaque jour.`);
+          if (palierAvecAdaptation)
+            manquants.push({ champ: 'fonction rénale à l’état d’équilibre (ou dosage plasmatique, DFG mesuré)', pourquoi: `adaptation rénale de ${m.dci} non calculable : ${ctx.renal.etat === 'instable' ? 'fonction rénale instable ou IRA' : 'hors domaine des équations'}`, impact: 'bloque_dose', cible: 'patient.renal.stabilite' });
+        } else {
+          adaptations.push(`Adaptation rénale non calculée : ${choix.refus}${choix.discordance ? ` ${choix.discordance}` : ''} Estimation exigée : ${choix.pourquoi}`);
+          if (choix.discordance) {
+            const pa = ar.paliers[palierDe(estimationValeur(ctx, 'clairance_cg'))];
+            const pb = ar.paliers[palierDe(estimationValeur(ctx, 'dfg_desindexe'))];
+            if (pa) adaptations.push(`Selon Cockcroft-Gault : ${pa.texte}`);
+            if (pb) adaptations.push(`Selon le DFG désindexé : ${pb.texte}`);
+          }
+          if (choix.manquants.length) manquants.push({ champ: choix.manquants.join(', '), pourquoi: `adaptation posologique de ${m.dci} (${refM.grandeur === 'dfg' ? 'DFG' : 'clairance de la créatinine'} en ${refM.unite})`, impact: impactRenal, cible: cibleRenale(choix.manquants) });
+        }
       } else {
-        const palier = ar.paliers.find((pl) => (pl.clcrMin === undefined || v.valeur >= pl.clcrMin) && (pl.clcrMax === undefined || v.valeur < pl.clcrMax));
-        const clTexte = `${v.methode} ≈ ${nombreFr(v.valeur)} mL/min`;
+        const palier = ar.paliers[palierDe(choix.valeur)];
+        const clTexte = choix.libelle ?? `${nombreFr(choix.valeur)} ${choix.unite}`;
         if (palier) {
           adaptations.push(`${clTexte} : ${palier.texte}`);
           sources.push(...palier.sources);
@@ -287,13 +323,13 @@ export function calculerPrescription(args: {
         } else if (ar.texteGeneral) {
           adaptations.push(`${clTexte} : ${ar.texteGeneral}`);
         }
-        if (!ctx.renal.applicable) {
-          avert.push(`Fonction rénale instable / IRA : l'estimation (${clTexte}) n'est qu'indicative ; adapter sur la créatininémie quotidienne et, pour les molécules dosables, sur les concentrations.`);
-        }
-        for (const l of ctx.renal.limites) if (!avert.includes(l) && !(ctx.renal.applicable === false && /instable|dialysé/.test(l))) avert.push(l);
-        // Même libellé que la règle transversale : les deux demandes fusionnent en une seule ligne.
-        if (p.renal.dialyse === 'inconnu') manquants.push({ champ: 'dialyse / épuration extrarénale (oui/non)', pourquoi: 'adaptation posologique', impact: 'affine' });
+        adaptations.push(`Estimation utilisée — pourquoi : ${choix.pourquoi}`);
+        if (choix.substitution) avert.push(choix.substitution);
+        for (const l of ctx.renal.limites) if (!avert.includes(l)) avert.push(l);
+        if (choix.manquants.length && choix.substitution) manquants.push({ champ: choix.manquants.join(', '), pourquoi: `estimation exigée par la référence de ${m.dci} (Cockcroft-Gault)`, impact: 'affine', cible: cibleRenale(choix.manquants) });
       }
+      // Même libellé que la règle transversale : les deux demandes fusionnent en une seule ligne.
+      if (p.renal.dialyse === 'inconnu') manquants.push({ champ: 'dialyse / épuration extrarénale (oui/non)', pourquoi: 'adaptation posologique', impact: 'affine' });
     }
   }
 

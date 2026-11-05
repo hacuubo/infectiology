@@ -12,6 +12,7 @@ import type {
   NiveauUrgence,
   OptionTherapeutique,
   Plan,
+  PropositionEcartee,
   RegleAppliquee,
   SourceRef,
   StatutValidation,
@@ -25,6 +26,8 @@ import { VERSION_CLINIQUE } from '../clinical/version';
 import { REGLES } from '../clinical/rules';
 import { analyserIsolat } from '../clinical/microbiologie/analyse';
 import { isolatsDe } from './etat';
+import { etablirSortie, sortieErreurTechnique } from './sortie';
+import { rattacherChamp } from './cibles';
 
 export interface Contribution {
   situation?: Plan['situation'];
@@ -40,6 +43,8 @@ export interface Contribution {
   couvertureMax?: Couverture;
   /** Décision sur l'indication d'antibiothérapie (la règle de plus haute priorité l'emporte). */
   indication?: IndicationPlan;
+  /** Propositions écartées par la règle, avec leur raison structurée. */
+  ecartees?: PropositionEcartee[];
 }
 
 export interface Regle {
@@ -128,7 +133,13 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     regles: [],
     sources: [],
     contientReglesNonValidees: false,
+    sortie: { traitement: 'aucun', urgence: false, actionsUrgentes: [], motifs: [], ecartees: [] },
   };
+  const ecartees: PropositionEcartee[] = [];
+  // Mode usage clinique : les règles non validées par un humain ne sont pas évaluées ; leur masquage est tracé.
+  if (opts.modeUsageClinique)
+    for (const r of REGLES.filter((x) => x.statut !== 'retiree' && x.statut !== 'validee_humain' && x.statut !== 'publiee' && x.sApplique(ctx)))
+      ecartees.push({ libelle: r.libelle, type: 'non_validee', raison: `mode usage clinique : règle au statut « ${r.statut} », non validée par un humain, non appliquée`, sources: r.sources, origine: r.id });
 
   const reevals: { texte: string; sources: SourceRef[]; offsetHeures?: number }[] = [];
   let regleSituation: RegleAppliquee | undefined;
@@ -160,7 +171,8 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     regleSituation = situationCandidate.ra;
   }
 
-  for (const { c } of contributions.filter(garder)) {
+  for (const { ra, c } of contributions.filter(garder)) {
+    if (c.ecartees) ecartees.push(...c.ecartees.map((e) => ({ ...e, origine: ra.id })));
     if (c.couvertureMax && RANG_COUV[c.couvertureMax] < RANG_COUV[couvertureMax]) couvertureMax = c.couvertureMax;
     if (c.urgence && RANG_URGENCE[c.urgence] > RANG_URGENCE[plan.urgence.niveau]) plan.urgence.niveau = c.urgence;
     if (c.alertes) plan.urgence.alertes.push(...c.alertes);
@@ -172,7 +184,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
       reevals.push(...c.reevaluation);
     }
     if (c.avisSpecialise) plan.avisSpecialise.push(...c.avisSpecialise);
-    if (c.donneesManquantes) plan.donneesManquantes.push(...c.donneesManquantes.filter((m) => traitement || (m.impact !== 'bloque_dose' && m.impact !== 'bloque_surveillance')));
+    if (c.donneesManquantes) plan.donneesManquantes.push(...c.donneesManquantes.filter((m) => traitement || (m.impact !== 'bloque_dose' && m.impact !== 'bloque_duree' && m.impact !== 'bloque_surveillance')));
   }
   // Prélèvement polymicrobien : chaque antibiogramme reste rattaché à son isolat ; les propositions ne portent que sur le germe principal.
   const poly = dossier.prelevements.filter((x) => (x.isolatsSupplementaires ?? []).some((i) => i.organisme !== undefined));
@@ -211,6 +223,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   plan.options = plan.options.filter((o) => {
     const refs = [...o.sources, ...o.prescriptions.flatMap((p) => [...p.sources, ...p.duree.sources])];
     const ret = sourceRetiree(refs);
+    if (ret) ecartees.push({ libelle: o.libelle, type: 'source_retiree', raison: `s'appuie sur une source marquée comme retirée (${SOURCES_PAR_ID[ret.source]?.titre ?? ret.source})`, sources: [ret], origine: 'controle-sources' });
     if (ret) plan.urgence.alertes.push({ niveau: 'attention', texte: `Option « ${o.libelle} » retirée : elle s'appuie sur une source marquée comme retirée (${SOURCES_PAR_ID[ret.source]?.titre ?? ret.source}). Révision de la règle nécessaire.` });
     return !ret;
   });
@@ -218,6 +231,9 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   // 2. Mode usage clinique : seules les options validées par un humain ou publiées sont conservées.
   if (opts.modeUsageClinique) {
     const avant = plan.options.length;
+    for (const o of plan.options)
+      if (o.statut !== 'validee_humain' && o.statut !== 'publiee')
+        ecartees.push({ libelle: o.libelle, type: 'non_validee', raison: `mode usage clinique : règle au statut « ${o.statut} », non validée par un humain`, sources: o.sources, origine: 'mode-usage-clinique' });
     plan.options = plan.options.filter((o) => o.statut === 'validee_humain' || o.statut === 'publiee');
     if (avant > 0 || applicables.length === 0) plan.urgence.alertes.push({ niveau: 'attention', texte: `Mode usage clinique : ${avant - plan.options.length} option(s) non validée(s) par un humain masquée(s). Aucune règle de cette version n'est encore validée médicalement : prendre l'avis du SMIT.` });
   }
@@ -236,6 +252,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   for (const o of plan.options) {
     const raison = evitee(o);
     if (raison) {
+      ecartees.push({ libelle: o.libelle, type: 'allergie', raison: `${raison} ; affichée seulement comme option conditionnelle`, sources: [], origine: 'controle-allergies' });
       if (o.rang === 'premiere_ligne') premiereRetiree = true;
       o.rang = 'conditionnelle';
       o.condition = `Non utilisable en l'état : ${raison}. Seulement après évaluation allergologique.`;
@@ -262,7 +279,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   plan.surveillance = base ? base.prescriptions.flatMap((p) => p.surveillance) : [];
 
   // Dédoublonnage des données manquantes (même champ → une ligne, impact le plus fort)
-  const poids: Record<DonneeManquante['impact'], number> = { affine: 0, bloque_surveillance: 1, bloque_dose: 2, bloque_decision: 3 };
+  const poids: Record<DonneeManquante['impact'], number> = { affine: 0, bloque_surveillance: 1, bloque_duree: 2, bloque_dose: 3, bloque_decision: 4 };
   const parChamp = new Map<string, DonneeManquante>();
   for (const dm of plan.donneesManquantes) {
     const ex = parChamp.get(dm.champ);
@@ -273,7 +290,9 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
       parChamp.set(dm.champ, { ...ex, pourquoi, impact: poids[dm.impact] > poids[ex.impact] ? dm.impact : ex.impact });
     }
   }
-  plan.donneesManquantes = [...parChamp.values()].map((dm) => ({ ...dm, pourquoi: regrouperPourquoi(dm.pourquoi) })).sort((a, b) => poids[b.impact] - poids[a.impact]);
+  plan.donneesManquantes = [...parChamp.values()]
+    .map((dm) => ({ ...dm, pourquoi: regrouperPourquoi(dm.pourquoi), cible: dm.cible ?? rattacherChamp(dm.champ).cible }))
+    .sort((a, b) => poids[b.impact] - poids[a.impact]);
 
   // Alertes : urgence en tête, dédoublonnées
   const rangAl = { urgence: 0, attention: 1, info: 2 };
@@ -309,7 +328,23 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     plan.regles.some((r) => r.statut !== 'validee_humain' && r.statut !== 'publiee') ||
     plan.options.some((o) => o.prescriptions.some((p) => p.statut !== 'validee_humain' && p.statut !== 'publiee'));
 
+  // État de sortie explicite : jamais de zone thérapeutique vide sans explication.
+  plan.sortie = etablirSortie(plan, ctx, ecartees);
+
   return plan;
+}
+
+/** Résultat du moteur : un plan, ou une erreur technique explicitement distinguée d'une conclusion médicale. */
+export type ResultatMoteur = { ok: true; plan: Plan } | { ok: false; erreur: string; sortie: Plan['sortie'] };
+
+/** Appel protégé du moteur : une panne n'est jamais traduite par « pas d'antibiothérapie indiquée ». */
+export function deciderSansPanne(dossier: Dossier, opts: OptionsMoteur = {}): ResultatMoteur {
+  try {
+    return { ok: true, plan: decider(dossier, opts) };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { ok: false, erreur: message, sortie: sortieErreurTechnique(message) };
+  }
 }
 
 export { construireContexte };

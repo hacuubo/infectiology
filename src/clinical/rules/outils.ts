@@ -16,6 +16,7 @@ import type {
   OptionTherapeutique,
   OrganismeId,
   Prelevement,
+  PropositionEcartee,
   SourceRef,
   StatutValidation,
 } from '../types';
@@ -47,6 +48,7 @@ export class Fiche {
     reevaluation: [],
     avisSpecialise: [],
     donneesManquantes: [],
+    ecartees: [],
   };
   constructor(
     public readonly ctx: ContexteDecision,
@@ -71,6 +73,11 @@ export class Fiche {
   }
   manque(champ: string, pourquoi: string, impact: DonneeManquante['impact'] = 'bloque_decision') {
     this.c.donneesManquantes.push({ champ, pourquoi, impact });
+    return this;
+  }
+  /** Proposition écartée par la règle : raison structurée, affichée dans « Pourquoi cette proposition n'est-elle pas disponible ? ». */
+  ecarter(libelle: string, type: PropositionEcartee['type'], raison: string, sources: SourceRef[] = []) {
+    this.c.ecartees.push({ libelle, type, raison, sources, origine: '' });
     return this;
   }
   avis(texte: string, urgent: boolean, sources: SourceRef[]) {

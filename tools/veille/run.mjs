@@ -54,6 +54,9 @@ function normaliser(texte, type) {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '')
+    // Blocs masqués sans balise interne (jeton CSRF, contexte Ajax des pages HAS) : régénérés à chaque requête.
+    // Un jeton CSRF de 16 lettres sans chiffre échappait au filtre ci-dessous (~6 % des requêtes).
+    .replace(/<(div|span)[^>]*style="display:\s*none;?"[^>]*>[^<]*<\/\1>/gi, ' ')
     .replace(/\b(csrf|nonce|token|session|_ga|timestamp)[^"'\s]*/gi, '')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z]+;/gi, ' ')

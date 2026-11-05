@@ -31,6 +31,12 @@ Les règles d'indication et d'interprétation microbiologique suivent le même c
 
 Elles sont « vérifiées par IA » ou en brouillon, jamais validées. Leur matrice figure dans `docs/relectures/v2-relecteur-2-audit-documentaire.md`. Une décision de non-traitement se valide comme une proposition de traitement : conditions, exceptions, source et version.
 
+## Nouveautés de la version 2026.11.2
+
+- **Fonction rénale** (`src/calc/renal.ts`, `src/clinical/molecules/reference-renale.ts`) : les formules, leur version, la grandeur exigée par chaque référence posologique et la conduite en IRA ou dialyse suivent le même circuit de validation que les règles thérapeutiques. Le choix de l'équation par défaut (CKD-EPI 2009 sans coefficient racial) est à confirmer par l'équipe médicale et, si possible, aligné sur l'équation rendue par le laboratoire de l'établissement.
+- **États de sortie** (`src/engine/sortie.ts`) : chaque motif d'absence de proposition indique les règles dont il provient. Un motif ne crée aucune recommandation : il reprend ce que les règles ont produit (indication, situation, données manquantes, propositions écartées).
+- Relectures : `docs/relectures/v3-relecteur-1-developpement.md` et `docs/relectures/v3-relecteur-2-audit-documentaire.md`.
+
 ## Procédure de validation d'une règle
 
 1. La règle est en `verifiee_ia` avec ses sources lues et ses repères (page, tableau, recommandation).

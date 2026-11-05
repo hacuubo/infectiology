@@ -1,4 +1,4 @@
-# Périmètre de la version 2026.11.1-brouillon
+# Périmètre de la version 2026.11.2-brouillon
 
 Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans bloque les propositions. Les règles adultes ne sont pas transposées à la pédiatrie.
 
@@ -21,6 +21,8 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 | Prélèvement superficiel positif : pas d'antibiotique sans signe clinique d'infection | `R-PRELEVEMENT-SUPERFICIEL` | HAS/SPILF/SFD 2019, IWGDF/IDSA 2023 |
 | Hémocultures : S. aureus jamais traité comme contaminant ; SCN sur une seule série → refaire les hémocultures | `R-BACTERIEMIE-S-AUREUS`, `R-BACTERIEMIE-SCN` | IDSA/ESCMID 2026 (Table 1), IDSA 2009 rec. 38, Doern 2019 |
 | Antibiogramme guidé : questions par famille de germes, mécanismes rapportés, résistances attendues lues R, phénotypes inhabituels et résultats contradictoires signalés, molécules sensibles mais non pertinentes | `src/clinical/microbiologie/` | CA-SFM 2026, EUCAST v16.1, EUCAST phénotypes attendus et inhabituels, EUCAST détection v2.01 |
+| Fonction rénale : DFG estimé indexé (CKD-EPI 2009 sans coefficient racial par défaut ; 2021 ou EKFC au choix), DFG désindexé (Du Bois), clairance de Cockcroft-Gault ; valeur du laboratoire conservée à part ; choix de l'estimation selon la référence de chaque molécule | `src/calc/renal.ts`, `src/clinical/molecules/reference-renale.ts` | HAS 2023 (MRC), KDIGO 2024, EFLM 2022, Levey 2009, Inker 2021, Du Bois 1916, RCP, FDA 2024, EMA 2015 |
+| Explication de toute absence de proposition complète : non indiquée, informations manquantes, microbiologie insuffisante, situation non couverte, contraintes, règle non validée, données incohérentes, erreur technique | `src/engine/sortie.ts` | issue des règles évaluées (aucun texte rédigé après coup) |
 | Surveillance et STP intégrés : aminosides, vancomycine, daptomycine, bêta-lactamines en soins critiques, rifampicine, fluoroquinolones, cotrimoxazole | base des molécules | ANSM 2011, RCP, Rybak 2020, SPILF/SFPT/CA-SFM 2026, SFPT/SFAR 2018, Abdul-Aziz 2020 |
 
 ## Partiellement couvert (règles en brouillon ou avis spécialisé requis)
@@ -60,4 +62,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - L'analyse des allergies n'exploite pas encore le délai depuis la réaction (≤ 5 ans / > 5 ans) qui oriente la stratification SPILF 2026.
 - Une dose n > 1 n'est jamais datée dans la frise : l'intervalle réel entre doses dépend de la fonction rénale et des dosages.
 - Poids de référence des aminosides : poids idéal de Lorentz (RCP gentamicine) + 0,43 × surcharge (gentamicine) ou + 40 % de l'excédent (amikacine). Le RCP amikacine ne précise pas la formule du poids idéal ; Lorentz est retenu par cohérence.
-- La HAS (2023) demande d'adapter les posologies avec CKD-EPI alors que les RCP sont établis en Cockcroft-Gault : l'application utilise Cockcroft quand le poids est connu et affiche toujours la méthode et ses limites.
+- La HAS (2023) demande d'adapter les posologies avec CKD-EPI alors que certains RCP citent Cockcroft-Gault : l'estimation est choisie molécule par molécule (voir ARBITRAGES) et toujours affichée avec sa raison.
+- Fonction rénale : pas de cystatine C ni de DFG mesuré ; EKFC non calculé avant 25 ans (Q dépend de l'âge) ; pas de seuil chiffré de désindexation ; en IRA, instabilité ou dialyse, aucune adaptation automatique (avis spécialisé).
+- Les paliers de la ciprofloxacine sont ceux de la forme IV (mL/min/1,73 m²) ; ceux de la forme orale n'ont pas été lus.
+- Les équations sont celles de l'adulte ; la grossesse, l'infection grave et les masses musculaires extrêmes sont signalées comme limites (KDIGO 2024), sans correction.
