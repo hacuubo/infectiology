@@ -270,14 +270,6 @@ export interface ContexteECBU {
   nbEspeces: 'une' | 'deux' | 'trois_ou_plus' | 'inconnu';
 }
 
-export type MecanismeResistance =
-  | 'BLSE'
-  | 'carbapenemase'
-  | 'cephalosporinase_dereprimee'
-  | 'SARM'
-  | 'ERV'
-  | 'aucun_documente';
-
 export type FoyerId =
   | 'inconnu'
   | 'urinaire'
@@ -633,6 +625,8 @@ export interface SyntheseIsolat {
 export interface Plan {
   versionClinique: string;
   indication?: IndicationPlan;
+  /** Autres conclusions (ex. SCN sur une seule série alors qu'un autre foyer est traité). */
+  indicationsSecondaires?: IndicationPlan[];
   microbiologie: SyntheseIsolat[];
   situation: {
     id: string;

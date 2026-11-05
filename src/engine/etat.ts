@@ -3,7 +3,7 @@
  * d'invalidation des réponses dépendantes devenues non pertinentes.
  * Aucune donnée n'est conservée en dehors de la session du navigateur.
  */
-import type { Clinique, DonneesIsolat, FoyerId, Isolat, Patient, Prelevement } from '../clinical/types';
+import type { Clinique, DonneesIsolat, FoyerId, Isolat, OrganismeId, Patient, Prelevement } from '../clinical/types';
 
 export type ModeEntree = 'syndrome' | 'microbiologie' | 'non_choisi';
 
@@ -52,6 +52,34 @@ export function patientParDefaut(): Patient {
 
 export function cliniqueParDefaut(): Clinique {
   return { fievre: 'inconnu', signesUrinaires: 'inconnu', signesNonSpecifiques: 'inconnu', autreFoyer: 'non_recherche', gesteUrologique: 'inconnu', signesInfectionLocale: 'inconnu' };
+}
+
+const LIBELLE_CLINIQUE: Record<keyof Clinique, string> = {
+  fievre: 'Fièvre',
+  signesUrinaires: 'Signes urinaires',
+  signesNonSpecifiques: 'Signes non spécifiques',
+  autreFoyer: 'Autre foyer pouvant expliquer les signes',
+  gesteUrologique: 'Geste urologique prévu',
+  signesInfectionLocale: 'Signes cliniques d’infection de la plaie',
+};
+
+const DISPOSITIFS_URINAIRES = ['sonde_vesicale', 'sonde_jj', 'nephrostomie', 'autre'];
+
+/** Questions cliniques utiles à la décision d'indication : posées seulement si elles peuvent la changer. */
+export function pertinenceClinique(d: Dossier): Record<keyof Clinique, boolean> {
+  const urine = d.prelevements.some((x) => x.type === 'urine');
+  const superficiel = d.prelevements.some((x) => x.type === 'superficiel');
+  const c = d.clinique ?? cliniqueParDefaut();
+  const sonde = DISPOSITIFS_URINAIRES.includes(d.patient.materielUrinaire);
+  const grave = d.patient.gravite === 'sepsis' || d.patient.gravite === 'choc_septique';
+  return {
+    fievre: urine,
+    signesUrinaires: urine,
+    signesNonSpecifiques: urine,
+    autreFoyer: urine && (c.fievre === 'oui' || c.signesNonSpecifiques === 'oui' || (grave && sonde)),
+    gesteUrologique: urine,
+    signesInfectionLocale: superficiel,
+  };
 }
 
 export function dossierParDefaut(): Dossier {
@@ -203,15 +231,15 @@ export const REGLES_PERTINENCE: {
       d.patient.dispositifIntracardiaque = 'inconnu';
     },
   },
-  {
-    champ: 'clinique.gesteUrologique',
-    libelle: 'Geste urologique prévu',
-    pertinent: (d) => d.prelevements.some((x) => x.type === 'urine'),
-    estRenseigne: (d) => (d.clinique?.gesteUrologique ?? 'inconnu') !== 'inconnu',
-    reinitialiser: (d) => {
-      d.clinique.gesteUrologique = 'inconnu';
+  ...(['fievre', 'signesUrinaires', 'signesNonSpecifiques', 'autreFoyer', 'gesteUrologique', 'signesInfectionLocale'] as const).map((k) => ({
+    champ: `clinique.${k}`,
+    libelle: LIBELLE_CLINIQUE[k],
+    pertinent: (d: Dossier) => pertinenceClinique(d)[k],
+    estRenseigne: (d: Dossier) => d.clinique !== undefined && d.clinique[k] !== cliniqueParDefaut()[k],
+    reinitialiser: (d: Dossier) => {
+      (d.clinique as unknown as Record<string, string>)[k] = cliniqueParDefaut()[k];
     },
-  },
+  })),
   {
     champ: 'horaires.premiereDoseISO',
     libelle: 'Horaire de la première dose',
@@ -254,11 +282,13 @@ export const REGLES_PERTINENCE_PRELEVEMENT: {
     champ: 'antibiogramme',
     libelle: 'Antibiogramme',
     pertinent: (p) => p.stade === 'antibiogramme',
-    estRenseigne: (p) => (p.antibiogramme?.length ?? 0) > 0 || Object.keys(p.phenotypes ?? {}).length > 0,
+    estRenseigne: (p) => isolatsDe(p).some((i) => (i.antibiogramme?.length ?? 0) > 0 || Object.keys(i.phenotypes ?? {}).length > 0),
     reinitialiser: (p) => {
-      p.antibiogramme = undefined;
-      p.phenotypes = undefined;
-      p.antibiogrammePour = undefined;
+      for (const i of isolatsDe(p)) {
+        i.antibiogramme = undefined;
+        i.phenotypes = undefined;
+        i.antibiogrammePour = undefined;
+      }
       p.referentiel = undefined;
       p.antibiogrammeDisponible = 'inconnu';
     },
@@ -320,6 +350,17 @@ export const REGLES_PERTINENCE_PRELEVEMENT: {
  * pertinent est remise à « non renseigné ». Retourne la liste des invalidations
  * pour information de l'utilisateur. Déterministe et idempotent.
  */
+/** Identification précisée pour le même isolat (ex. « entérobactérie non précisée » → E. coli) : les résultats restent valables. */
+const PRECISIONS: Partial<Record<OrganismeId, OrganismeId[]>> = {
+  bgn_non_identifie: ['enterobacterie_non_identifiee', 'escherichia_coli', 'klebsiella_pneumoniae', 'enterobacter_cloacae', 'proteus_mirabilis', 'pseudomonas_aeruginosa'],
+  enterobacterie_non_identifiee: ['escherichia_coli', 'klebsiella_pneumoniae', 'enterobacter_cloacae', 'proteus_mirabilis'],
+  staphylocoque_coagulase_negative: ['staphylococcus_epidermidis', 'staphylococcus_lugdunensis'],
+  enterocoque_non_identifie: ['enterococcus_faecalis', 'enterococcus_faecium'],
+};
+function precision(avant: OrganismeId, apres: OrganismeId): boolean {
+  return PRECISIONS[avant]?.includes(apres) ?? false;
+}
+
 export function nettoyerDossier(d: Dossier): Invalidation[] {
   const invalidations: Invalidation[] = [];
   if (!d.clinique) d.clinique = cliniqueParDefaut();
@@ -327,12 +368,16 @@ export function nettoyerDossier(d: Dossier): Invalidation[] {
   for (const p of d.prelevements) {
     for (const iso of isolatsDe(p)) {
       const aDesResultats = (iso.antibiogramme?.length ?? 0) > 0 || Object.keys(iso.phenotypes ?? {}).length > 0;
+      if (aDesResultats && iso.antibiogrammePour !== undefined && iso.organisme !== undefined && iso.antibiogrammePour !== iso.organisme && precision(iso.antibiogrammePour, iso.organisme)) {
+        iso.antibiogrammePour = iso.organisme;
+        continue;
+      }
       if (aDesResultats && iso.antibiogrammePour !== undefined && iso.antibiogrammePour !== iso.organisme) {
         const ancien = iso.antibiogrammePour;
         iso.antibiogramme = undefined;
         iso.phenotypes = undefined;
         iso.antibiogrammePour = undefined;
-        invalidations.push({ champ: `${p.id}.${iso.id}.antibiogramme`, raison: `Le germe a changé : les résultats d'antibiogramme saisis pour « ${ancien.replace(/_/g, ' ')} » ne s'appliquent pas au nouveau germe et ont été effacés.` });
+        invalidations.push({ champ: iso.id === p.id ? `${p.id}.antibiogramme` : `${p.id}.${iso.id}.antibiogramme`, raison: `Le germe a changé : les résultats d'antibiogramme saisis pour « ${ancien.replace(/_/g, ' ')} » ne s'appliquent pas au nouveau germe et ont été effacés.` });
       }
     }
   }

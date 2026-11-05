@@ -239,7 +239,8 @@ export function guideAntibiogramme(iso: DonneesIsolat, cg: ContexteGuide | undef
     case 'autre':
       return { famille: cg.famille, essentielles: [], complementaires: autresMolecules(BGN_TOUTES.concat(STAPH_TOUTES)), message: 'Germe hors des familles modélisées : aucune question guidée. Les résultats restent saisissables, mais leur interprétation relève du SMIT.' };
     case 'enterobacterale': {
-      const c3g = s('ceftriaxone') ?? s('cefotaxime');
+      const c3gs = ['cefotaxime', 'ceftriaxone', 'ceftazidime'].map(s);
+      const c3g = c3gs.includes('R') ? 'R' : c3gs.includes('I') ? 'I' : c3gs.includes('S') ? 'S' : undefined;
       const blse = ph('BLSE');
       // Une C3G rendue S sur un compte rendu interprété exclut une BLSE détectée (lecture CA-SFM) : la question ne change alors rien.
       if (c3g !== 'S' || blse !== 'non_rapporte') ess.push(pheno('BLSE'));

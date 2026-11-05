@@ -10,6 +10,7 @@ import type { ContexteDecision } from '../../engine/contexte';
 import type { DonneesIsolat, Prelevement, SourceRef, SyntheseIsolat } from '../types';
 import { S } from '../molecules/base';
 import { familleDe, libelleGerme, type FamilleGerme } from './germes';
+import { pireC3G } from '../rules/outils';
 import { AIDE_I, SOURCE_I, etatPhenotype, guideAntibiogramme, libelleMolecule, sirDe, type ContexteGuide } from './guide';
 
 const CASFM = (repere: string, extrait?: string) => S('CASFM-2026-V1.0', repere, extrait, 'definition');
@@ -116,7 +117,8 @@ export function analyserIsolat(ctx: ContexteDecision, prl: Prelevement, iso: Don
 
   // Inconnues : questions essentielles sans réponse exploitable.
   const guide = guideAntibiogramme(iso, cg);
-  for (const q of guide.essentielles) {
+  // Avant le stade « antibiogramme », ces résultats ne sont pas encore attendus : ils ne sont pas comptés comme inconnus.
+  for (const q of prl.stade === 'antibiogramme' ? guide.essentielles : []) {
     if (q.type === 'molecule' && s(q.dci) === undefined) syn.inconnues.push({ texte: `${q.libelle} : non renseigné ou non testé`, pourquoi: q.utilite });
     if (q.type === 'phenotype' && ph(q.phenotype) === 'non_rapporte') syn.inconnues.push({ texte: `${q.libelle} : non rapporté`, pourquoi: q.utilite });
   }
@@ -146,7 +148,7 @@ export function analyserIsolat(ctx: ContexteDecision, prl: Prelevement, iso: Don
     det('P. aeruginosa : la souche sauvage est catégorisée I (pipéracilline-tazobactam, céfépime, aztréonam, imipénème, ciprofloxacine, lévofloxacine) ; I impose la forte posologie.', [S('EUCAST-2026-breakpoints-v16.1', 'Pseudomonas spp. (S ≤ 0,001 mg/L)', undefined, 'definition'), S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9', 'Pseudomonas spp. […] forte posologie uniquement', 'posologie')]);
 
   if (f === 'enterobacterale' || f === 'enterobacterale_groupe3') {
-    const c3g = s('ceftriaxone') ?? s('cefotaxime');
+    const c3g = pireC3G(s);
     const blse = ph('BLSE');
     const ampc = ph('ampc');
     if (blse === 'present' && (s('ceftriaxone') === 'S' || s('cefotaxime') === 'S' || s('cefepime') === 'S'))
@@ -155,16 +157,20 @@ export function analyserIsolat(ctx: ContexteDecision, prl: Prelevement, iso: Don
       const texte = blse === 'absent' && ampc === 'absent'
         ? 'Résistance aux C3G alors que BLSE et céphalosporinase sont indiquées absentes : résultat inhabituel, à vérifier avec le laboratoire.'
         : 'Résistance aux C3G sans mécanisme rapporté : elle ne permet pas, à elle seule, d\'affirmer une BLSE (une céphalosporinase hyperproduite ou acquise donne aussi ce profil). Demander au laboratoire le mécanisme.';
-      inc(texte, [S('EUCAST-expert-rules-v3.3-enterobacterales', 'règle 7', 'This phenotype is most often caused by ESBL production.', 'definition'), CASFM('ch. 5.1 Enterobacterales', 'détection de la BLSE par synergie avec l\'acide clavulanique')]);
+      inc(texte, [CASFM('ch. 5.1, p. 50', 'en l\'absence de synergie… évocatrice d\'une souche hyperproductrice de céphalosporinase chromosomique (groupe 3 et E. coli) ou d\'une céphalosporinase plasmidique')]);
     }
+    const c3gs = ['cefotaxime', 'ceftriaxone', 'ceftazidime'].map(s);
+    if (c3gs.includes('R') && c3gs.includes('S'))
+      inc('Résultats discordants entre C3G (l’une R, l’autre S) : l’application retient la résistance et ne propose pas la C3G rendue S. Demander le mécanisme au laboratoire.', [CASFM('ch. 5.1, p. 50'), S('EUCAST-expert-rules-v3.3-enterobacterales', 'règle 7 (E. coli, Klebsiella, Raoultella)', 'report each as tested and enclose a warning on uncertain therapeutic outcome for infections other than urinary tract infections', 'definition')]);
     if ([s('ertapeneme'), s('meropeneme'), s('imipeneme')].some((c) => c === 'R' || c === 'I') && ph('carbapenemase') !== 'present')
       inc('Carbapénème non sensible sans carbapénémase rapportée : suspicion à confirmer. Demander au laboratoire si une carbapénémase a été recherchée (algorithme de criblage CA-SFM) et prévenir l\'équipe d\'hygiène.', [CASFM('Annexe 6, p. 158', 'Algorithme phénotypique de criblage des souches d\'Enterobacterales productrices de carbapénémases')]);
     if (s('ciprofloxacine') === 'R' && (s('levofloxacine') === 'S' || s('levofloxacine') === 'I'))
       inc('Ciprofloxacine R mais lévofloxacine rendue sensible : la résistance s\'étend à toutes les fluoroquinolones ; l\'application lit la lévofloxacine comme R.', [S('EUCAST-expert-rules-v3.3-enterobacterales', 'règle 8', 'IF resistant to ciprofloxacin, THEN report as resistant to all fluoroquinolones', 'definition')]);
     // Pertinence : sensible ne veut pas dire indiqué.
-    if (!cg.urinaire) nonRetenue('temocilline', 'catégorisation EUCAST établie uniquement pour les infections d\'origine urinaire', [S('EUCAST-2026-breakpoints-v16.1', 'Enterobacterales, témocilline', 'infections originating from the urinary tract', 'definition')]);
-    const cefoxitineOk = cg.urinaire && blse === 'present' && (cg.organisme === 'escherichia_coli' || cg.organisme === 'proteus_mirabilis');
-    if (!cefoxitineOk) nonRetenue('cefoxitine', 'proposée seulement pour E. coli ou Proteus producteurs de BLSE, en foyer urinaire', [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'choix'), S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', 'Céfoxitine uniquement pour E. coli producteur de BLSE', 'choix')]);
+    if (!cg.urinaire) nonRetenue('temocilline', 'proposée par la SPILF uniquement en foyer urinaire ; le CA-SFM permet une catégorisation hors voie urinaire (forte posologie), l’EUCAST non', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', undefined, 'choix'), CASFM('ch. 5.1, p. 49', 'Témocilline (autres infections)'), S('EUCAST-2026-breakpoints-v16.1', 'Enterobacterales, témocilline', 'infections originating from the urinary tract', 'definition')]);
+    const cefoxitineOk = cg.urinaire && blse === 'present' && cg.organisme === 'escherichia_coli';
+    if (!cefoxitineOk && cg.organisme !== 'proteus_mirabilis') nonRetenue('cefoxitine', 'proposée seulement pour E. coli producteur de BLSE, en foyer urinaire (catégorisation CA-SFM validée pour E. coli seulement)', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', 'Céfoxitine uniquement pour E. coli producteur de BLSE', 'choix'), CASFM('ch. 5.1, p. 51', 'valeurs critiques thérapeutiques validées que pour E. coli')]);
+    if (cg.organisme === 'proteus_mirabilis') nonRetenue('cefoxitine', 'Proteus : admise par SPILF 2026 mais non par SPILF 2023, et catégorisation CA-SFM non validée pour Proteus : option conditionnelle seulement, sur avis', [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'choix'), CASFM('ch. 5.1, p. 51', 'valeurs critiques thérapeutiques validées que pour E. coli')]);
     if (f === 'enterobacterale_groupe3') {
       const src = [CASFM('ch. 5.1 (groupe 3)', 'l\'utilisation en monothérapie de la pipéracilline-tazobactam ou des céphalosporines de 3e génération […] est déconseillée')];
       nonRetenue('ceftriaxone', 'monothérapie par C3G déconseillée pour les entérobactéries du groupe 3 (risque de sélection d\'un mutant déréprimé)', src);
@@ -180,6 +186,10 @@ export function analyserIsolat(ctx: ContexteDecision, prl: Prelevement, iso: Don
   if (f === 's_aureus' || f === 's_lugdunensis' || f === 'scn') {
     const sarm = ph('SARM');
     const depistage = s('cefoxitine') ?? s('oxacilline');
+    const cef = s('cefoxitine');
+    const oxa = s('oxacilline');
+    if (cef && oxa && cef !== oxa && cef !== 'I' && oxa !== 'I') inc('Discordance entre céfoxitine et oxacilline : la céfoxitine est le test de référence ; vérifier par une autre méthode (mecA, PLP2a) avant de conclure. L’application laisse le statut méticilline inconnu.', [CASFM('ch. 5.7, note 4')]);
+    if (cef === 'I' || oxa === 'I') inc('Céfoxitine ou oxacilline rendue « I » : cette catégorie n’existe pas pour le dépistage de la méticillino-résistance ; vérifier le compte rendu.', [CASFM('ch. 5.7 Staphylococcus')]);
     if (sarm === 'present' && depistage === 'S') inc('Résistance à la méticilline rapportée mais céfoxitine/oxacilline rendue S : résultats contradictoires, à vérifier avec le laboratoire avant de choisir.', [CASFM('ch. 5.7 Staphylococcus')]);
     if (sarm === 'absent' && depistage === 'R') inc('Sensibilité à la méticilline indiquée mais céfoxitine/oxacilline rendue R : résultats contradictoires, à vérifier avec le laboratoire avant de choisir.', [CASFM('ch. 5.7 Staphylococcus')]);
     nonRetenue('cefixime', 'le céfixime ne doit pas être utilisé pour traiter une infection à staphylocoque', [CASFM('ch. 5.7 Staphylococcus', 'Le céfixime, la ceftazidime […] ne doivent pas être utilisés pour le traitement des infections staphylococciques.')]);
@@ -203,7 +213,7 @@ export function analyserIsolat(ctx: ContexteDecision, prl: Prelevement, iso: Don
       inc('Amoxicilline R mais pipéracilline-tazobactam ou imipénème rendu sensible : ces molécules doivent être catégorisées R. Vérifier avec le laboratoire ; l\'application les lit comme R.', [CASFM('ch. 5.8 Enterococcus', 'doivent également être catégorisées "résistantes" aux uréidopénicillines et aux carbapénèmes')]);
     if (ph('ERV') === 'present' && s('vancomycine') === 'S') inc('ERG/ERV rapporté mais vancomycine rendue S : résultats contradictoires, à vérifier avec le laboratoire.', [S('HCSP-2019-BHRe', 'définitions', undefined, 'definition')]);
     for (const a of ['gentamicine', 'amikacine'])
-      nonRetenue(a, 'résistance naturelle de bas niveau des entérocoques aux aminosides : seule compte l\'absence de haut niveau de résistance, pour une association synergique', [S('EUCAST-ERP-v1.2', 'note 2 (entérocoques)', 'In addition to LLR to aminoglycosides', 'definition')]);
+      nonRetenue(a, 'résistance naturelle de bas niveau des entérocoques aux aminosides : seule compte l\'absence de haut niveau de résistance, pour une association synergique', [S('EUCAST-ERP-v1.2', 'Table 4, note 1 (et note 2 pour E. faecium)', 'Low-level resistance (LLR) to aminoglycosides', 'definition')]);
   }
 
   return syn;

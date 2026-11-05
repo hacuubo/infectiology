@@ -5,7 +5,7 @@
 import { useId } from 'react';
 import type { CategorieSaisie, DonneesIsolat, EtatPhenotype, Isolat, OrganismeId, Prelevement } from '../clinical/types';
 import type { Dossier } from '../engine/etat';
-import { construireContexte } from '../engine/contexte';
+import { contexteUI } from './contexte-ui';
 import { nouvelIsolat } from '../engine/etat';
 import { contexteGuide } from '../clinical/microbiologie/analyse';
 import { AIDE_I, categorieDe, etatPhenotype, guideAntibiogramme, type QuestionMicro } from '../clinical/microbiologie/guide';
@@ -158,6 +158,8 @@ function CarteQuestion({ q, iso, maj }: { q: QuestionMicro; iso: DonneesIsolat; 
             const autres = (i.antibiogramme ?? []).filter((r) => r.dci !== q.dci);
             const actuel = (i.antibiogramme ?? []).find((r) => r.dci === q.dci);
             if (actuel?.categorie !== c) autres.push({ dci: q.dci, categorie: c, cmi: actuel?.cmi });
+            // Recliquer efface la catégorie mais conserve une CMI déjà saisie (catégorie « non testé »).
+            else if (actuel.cmi !== undefined) autres.push({ dci: q.dci, categorie: 'NT', cmi: actuel.cmi });
             i.antibiogramme = autres.length ? autres : undefined;
             marquer(i);
           })
@@ -205,7 +207,7 @@ function Pourquoi({ q }: { q: QuestionMicro }) {
 }
 
 export function AntibiogrammeGuide({ iso, prl, dossier, maj }: { iso: DonneesIsolat; prl: Prelevement; dossier: Dossier; maj: MajIsolat }) {
-  const ctx = construireContexte(dossier);
+  const ctx = contexteUI(dossier);
   const cg = contexteGuide(ctx, prl, iso);
   const guide = guideAntibiogramme(iso, cg);
   const groupes = [...new Set(guide.essentielles.map((q) => q.groupe))];

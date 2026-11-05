@@ -181,6 +181,8 @@ export interface LectureAtb {
   /** Vrai seulement si le laboratoire a rapporté le mécanisme (« présent »). */
   meca: (m: PhenotypeId) => boolean;
   etat: (m: PhenotypeId) => EtatPhenotype;
+  /** Résultat brut saisi, avant lecture interprétative. */
+  brut: (dci: string) => CategorieSIR | undefined;
 }
 
 const C3G = ['cefotaxime', 'ceftriaxone', 'ceftazidime', 'cefepime', 'cefixime', 'aztreonam'];
@@ -206,12 +208,15 @@ export function lireAntibiogramme(p: DonneesIsolat | undefined): LectureAtb {
     for (const d of ['ertapeneme', 'imipeneme', 'meropeneme']) if (brut.get(d) && brut.get(d) !== 'R') forces.set(d, 'R');
     notes.push({ texte: 'Carbapénémase : carbapénèmes interprétés R (changement CA-SFM 2026).', sources: casfm('avant-propos p. 5', 'interpréter comme "résistants" les carbapénèmes qui peuvent apparaître "sensibles" ou "sensibles à forte posologie"') });
   }
-  if (mecas.has('SARM')) {
+  const famille = familleDe(p?.organisme);
+  const staph = famille === 's_aureus' || famille === 'scn' || famille === 's_lugdunensis';
+  // Méticillino-résistance : rapportée, ou céfoxitine/oxacilline R sans discordance (CA-SFM 2026 ch. 5.7).
+  if (mecas.has('SARM') || (staph && depistageMeticilline(brut.get('cefoxitine'), brut.get('oxacilline')) === 'R' && etats.SARM !== 'absent')) {
     for (const d of ['oxacilline', 'cefazoline', 'amoxicilline_clavulanate', 'piperacilline_tazobactam', 'cefotaxime', 'ceftriaxone', 'meropeneme', 'imipeneme']) forces.set(d, 'R');
     notes.push({ texte: 'SARM : résistance à toutes les bêta-lactamines sauf ceftaroline et ceftobiprole (CA-SFM 2026).', sources: casfm('ch. 5.7 Staphylococcus', 'doivent être rendues résistantes à toutes les β-lactamines, y compris les carbapénèmes, à l\'exception de la ceftaroline et du ceftobiprole') });
   }
   // Règle 8 des règles expertes EUCAST : propre aux Enterobacterales, non généralisée aux autres germes.
-  const fam = familleDe(p?.organisme);
+  const fam = famille;
   const ciproR = brut.get('ciprofloxacine') === 'R';
   if (ciproR && (fam === 'enterobacterale' || fam === 'enterobacterale_groupe3')) {
     forces.set('levofloxacine', 'R');
@@ -222,13 +227,15 @@ export function lireAntibiogramme(p: DonneesIsolat | undefined): LectureAtb {
     if (cat === 'R') continue;
     const a = resistanceAttendue(p?.organisme, dci);
     if (a) {
+      // Signalé une seule fois, dans la lecture microbiologique (incohérence).
       forces.set(dci, 'R');
-      notes.push({ texte: `${dci.replace(/_/g, ' ')} rendu ${cat} malgré une résistance attendue pour ce germe : lu R ; vérifier avec le laboratoire.`, sources: a.sources });
     }
   }
   // Entérocoques : une résistance aux aminopénicillines s'étend aux uréidopénicillines et aux carbapénèmes (CA-SFM 2026 ch. 5.8).
   if (p?.organisme && ['enterococcus_faecalis', 'enterococcus_faecium', 'enterocoque_non_identifie'].includes(p.organisme) && brut.get('amoxicilline') === 'R') {
-    for (const d of ['piperacilline_tazobactam', 'imipeneme', 'meropeneme', 'ertapeneme']) if (brut.get(d) && brut.get(d) !== 'R') forces.set(d, 'R');
+    const lus = ['piperacilline_tazobactam', 'imipeneme', 'meropeneme', 'ertapeneme'].filter((d) => brut.get(d) && brut.get(d) !== 'R');
+    for (const d of lus) forces.set(d, 'R');
+    if (lus.length) notes.push({ texte: 'Entérocoque résistant à l’amoxicilline : pipéracilline(-tazobactam) et carbapénèmes lus R.', sources: casfm('ch. 5.8 Enterococcus', 'doivent également être catégorisées "résistantes" aux uréidopénicillines et aux carbapénèmes') });
   }
   if ([...brut.values()].includes('I')) {
     notes.push({
@@ -244,7 +251,22 @@ export function lireAntibiogramme(p: DonneesIsolat | undefined): LectureAtb {
     notes,
     meca: (m) => mecas.has(m),
     etat: (m) => etats[m] ?? 'non_rapporte',
+    brut: (d) => brut.get(d),
   };
+}
+
+/** Dépistage de la méticillino-résistance : R si l'un est R sans discordance ; discordance ou « I » → inconnu (à vérifier). */
+export function depistageMeticilline(cefoxitine: CategorieSIR | undefined, oxacilline: CategorieSIR | undefined): 'R' | 'S' | undefined {
+  const v = [cefoxitine, oxacilline].filter((x): x is CategorieSIR => x !== undefined);
+  if (v.length === 0 || v.includes('I')) return undefined;
+  if (v.includes('R') && v.includes('S')) return undefined;
+  return v.includes('R') ? 'R' : 'S';
+}
+
+/** C3G la plus défavorable parmi céfotaxime, ceftriaxone, ceftazidime (une seule C3G R suffit à évoquer un mécanisme, CA-SFM p. 50). */
+export function pireC3G(s: (d: string) => CategorieSIR | undefined): CategorieSIR | undefined {
+  const v = ['cefotaxime', 'ceftriaxone', 'ceftazidime'].map(s);
+  return v.includes('R') ? 'R' : v.includes('I') ? 'I' : v.includes('S') ? 'S' : undefined;
 }
 
 /**
@@ -253,8 +275,7 @@ export function lireAntibiogramme(p: DonneesIsolat | undefined): LectureAtb {
  */
 export function statutMeticilline(atb: LectureAtb): 'R' | 'S' | undefined {
   const ph = atb.etat('SARM');
-  const test = atb.sir('oxacilline') ?? atb.sir('cefoxitine');
-  const t = test === 'R' ? 'R' : test === 'S' || test === 'I' ? 'S' : undefined;
+  const t = depistageMeticilline(atb.brut('cefoxitine'), atb.brut('oxacilline'));
   const p = ph === 'present' ? 'R' : ph === 'absent' ? 'S' : undefined;
   if (p && t && p !== t) return undefined;
   return p ?? t;

@@ -49,6 +49,7 @@ export function GroupeRadio<T extends string>({
   classeOption?: (v: T) => string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const idAide = useId();
   const indexCoche = options.findIndex((o) => o.v === valeur);
   const focusable = indexCoche >= 0 ? indexCoche : 0;
   const deplacer = (i: number) => {
@@ -93,6 +94,7 @@ export function GroupeRadio<T extends string>({
           aria-checked={valeur === o.v}
           tabIndex={i === focusable ? 0 : -1}
           title={o.aide}
+          aria-describedby={o.aide ? `${idAide}-${i}` : undefined}
           className={`${valeur === o.v ? 'actif ' : ''}${classeOption ? classeOption(o.v) : ''}`.trim()}
           onClick={() => onChange(o.v)}
           onKeyDown={(e) => clavier(e, i)}
@@ -100,6 +102,13 @@ export function GroupeRadio<T extends string>({
           {o.l}
         </button>
       ))}
+      {options.map((o, i) =>
+        o.aide ? (
+          <span key={`aide-${o.v}`} id={`${idAide}-${i}`} className="sr-only">
+            {o.aide}
+          </span>
+        ) : null,
+      )}
     </div>
   );
 }

@@ -23,6 +23,14 @@ Ces conditions ne sont **pas remplies** à ce jour. Aucune conformité n'est dé
 5. **Référentiel HAS** : le référentiel fonctionnel HAS 2023 des systèmes d'aide à la décision en antibiothérapie doit être lu intégralement (non lisible lors de la vérification) et l'application confrontée à ses critères.
 6. **Sécurité** : revue de sécurité, dépendances maintenues, déploiement sur une infrastructure qualifiée.
 
+## Nouvelles règles de la version 2026.11.1
+
+Les règles d'indication et d'interprétation microbiologique suivent le même circuit que les règles thérapeutiques :
+- indication : `R-INDICATION-ECBU`, `R-SEPSIS-FOYER-INCONNU`, `R-PRELEVEMENT-SUPERFICIEL`, et les indications portées par `R-BACTERIEMIE-S-AUREUS` et `R-BACTERIEMIE-SCN` ;
+- interprétation microbiologique : `src/clinical/microbiologie/`.
+
+Elles sont « vérifiées par IA » ou en brouillon, jamais validées. Leur matrice figure dans `docs/relectures/v2-relecteur-2-audit-documentaire.md`. Une décision de non-traitement se valide comme une proposition de traitement : conditions, exceptions, source et version.
+
 ## Procédure de validation d'une règle
 
 1. La règle est en `verifiee_ia` avec ses sources lues et ses repères (page, tableau, recommandation).

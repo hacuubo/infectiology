@@ -45,6 +45,9 @@ npm run veille
    - D. réévaluation et avis spécialisé ;
    - E. sources, avec repère précis et statut de vérification.
 4. **Résumé patient** visible en permanence.
+5. **Décision « faut-il traiter ? »** avant le choix de la molécule. Une culture positive ne déclenche jamais, seule, une proposition d'antibiotique. Cinq conclusions distinctes : traiter, urgence, pas d'antibiothérapie indiquée, informations insuffisantes, attendre un résultat. La conclusion « pas d'antibiothérapie indiquée » est présentée en entier : raison, conditions, exceptions recherchées, actions, surveillance, éléments qui feraient reconsidérer, sources.
+6. **Antibiogramme guidé** par le germe et le contexte : seules les questions qui changent la décision sont posées, les autres restent dans « Ajouter d'autres résultats ». Les mécanismes rapportés se saisissent en présent / absent / non rapporté, les molécules en S / I / R / non testé. Chaque antibiogramme reste rattaché à son isolat.
+7. **Parcours en quatre étapes**, sans ordre imposé : indication, foyer et germe, résultats déterminants, prise en charge. Une synthèse résume l'ensemble en tête de fiche.
 
 ## Architecture
 
@@ -52,13 +55,15 @@ npm run veille
 |---|---|---|
 | Interface | `src/ui/` | React, formulaire progressif, fiche, résumé |
 | Moteur déterministe | `src/engine/` | contexte, posologie, décision, invalidation |
+| Indication de traitement | `src/clinical/indication/`, `src/clinical/rules/indication.ts` | ECBU, sepsis sans foyer, prélèvement superficiel |
+| Microbiologie guidée | `src/clinical/microbiologie/` | familles de germes, questions d'antibiogramme, résistances attendues, incohérences |
 | Calculs physiologiques | `src/calc/renal.ts` | Cockcroft-Gault, CKD-EPI 2021, Du Bois, poids idéal/ajusté |
 | Calendrier | `src/schedule/frise.ts` | frise relative ou datée selon les horaires connus |
 | Base clinique versionnée | `src/clinical/molecules/`, `src/clinical/rules/`, `src/clinical/etat-base.json` | molécules, régimes, adaptation rénale, surveillance, STP ; règles par situation |
 | Registre des sources | `src/clinical/sources/registre.json` | organisme, titre, année, version, URL, date de consultation, statut d'accès et de vigueur |
 | Tests | `src/tests/` | calculs, base, acceptation, interface |
 | Veille | `tools/veille/`, `.github/workflows/veille.yml` | veille mensuelle des sources |
-| Recherche documentaire | `docs/sources/` | fiches de vérification des sources (2026-11-04) |
+| Recherche documentaire | `docs/sources/` | fiches de vérification des sources (2026-11-04 et 2026-11-05) |
 
 Aucun modèle génératif n'intervient lors de la consultation : à entrées et version clinique identiques, le résultat est identique (testé). Aucune donnée saisie n'est conservée ni transmise.
 

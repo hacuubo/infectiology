@@ -9,7 +9,7 @@
       "organisme": "SPILF",
       "libelle": "Page des recommandations SPILF",
       "url": "https://www.infectiologie.com/fr/recommandations-spilf.html",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "eadd03e712613118fd9e351521800fb8a376d369c5a2bc087e56396c9dd42484",
       "taille": 142518,
       "reperes": {
@@ -26,7 +26,7 @@
       "organisme": "SPILF",
       "libelle": "Infections urinaires masculines 2026 (diaporama officiel)",
       "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/spilf-groupe-recos-ium.pptx",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "a53a4cd0fb8ae80e765ce24edc955bd31c08d6a224c2bb942768b0dbe2ae5bb0",
       "taille": 311994,
       "reperes": {},
@@ -37,7 +37,7 @@
       "organisme": "SPILF",
       "libelle": "Infections urinaires communautaires 2015 (texte court)",
       "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/infections-urinaires-spilf.pdf",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "0be980110daf6f69bcebf0ab1f3caffe47c09cf17bb74160c6eafcb8f48e5b06",
       "taille": 497813,
       "reperes": {},
@@ -48,7 +48,7 @@
       "organisme": "SPILF/AFU/SF2H",
       "libelle": "Infections urinaires associées aux soins 2015",
       "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/2015-rpc-infections-urinaires-associees-aux-soins.pdf",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "04a5ffe3194fae711bc95007d2709158f230c63f070271c51013921eb80908c7",
       "taille": 480170,
       "reperes": {},
@@ -59,8 +59,8 @@
       "organisme": "HAS",
       "libelle": "Choix et durées d'antibiothérapie préconisées dans les infections bactériennes courantes",
       "url": "https://www.has-sante.fr/jcms/p_3278764/fr/",
-      "statut": "nouvelle_reference",
-      "empreinte": "2185bbf230a31594609003033101532f13bf92fa4276a010fc193077b9d2ac65",
+      "statut": "inchangee",
+      "empreinte": "5c1b09f75c1897f58f8f8c9fdfdad16b2c6ee0aa59778b979ab803b4b8555642",
       "taille": 113123,
       "reperes": {
         "Mise à jour": null
@@ -71,9 +71,9 @@
       "organisme": "HAS",
       "libelle": "Pyélonéphrite aiguë de la femme",
       "url": "https://www.has-sante.fr/jcms/c_2722914/fr/pyelonephrite-aigue-de-la-femme",
-      "statut": "nouvelle_reference",
-      "empreinte": "a2419cb8d72d0c27d1e28a8710a4e5a222857820e787ad6f0e31cd6ead175cd1",
-      "taille": 92337,
+      "statut": "inchangee",
+      "empreinte": "dbc4d4f7dbf161a10ef4820854dae9df4f302db26e3768348e9ffad682b32ba2",
+      "taille": 92341,
       "reperes": {
         "Mise à jour": null
       }
@@ -83,7 +83,7 @@
       "organisme": "ANSM",
       "libelle": "Mise au point bon usage des aminosides (2011)",
       "url": "https://ansm.sante.fr/uploads/2021/02/04/map-aminosides.pdf",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "ea05bae35af8f3a72aa9c2316f6c0955837692be6df3e297f3781f02a1c3c2a4",
       "taille": 1223687,
       "reperes": {},
@@ -94,7 +94,7 @@
       "organisme": "ANSM",
       "libelle": "Fluoroquinolones : rappel des restrictions d'utilisation",
       "url": "https://ansm.sante.fr/informations-de-securite/antibiotiques-de-la-famille-des-fluoroquinolones-administres-par-voie-systemique-ou-inhalee-rappel-des-restrictions-dutilisation",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "2ee51cbf4d117371edf0a443705d4727960bc1ed7181f082ecee094f27043f72",
       "taille": 107225,
       "reperes": {}
@@ -104,7 +104,7 @@
       "organisme": "EUCAST",
       "libelle": "Breakpoint tables v16.1 (PDF en vigueur, contient les définitions S/I/R en note 6)",
       "url": "https://www.eucast.org/fileadmin/eucast/pdf/breakpoints/v_16.1_Breakpoint_Tables.pdf",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "5789907e4f91628ca9b8db2fe471e2d5cb715be8c1bc906000f04fde225435c3",
       "taille": 4351645,
       "reperes": {},
@@ -123,9 +123,9 @@
       "organisme": "SFM (CA-SFM/EUCAST)",
       "libelle": "Référentiel CA-SFM/EUCAST 2026 V1.0 (page de la boutique SFM)",
       "url": "https://www.sfm-microbiologie.org/boutique/ca-sfm-v1-0-septembre-2026/",
-      "statut": "nouvelle_reference",
-      "empreinte": "b20bfb37056a8f2c534bff54404284fd2a80803f9e68efdf901141e0be900fb7",
-      "taille": 231240,
+      "statut": "inchangee",
+      "empreinte": "5cac1f6ebbbd301f73d4f931330143433e61e9835288d904d69a60e06953de4f",
+      "taille": 231664,
       "reperes": {
         "2027": "da Microbes 2026 AMP 2026 Pseudomonas 2026 Virus et Greffes 2027 GEFH 2027 Virus à ADN 2027 ÉMERGENCES 2027 Journée BUD Webi",
         "V1.0": "Addendum 2026 _Comité de l’Antibiogramme de la SFM (CA-SFM) V1.0 Septembre 2026 🆕 Gratuit La version 2026 du communiqué du ",
@@ -138,7 +138,7 @@
       "organisme": "ESCMID",
       "libelle": "Guidelines publiées",
       "url": "https://www.escmid.org/guidelines-journals/guidelines/published-guidelines/",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "95def23e644fbcd25610b72f7c34b3162ed909f28d11463f14d8bc2addc31f35",
       "taille": 116238,
       "reperes": {},
@@ -149,7 +149,7 @@
       "organisme": "ESC",
       "libelle": "Guidelines endocardite",
       "url": "https://www.escardio.org/guidelines/clinical-practice-guidelines/all-esc-practice-guidelines/endocarditis/",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "439c48afdfa554fbfbae619465446e2d93a2c8147edefd79d12f4c05d8373ab1",
       "taille": 399944,
       "reperes": {
@@ -162,7 +162,7 @@
       "organisme": "EAU",
       "libelle": "Guidelines on Urological Infections",
       "url": "https://uroweb.org/guidelines/urological-infections",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "882cc65f4ac0768fa37640a63e902c3f2e9b59149a5769d47202da51faf82a65",
       "taille": 1328932,
       "reperes": {
@@ -176,7 +176,7 @@
       "organisme": "CRAT",
       "libelle": "Centre de référence sur les agents tératogènes (page d'accueil des antibiotiques)",
       "url": "https://www.lecrat.fr/",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "d67df776eec47627e861fdc33e42737297bb2f82d975de3e35dcb99cb683e19e",
       "taille": 207780,
       "reperes": {}
@@ -186,13 +186,142 @@
       "organisme": "GitHub",
       "libelle": "Documentation des déclencheurs planifiés (fiabilité de la veille elle-même)",
       "url": "https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows",
-      "statut": "nouvelle_reference",
+      "statut": "inchangee",
       "empreinte": "6b753b4cb7a35c188cfa4e4ca30579a3de415fdc224387ed48507be5ce0a74eb",
       "taille": 1076040,
       "reperes": {
         "schedule": "ls to issues Close inactive issues Add comments with labels Schedule issue creation Store and share data Use containerized servi",
         "UTC": "n at specific times. By default, scheduled workflows run in UTC. You can optionally specify a timezone using an IANA timezo"
       }
+    },
+    {
+      "id": "afu-ecbu-geste-2026",
+      "organisme": "AFU / CIAFU / SPILF",
+      "libelle": "ECBU avant geste urologique et traitement de la colonisation (synthèse 2026)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/reco-ecbu-synthese-04032026-mel.pdf",
+      "statut": "inchangee",
+      "empreinte": "cb301fc30618185c5fb4db169571d690137c36d7957ee7cf8eae230ec78d5c27",
+      "taille": 934914,
+      "reperes": {},
+      "derniereModif": "Tue, 24 Mar 2026 21:20:19 GMT"
+    },
+    {
+      "id": "spilf-iu-2015-argumentaire",
+      "organisme": "SPILF",
+      "libelle": "Infections urinaires communautaires 2015 (argumentaire : prélèvement, contamination)",
+      "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/infections-urinaires-spilf-argumentaire.pdf",
+      "statut": "inchangee",
+      "empreinte": "15ca35aa4621bc652c8225b0137224dada751156be144c5afd431622b1e85420",
+      "taille": 1158095,
+      "reperes": {},
+      "derniereModif": "Fri, 11 Dec 2015 11:05:09 GMT"
+    },
+    {
+      "id": "has-femme-enceinte-iu",
+      "organisme": "HAS",
+      "libelle": "Femme enceinte : colonisation urinaire et cystite",
+      "url": "https://www.has-sante.fr/jcms/c_2722927/fr/femme-enceinte-colonisation-urinaire-et-cystite",
+      "statut": "inchangee",
+      "empreinte": "aa8f9b7e48a80da7d91542ea310cac79ed9183f88788897730d4e58233ab2f47",
+      "taille": 90529,
+      "reperes": {
+        "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist",
+        "colonisation": "nté - Choix et durées d'antibiothérapies : Femme enceinte : colonisation urinaire et cystite Recherche Menu principal Contenu princi"
+      }
+    },
+    {
+      "id": "has-cystite-femme",
+      "organisme": "HAS",
+      "libelle": "Cystite aiguë simple, à risque de complication ou récidivante, de la femme",
+      "url": "https://www.has-sante.fr/jcms/c_2722827/fr/cystite-aigue-simple-a-risque-de-complication-ou-recidivante-de-la-femme",
+      "statut": "inchangee",
+      "empreinte": "7c97051c91ce0eac991caf7363246ec5f22917f8dd7c6551832c5e7c872977a4",
+      "taille": 96846,
+      "reperes": {
+        "Mis à jour": "andation de bonne pratique - Mis en ligne le 27 août 2021 - Mis à jour le 13 mai 2025 &#xa0; &#xa0; L’expansion de l’antibiorésist"
+      }
+    },
+    {
+      "id": "has-infections-cutanees-2019",
+      "organisme": "HAS / SPILF / SFD",
+      "libelle": "Infections cutanées bactériennes courantes (plaies chroniques)",
+      "url": "https://www.has-sante.fr/jcms/c_2911550/fr/prise-en-charge-des-infections-cutanees-bacteriennes-courantes",
+      "statut": "inchangee",
+      "empreinte": "eb41d3bdd881d33863f88d19328015c8941834105c620ab1a6a97a5f10d18b2b",
+      "taille": 88892,
+      "reperes": {
+        "Mis à jour": null
+      }
+    },
+    {
+      "id": "iwgdf-idsa-2023",
+      "organisme": "IWGDF / IDSA",
+      "libelle": "Infection du pied diabétique (2023)",
+      "url": "https://iwgdfguidelines.org/wp-content/uploads/2023/07/IWGDF-2023-04-Infection-Guideline.pdf",
+      "statut": "inchangee",
+      "empreinte": "27172ebc3f2f91790010160945c9c84c45222cdf3f499530afae83f3f53da3f3",
+      "taille": 2083490,
+      "reperes": {},
+      "derniereModif": "Thu, 13 Jul 2023 18:42:25 GMT"
+    },
+    {
+      "id": "idsa-bacteriurie-2019",
+      "organisme": "IDSA",
+      "libelle": "Bactériurie asymptomatique (2019)",
+      "url": "https://www.idsociety.org/practice-guideline/asymptomatic-bacteriuria/",
+      "statut": "inchangee",
+      "empreinte": "aadeaa852c1f2e8fa1e76bbc35dd879c213c0d16ba406177e406810c1f29adae",
+      "taille": 236746,
+      "reperes": {
+        "Updated": " implementation of nontreatment recommendations. Thus, this updated guideline also addresses the clinical presentation of sympt",
+        "Published": "ymptomatic Bacteriuria Download PDF View Citation Copy Link Published March 21, 2019 Clinical Infectious Diseases , Volume 68, Is"
+      }
+    },
+    {
+      "id": "idsa-escmid-sab-2026",
+      "organisme": "IDSA / ESCMID",
+      "libelle": "Bactériémie à S. aureus — consensus 2026 (définitions)",
+      "url": "https://www.idsociety.org/practice-guideline/staphylococcus-aureus-bacteremia/",
+      "statut": "inchangee",
+      "empreinte": "06be51cc89bd78c7d7cc48030972296f9152ebbfa57fa974310f75d736ca44f3",
+      "taille": 164088,
+      "reperes": {
+        "Updated": "ts and Children Copy Link Published September 09, 2026 Last Updated September 09, 2026 Update History This is Part 1 of new con",
+        "Published": "Evaluation, and Management of Adults and Children Copy Link Published September 09, 2026 Last Updated September 09, 2026 Update H"
+      }
+    },
+    {
+      "id": "eucast-erp-v1.2",
+      "organisme": "EUCAST",
+      "libelle": "Expected Resistant Phenotypes v1.2",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Resistant_Phenotypes_v1.2_20230113.pdf",
+      "statut": "inchangee",
+      "empreinte": "ff6af7af00345793e2527982a49f8607281afab5adc789fd91d2de3a18d873e3",
+      "taille": 411304,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:34:51 GMT"
+    },
+    {
+      "id": "eucast-esp-v1.1",
+      "organisme": "EUCAST",
+      "libelle": "Expected Susceptible Phenotypes v1.1",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/expert_rules/Expected_Susceptible_Phenotypes_Tables_v1.1_20220325.pdf",
+      "statut": "inchangee",
+      "empreinte": "175b2e4b7407d23d45b63825129950fbeeb96b02e5d8791553d31c12a59f9a35",
+      "taille": 223044,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:39:27 GMT"
+    },
+    {
+      "id": "eucast-detection-v2.01",
+      "organisme": "EUCAST",
+      "libelle": "Détection des mécanismes de résistance v2.01",
+      "url": "https://www.eucast.org/fileadmin/eucast/pdf/eucast_guidelines/EUCAST_detection_of_resistance_mechanisms_170711.pdf",
+      "statut": "inchangee",
+      "empreinte": "a1f2f71bd28ffdb7a81ce10bba58802aec64908eaade1bd35bd0ac5f2613222b",
+      "taille": 928254,
+      "reperes": {},
+      "derniereModif": "Wed, 02 Jul 2025 15:05:52 GMT"
     }
   ]
 }

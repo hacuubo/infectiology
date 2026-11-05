@@ -232,9 +232,10 @@ export function construireContexte(d: Dossier, maintenant: Date = new Date()): C
   const materielPresent =
     materielVasculairePresent || protheseValvulaire || p.dispositifIntracardiaque === 'oui' || p.protheseArticulaire === 'oui' || !['aucun', 'inconnu'].includes(p.materielUrinaire);
 
-  if (!d.clinique) d.clinique = cliniqueParDefaut();
+  // Pas d'écriture dans le dossier (appelé pendant le rendu) : copie si la clinique manque.
+  const dd: Dossier = d.clinique ? d : { ...d, clinique: cliniqueParDefaut() };
   const ctx: ContexteDecision = {
-    dossier: d,
+    dossier: dd,
     renal,
     allergie: analyserAllergies(d),
     prelevementPrincipal: principal,

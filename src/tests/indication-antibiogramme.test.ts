@@ -53,7 +53,9 @@ describe('ECBU positif : traiter ou ne pas traiter', () => {
     expect(p.indication?.conditions.length).toBeGreaterThan(0);
     expect(p.indication?.exceptions.join(' ')).toMatch(/Geste urologique/);
     expect(p.indication?.reconsiderer.join(' ')).toMatch(/fièvre/);
-    expect(p.indication?.sources.map((s) => s.source)).toEqual(expect.arrayContaining(['SPILF-2015-IU', 'SPILF-2026-IUM', 'AFU-2026-ECBU-geste']));
+    expect(p.indication?.sources.map((s) => s.source)).toEqual(expect.arrayContaining(['SPILF-2015-IU', 'IDSA-2019-bacteriurie-asymptomatique', 'AFU-2026-ECBU-geste']));
+    // SPILF 2026 ne vise que l'homme (IU masculine communautaire) : non citée pour cette patiente.
+    expect(p.indication?.sources.some((s) => s.source === 'SPILF-2026-IUM')).toBe(false);
   });
 
   test('symptômes compatibles et fièvre : infection urinaire, propositions de traitement', () => {

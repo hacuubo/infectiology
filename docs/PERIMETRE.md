@@ -1,4 +1,4 @@
-# Périmètre de la version 2026.11.0-brouillon
+# Périmètre de la version 2026.11.1-brouillon
 
 Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans bloque les propositions. Les règles adultes ne sont pas transposées à la pédiatrie.
 
@@ -16,6 +16,11 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 | Endocardite (staphylocoques, streptocoques, entérocoques ; probabiliste) | `R-ENDOCARDITE` | ESC 2023, SPILF/AEPEI 2025 |
 | Infection liée au cathéter | `R-INFECTION-CATHETER` | IDSA 2009, SRLF 2020, SPILF 2021 |
 | Gravité, réévaluation, persistance des hémocultures, colonisation urinaire | règles transversales | SSC 2026, HAS 2008/2025, SRLF 2020 |
+| Indication devant un ECBU positif : infection, colonisation, contamination possible, situation indéterminée ; signes non spécifiques du sujet âgé ; porteur de sonde ; exceptions grossesse et gestes urologiques (liste AFU 2026) | `R-INDICATION-ECBU` | SPILF 2015 (texte court et argumentaire), SPILF 2026, IUAS 2015, AFU/CIAFU 2026, IDSA 2019, HAS (femme enceinte) |
+| Sepsis sans foyer ni germe identifié : urgence, sans proposition de molécule | `R-SEPSIS-FOYER-INCONNU` | SSC 2026, HAS 2025 |
+| Prélèvement superficiel positif : pas d'antibiotique sans signe clinique d'infection | `R-PRELEVEMENT-SUPERFICIEL` | HAS/SPILF/SFD 2019, IWGDF/IDSA 2023 |
+| Hémocultures : S. aureus jamais traité comme contaminant ; SCN sur une seule série → refaire les hémocultures | `R-BACTERIEMIE-S-AUREUS`, `R-BACTERIEMIE-SCN` | IDSA/ESCMID 2026 (Table 1), IDSA 2009 rec. 38, Doern 2019 |
+| Antibiogramme guidé : questions par famille de germes, mécanismes rapportés, résistances attendues lues R, phénotypes inhabituels et résultats contradictoires signalés, molécules sensibles mais non pertinentes | `src/clinical/microbiologie/` | CA-SFM 2026, EUCAST v16.1, EUCAST phénotypes attendus et inhabituels, EUCAST détection v2.01 |
 | Surveillance et STP intégrés : aminosides, vancomycine, daptomycine, bêta-lactamines en soins critiques, rifampicine, fluoroquinolones, cotrimoxazole | base des molécules | ANSM 2011, RCP, Rybak 2020, SPILF/SFPT/CA-SFM 2026, SFPT/SFAR 2018, Abdul-Aziz 2020 |
 
 ## Partiellement couvert (règles en brouillon ou avis spécialisé requis)
@@ -27,6 +32,11 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - **P. aeruginosa** documenté : forte posologie uniquement, avis spécialisé.
 - **Grossesse, immunodépression** : statut molécule par molécule (CRAT) mais pas de schéma dédié ; l'IU de l'homme immunodéprimé est hors du champ SPILF 2026 (brouillon).
 - **Bloqués en brouillon par l'audit documentaire** : daptomycine seule dans l'endocardite à SARM (les sources la recommandent en association), molécules des bactériémies à streptocoque hors endocardite (extrapolées), vancomycine pour allergie dans les bactériémies à entérocoque, aztréonam dans l'IU associée aux soins.
+- **Indication, situations en brouillon** :
+  - fièvre sans signe urinaire ni autre foyer avec bactériurie : IDSA 2019 (remarque) et SPILF 2026 divergent ; avis SMIT, spectre non modélisé ;
+  - changement de sonde JJ ou de néphrostomie : zone grise dans le texte AFU 2026.
+- **Cystite, colonisation gravidique, colonisation avant geste** : l'indication est sourcée, mais les molécules de 1re intention (fosfomycine-trométamol, pivmécillinam, nitrofurantoïne, triméthoprime) ne sont pas dans la base. Seule l'amoxicilline est proposée pendant la grossesse si la souche est sensible.
+- **Prélèvements polymicrobiens** : chaque antibiogramme reste rattaché à son isolat, mais les propositions ne portent que sur le germe principal (alerte affichée).
 - **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 
 ## Non couvert (avis spécialisé, aucune proposition)
@@ -37,6 +47,8 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - Foyers pulmonaires, digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
 - Endocardites à BGN, champignons, germes intracellulaires.
 - Candidémies.
+- Prélèvements respiratoires ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
+- Transplanté rénal de moins d'un mois avec bactériurie (aucune recommandation, IDSA 2019) ; ce terrain n'est pas saisi dans l'application.
 
 ## Limites connues
 

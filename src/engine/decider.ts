@@ -62,6 +62,11 @@ export interface OptionsMoteur {
 
 const RANG_URGENCE: Record<NiveauUrgence, number> = { standard: 0, elevee: 1, immediate: 2 };
 
+/** Décisions qui excluent toute proposition d'antibiotique. */
+export const DECISIONS_SANS_TRAITEMENT: IndicationPlan['decision'][] = ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'];
+/** Règles transversales dont le contenu ne concerne qu'un traitement en cours ou à débuter. */
+const REGLES_DU_TRAITEMENT = ['R-REEVALUATION-48-72H', 'R-GRAVITE-SEPSIS'];
+
 function cleRef(r: SourceRef): string {
   return `${r.source}|${r.repere ?? ''}|${r.justifie ?? ''}`;
 }
@@ -126,20 +131,36 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   };
 
   const reevals: { texte: string; sources: SourceRef[]; offsetHeures?: number }[] = [];
-  let situationFixee = false;
   let regleSituation: RegleAppliquee | undefined;
   let couvertureMax: Couverture = 'couverte';
   const RANG_COUV: Record<Couverture, number> = { couverte: 2, partielle: 1, non_couverte: 0 };
+  const contributions: { ra: RegleAppliquee; c: Contribution }[] = [];
   for (const r of applicables) {
-    const c = r.appliquer(ctx);
     const ra: RegleAppliquee = { id: r.id, libelle: r.libelle, statut: r.statut, sources: r.sources };
     plan.regles.push(ra);
-    if (c.situation && !situationFixee) {
-      plan.situation = c.situation;
-      situationFixee = true;
-      regleSituation = ra;
-    }
-    if (c.indication && !plan.indication) plan.indication = c.indication;
+    contributions.push({ ra, c: r.appliquer(ctx) });
+  }
+
+  // Indication. Une conclusion propre à un prélèvement (contamination possible, colonisation…) ne retire pas le
+  // traitement d'un autre foyer : une décision de traiter, explicite ou portée par une règle qui propose un
+  // traitement, l'emporte ; les autres conclusions restent affichées comme conclusions secondaires.
+  const nonTraitement = (c: Contribution) => !!c.indication && DECISIONS_SANS_TRAITEMENT.includes(c.indication.decision);
+  const indications = contributions.filter((x) => x.c.indication).map((x) => x.c.indication!);
+  const traitantes = contributions.filter((x) => (x.c.options?.length ?? 0) > 0 && !nonTraitement(x.c));
+  const principale = indications.find((i) => i.decision === 'urgence') ?? indications.find((i) => i.decision === 'traiter') ?? (traitantes.length > 0 ? undefined : indications[0]);
+  const traitement = principale ? !DECISIONS_SANS_TRAITEMENT.includes(principale.decision) : traitantes.length > 0;
+  plan.indication = principale;
+  plan.indicationsSecondaires = indications.filter((i) => i !== principale);
+  // Sans traitement, les éléments propres au traitement sont écartés (options, contrôles et réévaluation des règles thérapeutiques).
+  const garder = (x: { ra: RegleAppliquee; c: Contribution }) =>
+    traitement || nonTraitement(x.c) || ((x.c.options?.length ?? 0) === 0 && !REGLES_DU_TRAITEMENT.includes(x.ra.id));
+  const situationCandidate = contributions.find((x) => x.c.situation && (!traitement || !nonTraitement(x.c))) ?? contributions.find((x) => x.c.situation);
+  if (situationCandidate) {
+    plan.situation = situationCandidate.c.situation!;
+    regleSituation = situationCandidate.ra;
+  }
+
+  for (const { c } of contributions.filter(garder)) {
     if (c.couvertureMax && RANG_COUV[c.couvertureMax] < RANG_COUV[couvertureMax]) couvertureMax = c.couvertureMax;
     if (c.urgence && RANG_URGENCE[c.urgence] > RANG_URGENCE[plan.urgence.niveau]) plan.urgence.niveau = c.urgence;
     if (c.alertes) plan.urgence.alertes.push(...c.alertes);
@@ -151,7 +172,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
       reevals.push(...c.reevaluation);
     }
     if (c.avisSpecialise) plan.avisSpecialise.push(...c.avisSpecialise);
-    if (c.donneesManquantes) plan.donneesManquantes.push(...c.donneesManquantes);
+    if (c.donneesManquantes) plan.donneesManquantes.push(...c.donneesManquantes.filter((m) => traitement || (m.impact !== 'bloque_dose' && m.impact !== 'bloque_surveillance')));
   }
   // Prélèvement polymicrobien : chaque antibiogramme reste rattaché à son isolat ; les propositions ne portent que sur le germe principal.
   const poly = dossier.prelevements.filter((x) => (x.isolatsSupplementaires ?? []).some((i) => i.organisme !== undefined));
@@ -159,6 +180,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     if (RANG_COUV.partielle < RANG_COUV[couvertureMax]) couvertureMax = 'partielle';
     plan.urgence.alertes.push({ niveau: 'attention', texte: 'Prélèvement polymicrobien : au-delà du périmètre validé. Les propositions ne tiennent compte que du germe principal de chaque prélèvement ; la couverture des autres isolats (voir leurs antibiogrammes) est à vérifier avec le SMIT.' });
   }
+  for (const x of poly) if (x.type === 'urine' && x.urine?.nbEspeces === 'une') plan.urgence.alertes.push({ niveau: 'attention', texte: 'ECBU : « une espèce » est indiqué, mais plusieurs germes sont saisis. Vérifier le compte rendu.' });
   if (RANG_COUV[couvertureMax] < RANG_COUV[plan.situation.couverture]) plan.situation.couverture = couvertureMax;
 
   // Synthèse microbiologique de chaque isolat identifié.
@@ -182,9 +204,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
       regleId: regleSituation.id,
     };
   }
-  if (plan.indication && ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'].includes(plan.indication.decision) && plan.options.length > 0) {
-    plan.options = [];
-  }
+  if (!traitement) plan.options = [];
 
   // 1. Sources retirées : toute option qui s'appuie sur une source retirée est exclue.
   const sourceRetiree = (refs: SourceRef[]) => refs.find((r) => SOURCES_PAR_ID[r.source]?.statutVigueur === 'retiree');

@@ -160,7 +160,7 @@ export const R_SCN: Regle = {
     else if (series !== undefined && series <= 1 && !lugd)
       ind(grave ? 'urgence' : 'attendre_resultat', 'contamination_possible', grave ? 'Sepsis avec un SCN sur une seule série : traiter le sepsis sans attendre' : 'Contamination possible : refaire les hémocultures avant de traiter', grave ? 'Le sepsis impose une antibiothérapie immédiate ; la signification du SCN reste à établir par de nouvelles hémocultures.' : 'Un SCN isolé dans une seule série est souvent un contaminant, mais pas toujours (matériel). Refaire des hémocultures (périphérie et cathéter suspect) avant tout antibiotique ou retrait de cathéter.', { conditions: ['une seule série positive', materiel ? 'matériel présent' : 'pas de matériel déclaré'], actions: ['Nouvelles hémocultures périphériques et sur le cathéter suspect, avant antibiotique', ...(materiel ? ['Avis infectiologique avant de conclure à une contamination (matériel présent)'] : [])], reconsiderer: ['Même SCN (même antibiogramme) dans une 2e série', 'Signes d’infection du cathéter ou du matériel', 'Sepsis'] });
     else if (series !== undefined && series >= 2)
-      ind(grave ? 'urgence' : 'traiter', 'infection', 'Bactériémie à SCN probable : traitement indiqué', 'Même espèce retrouvée dans au moins 2 séries : bactériémie vraie probable (vérifier l’identité des antibiogrammes).', { conditions: [`${series} séries positives`] });
+      ind(grave ? 'urgence' : 'traiter', 'infection_probable', 'Bactériémie à SCN probable : traitement indiqué', 'Même espèce retrouvée dans au moins 2 séries : bactériémie vraie probable (vérifier l’identité des antibiogrammes).', { conditions: [`${series} séries positives`] });
     if (series === undefined) {
       f.situation('scn-a-qualifier', `Hémocultures à ${lugd ? 'S. lugdunensis' : 'staphylocoque à coagulase négative'} — signification à établir`, 'partielle', 'Le nombre de séries positives est indispensable : un SCN n\'est ni automatiquement un contaminant, ni automatiquement une indication d\'antibiothérapie.');
       f.manque('nombre de séries prélevées et positives', 'distinguer contamination probable et bactériémie vraie', 'bloque_decision');
@@ -216,7 +216,8 @@ export const R_STREPTO: Regle = {
     const atb = lireAntibiogramme(prl);
     // Déduction amoxicilline ← pénicilline G : règle CA-SFM 2026 (ch. 5.10) propre aux streptocoques A, B, C et G, non généralisée.
     const abcg = org === 'streptococcus_pyogenes' || org === 'streptococcus_agalactiae' || org === 'streptocoque_groupe_c_g';
-    const amox = atb.sir('amoxicilline') ?? (abcg ? atb.sir('penicilline_g') : undefined);
+    // Déduction seulement d'un résultat S ; une résistance est exceptionnelle et signalée (CMI, identification).
+    const amox = atb.sir('amoxicilline') ?? (abcg && atb.sir('penicilline_g') === 'S' ? 'S' : undefined);
     // Audit relecteur 2 (2026-11-05) : BLOQUÉ (brouillon). Aucune recommandation lue ne porte sur le choix de la molécule
     // dans la bactériémie à streptocoque hors endocardite : l'amoxicilline est extrapolée (CA-SFM = règle de lecture,
     // ESC 2023 T7 = endocardite). Seule la durée de 7 jours (SPILF/GPIP 2021) est sourcée.

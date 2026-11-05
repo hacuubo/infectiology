@@ -42,40 +42,6 @@ export const LIBELLE_TRAITEMENT: Record<TraitementAssocie, string> = {
   autre: 'Autre traitement à vérifier',
 };
 
-export const DCI_ANTIBIOGRAMME: { id: string; l: string }[] = [
-  { id: 'amoxicilline', l: 'Amoxicilline / ampicilline' },
-  { id: 'amoxicilline_clavulanate', l: 'Amoxicilline-acide clavulanique' },
-  { id: 'piperacilline_tazobactam', l: 'Pipéracilline-tazobactam' },
-  { id: 'temocilline', l: 'Témocilline' },
-  { id: 'cefazoline', l: 'Céfazoline' },
-  { id: 'cefoxitine', l: 'Céfoxitine (dépistage SARM)' },
-  { id: 'cefotaxime', l: 'Céfotaxime' },
-  { id: 'ceftriaxone', l: 'Ceftriaxone' },
-  { id: 'ceftazidime', l: 'Ceftazidime' },
-  { id: 'cefepime', l: 'Céfépime' },
-  { id: 'cefixime', l: 'Céfixime' },
-  { id: 'aztreonam', l: 'Aztréonam' },
-  { id: 'ertapeneme', l: 'Ertapénème' },
-  { id: 'meropeneme', l: 'Méropénème' },
-  { id: 'imipeneme', l: 'Imipénème' },
-  { id: 'gentamicine', l: 'Gentamicine' },
-  { id: 'amikacine', l: 'Amikacine' },
-  { id: 'ciprofloxacine', l: 'Ciprofloxacine' },
-  { id: 'levofloxacine', l: 'Lévofloxacine' },
-  { id: 'cotrimoxazole', l: 'Cotrimoxazole' },
-  { id: 'fosfomycine', l: 'Fosfomycine' },
-  { id: 'nitrofurantoine', l: 'Nitrofurantoïne' },
-  { id: 'oxacilline', l: 'Oxacilline / cloxacilline' },
-  { id: 'penicilline_g', l: 'Pénicilline G' },
-  { id: 'vancomycine', l: 'Vancomycine' },
-  { id: 'teicoplanine', l: 'Téicoplanine' },
-  { id: 'daptomycine', l: 'Daptomycine' },
-  { id: 'linezolide', l: 'Linézolide' },
-  { id: 'rifampicine', l: 'Rifampicine' },
-  { id: 'clindamycine', l: 'Clindamycine' },
-  { id: 'gentamicine_haut_niveau', l: 'Gentamicine haut niveau (entérocoques)' },
-];
-
 /* Libellés lisibles (accents, termes cliniques) des valeurs codées, pour le résumé patient. */
 export const LIBELLE_VALEUR: Record<string, string> = {
   femme: 'femme',
@@ -116,11 +82,9 @@ export const LIBELLE_VALEUR: Record<string, string> = {
   cgp_chainettes: 'CGP en chaînettes',
   BLSE: 'BLSE',
   carbapenemase: 'carbapénémase',
-  cephalosporinase_dereprimee: 'céphalosporinase déréprimée',
   SARM: 'SARM',
   ERV: 'ERV',
   EPC: 'EPC',
-  aucun_documente: 'aucun mécanisme documenté',
 };
 
 export function libelle(v: string | undefined): string {

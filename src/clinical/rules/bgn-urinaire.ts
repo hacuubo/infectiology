@@ -5,7 +5,7 @@
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { OptionTherapeutique, Prelevement, SourceRef } from '../types';
-import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, utilisable, type DureeDecidee } from './outils';
+import { Fiche, S, adulte, bacteriemie, germePrincipal, groupe, lireAntibiogramme, utilisable, type DureeDecidee, pireC3G } from './outils';
 
 /* ------------------------------------------------------------------ */
 /* Choix documenté sur antibiogramme                                   */
@@ -40,13 +40,14 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
     relaisOral(f, s, site, duree, !ok);
     return;
   }
-  const c3gBrut = s('ceftriaxone') ?? s('cefotaxime');
+  // La C3G la plus défavorable : un céfotaxime R n'est pas masqué par une ceftriaxone S (CA-SFM 2026 p. 50).
+  const c3gBrut = pireC3G(s);
   const blseDoc = atb.meca('BLSE');
   // Une résistance aux C3G n'est pas assimilée à une BLSE : même conduite que pour les entérobactéries résistantes
   // aux C3G (SPILF 2023 d'après ESCMID 2022), mais sans les options réservées à la BLSE documentée.
   const c3gRInexpliquee = !blseDoc && c3gBrut === 'R';
   if (c3gRInexpliquee) {
-    f.alerte('attention', 'Résistance aux C3G sans mécanisme rapporté : elle ne prouve pas une BLSE. Conduite des entérobactéries résistantes aux C3G ; céfoxitine non proposée (réservée aux BLSE documentées) ; pipéracilline-tazobactam seulement si le laboratoire exclut une céphalosporinase hyperproduite. Demander le mécanisme au laboratoire.', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 5-6', undefined, 'choix'), S('EUCAST-expert-rules-v3.3-enterobacterales', 'règle 7', 'This phenotype is most often caused by ESBL production.', 'definition')]);
+    f.alerte('attention', 'Résistance aux C3G sans mécanisme rapporté : elle ne prouve pas une BLSE. Conduite des entérobactéries résistantes aux C3G ; céfoxitine non proposée (réservée aux BLSE documentées) ; pipéracilline-tazobactam seulement si le laboratoire exclut une céphalosporinase hyperproduite. Demander le mécanisme au laboratoire.', [S('SPILF-2023-BGN-MDR-diapo', 'diapo 5-6', undefined, 'choix'), S('CASFM-2026-V1.0', 'ch. 5.1, p. 50', 'en l\'absence de synergie… évocatrice d\'une souche hyperproductrice de céphalosporinase chromosomique (groupe 3 et E. coli) ou d\'une céphalosporinase plasmidique', 'definition')]);
     f.manque('mécanisme de la résistance aux C3G (BLSE, céphalosporinase)', 'la céfoxitine et la pipéracilline-tazobactam n\'ont de place que selon le mécanisme', 'affine');
   }
   if (blseDoc || c3gRInexpliquee) {
@@ -102,7 +103,10 @@ function blseUrinaireNonGrave(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | unde
   const ptz = s('piperacilline_tazobactam');
   if (utilisable(ptz) && !blseDocumentee) f.option({ id: 'doc-c3gr-piptazo', libelle: `Pipéracilline-tazobactam (résistance aux C3G, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: 'conditionnelle', condition: 'seulement si le laboratoire exclut une céphalosporinase hyperproduite (qui rendrait la pipéracilline-tazobactam R)', items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
   if (utilisable(ptz) && blseDocumentee) f.option({ id: 'doc-blse-piptazo', libelle: `Pipéracilline-tazobactam (BLSE, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: next(), items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
-  if (blseDocumentee && (org === 'escherichia_coli' || org === 'proteus_mirabilis') && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine', libelle: 'Céfoxitine (E. coli / Proteus BLSE)', type: 'documente', rang: next(), items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: src });
+  // Céfoxitine : catégorisation CA-SFM validée pour E. coli seulement (p. 51) ; SPILF 2026 l'admet aussi pour Proteus, SPILF 2023 non.
+  const srcCefoxitine = [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'choix'), S('CASFM-2026-V1.0', 'ch. 5.1, p. 51', 'valeurs critiques thérapeutiques validées que pour E. coli', 'definition')];
+  if (blseDocumentee && org === 'escherichia_coli' && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine', libelle: 'Céfoxitine (E. coli BLSE)', type: 'documente', rang: next(), items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: [...srcCefoxitine, S('SPILF-2023-BGN-MDR-diapo', 'diapo 6', 'Céfoxitine uniquement pour E. coli producteur de BLSE', 'choix')] });
+  if (blseDocumentee && org === 'proteus_mirabilis' && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine-proteus', libelle: 'Céfoxitine (Proteus BLSE)', type: 'documente', rang: 'conditionnelle', condition: 'catégorisation CA-SFM non validée pour Proteus ; divergence SPILF 2026 (admise) / SPILF 2023 (E. coli seulement) : avis SMIT', statut: 'brouillon', items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: srcCefoxitine });
   if (rang === rang0) {
     f.option({ id: 'doc-blse-carba-defaut', libelle: 'Carbapénème (à défaut d\'alternative)', type: 'documente', rang: next(), items: [{ m: 'meropeneme', r: 'meropeneme-1g8h' }], duree, sources: [S('SPILF-2026-IUM', 'diapo 17', 'à défaut « ertapénème IV 1 g/jour OU imipénème IV 3 g/jour OU méropénème IV 3 g/jour »', 'choix')] });
   }
@@ -184,6 +188,27 @@ function dureeIU(ctx: ContexteDecision, cadre: Cadre): DureeDecidee {
   };
 }
 
+/**
+ * Germe pris en compte pour l'infection urinaire : bacille à Gram négatif des hémocultures ou de l'ECBU.
+ * Un prélèvement superficiel ou un SCN sur une seule série (contamination possible) ne bloque pas la règle ;
+ * une bactériémie significative à un autre germe la bloque (« autre »).
+ */
+function germeUrinaire(ctx: ContexteDecision): { prl?: Prelevement; g: 'bgn' | 'aucun' | 'autre' } {
+  const significative = (h: Prelevement) => {
+    const g = groupe(h);
+    if (g === 'aucun' || g === 'bgn') return false;
+    if (g === 'scn') return (h.hemoc?.nbSeriesPositives ?? 2) >= 2;
+    return true;
+  };
+  const hemoBGN = ctx.hemocultures.find((h) => groupe(h) === 'bgn');
+  if (hemoBGN) return { prl: hemoBGN, g: 'bgn' };
+  if (ctx.hemocultures.some(significative)) return { g: 'autre' };
+  const urineBGN = ctx.urines.find((u) => groupe(u) === 'bgn');
+  if (urineBGN) return { prl: urineBGN, g: 'bgn' };
+  if (ctx.urines.some((u) => groupe(u) !== 'aucun')) return { g: 'autre' };
+  return { g: 'aucun' };
+}
+
 export const R_IU_FEBRILE: Regle = {
   id: 'R-IU-FEBRILE',
   libelle: 'Infection urinaire fébrile (pyélonéphrite, IU masculine, IU associée aux soins), avec ou sans bactériémie',
@@ -195,8 +220,10 @@ export const R_IU_FEBRILE: Regle = {
     if (!adulte(ctx) || ctx.foyer !== 'urinaire') return false;
     // La cystite, la colonisation gravidique ou avant geste et la forme non précisée relèvent de R-INDICATION-ECBU.
     const forme = ctx.evaluationECBU?.forme;
+    const decisionECBU = ctx.evaluationECBU?.decision;
+    if (decisionECBU === 'ne_pas_traiter' || decisionECBU === 'attendre_resultat' || decisionECBU === 'informations_insuffisantes') return false;
     if (forme === 'cystite' || forme === 'colonisation_gravidique' || forme === 'colonisation_avant_geste' || forme === 'a_preciser') return false;
-    const g = germePrincipal(ctx).g;
+    const g = germeUrinaire(ctx).g;
     return g === 'aucun' || g === 'bgn';
   },
   appliquer: (ctx) => {
@@ -209,7 +236,7 @@ export const R_IU_FEBRILE: Regle = {
     const cadre = cadreIU(ctx);
     if (hommeImmuno) f.alerte('attention', 'Homme immunodéprimé : exclu du périmètre de SPILF 2026 (IU masculines) ; le chapitre masculin de SPILF 2015 est remplacé. Les options sont extrapolées (brouillon) : avis infectiologique.', [S('SPILF-2026-IUM', 'diapo 3', 'patient immunodéprimé (exclusion du périmètre)', 'autre')]);
     const duree = dureeIU(ctx, cadre);
-    const { prl } = germePrincipal(ctx);
+    const { prl } = germeUrinaire(ctx);
     const grave = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
     const choc = p.gravite === 'choc_septique';
     const libCadre = { homme_spilf2026: 'IU masculine fébrile (SPILF 2026)', femme_spilf2015: 'Pyélonéphrite aiguë (SPILF 2015/2018)', iuas: 'IU associée aux soins / sur matériel (SPILF/AFU/SF2H 2015)' }[cadre];

@@ -197,9 +197,9 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 .synthese-dl dd { margin: 0; }
 .synthese-dl ul { margin: 0; }
 .carte-indication { border-width: 2px; }
-.carte-indication.decision-ne_pas_traiter { border-color: var(--ok); background: #f6fbf7; }
+.carte-indication.decision-ne_pas_traiter { border-color: var(--ok); background: var(--ok-clair); }
 .carte-indication.decision-urgence { border-color: var(--urgence); background: var(--urgence-clair); }
-.carte-indication.decision-informations_insuffisantes, .carte-indication.decision-attendre_resultat { border-color: var(--attention); background: #fffaf2; }
+.carte-indication.decision-informations_insuffisantes, .carte-indication.decision-attendre_resultat { border-color: var(--attention); background: var(--attention-clair); }
 .carte-indication .bloc-liste { margin-top: 6px; }
 .groupe-questions { border: 1px solid var(--bord); border-radius: 6px; padding: 6px 10px 10px; margin: 8px 0; display: grid; gap: 8px; }
 .groupe-questions legend { font-weight: 600; padding: 0 4px; }

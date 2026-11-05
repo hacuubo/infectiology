@@ -3,28 +3,13 @@
  * et présentation de la conclusion (y compris « pas d'antibiothérapie indiquée »).
  */
 import type { Clinique, GesteUrologique, IndicationPlan, Plan, TriState } from '../clinical/types';
-import type { Dossier } from '../engine/etat';
+import { pertinenceClinique, type Dossier } from '../engine/etat';
 import { GESTES } from '../clinical/indication/ecbu';
-import { construireContexte } from '../engine/contexte';
+import { contexteUI } from './contexte-ui';
 import { LIBELLE_FOYER } from './libelles';
 import { Badge, BadgeStatut, ChoixRadio, ChoixTri, ListeSources, RefsInline, Select } from './composants';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
-
-export function pertinenceClinique(d: Dossier) {
-  const urine = d.prelevements.some((x) => x.type === 'urine');
-  const syndromeUrinaire = d.syndrome === 'urinaire';
-  const superficiel = d.prelevements.some((x) => x.type === 'superficiel');
-  const c = d.clinique;
-  return {
-    fievre: urine || syndromeUrinaire || superficiel,
-    signesUrinaires: urine || syndromeUrinaire,
-    signesNonSpecifiques: urine,
-    autreFoyer: urine && (c.fievre === 'oui' || c.signesNonSpecifiques === 'oui'),
-    geste: urine,
-    signesInfectionLocale: superficiel,
-  };
-}
 
 export function SectionIndication({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
   const d = dossier;
@@ -34,7 +19,7 @@ export function SectionIndication({ dossier, modifier }: { dossier: Dossier; mod
   const set = <K extends keyof Clinique>(k: K, v: Clinique[K]) => modifier((x) => (x.clinique[k] = v));
   return (
     <section className="carte" aria-labelledby="t-indication">
-      <h2 id="t-indication">Étape 1 — Faut-il traiter ?</h2>
+      <h2 id="t-indication">Faut-il traiter ? (indication)</h2>
       <p className="aide">Une culture positive n'est pas, à elle seule, une indication d'antibiotique. Ces réponses distinguent infection, colonisation et prélèvement contaminé.</p>
       {pert.signesUrinaires && (
         <ChoixRadio
@@ -71,7 +56,7 @@ export function SectionIndication({ dossier, modifier }: { dossier: Dossier; mod
           onChange={(v) => set('autreFoyer', v)}
         />
       )}
-      {pert.geste && (
+      {pert.gesteUrologique && (
         <Select
           libelle="Geste urologique prévu"
           aide="Tous les gestes ne sont pas équivalents : avant certains, une colonisation se traite ; avant d'autres, elle ne se recherche pas (AFU 2026)."
@@ -154,7 +139,7 @@ export function CarteIndication({ indication }: { indication: IndicationPlan }) 
 export function EtapesParcours({ plan, dossier }: { plan: Plan; dossier: Dossier }) {
   const ind = indicationOuiNon(plan.indication);
   const germes = plan.microbiologie.map((m) => m.germe);
-  const ctx = construireContexte(dossier);
+  const ctx = contexteUI(dossier);
   const foyer = ctx.foyer !== 'inconnu' ? ctx.foyer : undefined;
   const inconnues = plan.microbiologie.reduce((n, m) => n + m.inconnues.length, 0);
   const premiere = plan.options.find((o) => o.id === plan.optionRetenueId) ?? plan.options.find((o) => o.rang === 'premiere_ligne');
@@ -162,7 +147,19 @@ export function EtapesParcours({ plan, dossier }: { plan: Plan; dossier: Dossier
     { n: 1, t: 'Indication', v: ind === 'oui' ? 'oui' : ind === 'non' ? 'non' : 'indéterminée', ok: ind !== 'indéterminée' },
     { n: 2, t: 'Foyer et germe', v: `${foyer ? LIBELLE_FOYER[foyer] : 'foyer à préciser'}${germes.length ? ` ; ${germes.join(', ')}` : ''}`, ok: !!foyer && germes.length > 0 },
     { n: 3, t: 'Résultats déterminants', v: germes.length === 0 ? 'aucun germe' : plan.indication?.decision === 'ne_pas_traiter' ? 'non nécessaires' : inconnues === 0 ? 'complets' : `${inconnues} à préciser`, ok: germes.length > 0 && (inconnues === 0 || plan.indication?.decision === 'ne_pas_traiter') },
-    { n: 4, t: 'Prise en charge', v: plan.indication?.decision === 'ne_pas_traiter' ? 'pas d\'antibiotique' : premiere ? premiere.libelle : 'non établie', ok: plan.indication?.decision === 'ne_pas_traiter' || !!premiere },
+    {
+      n: 4,
+      t: 'Prise en charge',
+      v:
+        plan.indication?.decision === 'ne_pas_traiter'
+          ? 'pas d\'antibiotique'
+          : premiere
+            ? premiere.libelle
+            : (plan.indication?.decision === 'traiter' || plan.indication?.decision === 'urgence') && plan.options.length === 0
+              ? 'molécule non modélisée ou avis SMIT — voir B'
+              : 'non établie',
+      ok: plan.indication?.decision === 'ne_pas_traiter' || !!premiere,
+    },
   ];
   return (
     <ol className="etapes" aria-label="Étapes du parcours">
@@ -216,10 +213,10 @@ export function SyntheseDecision({ plan }: { plan: Plan }) {
           </>
         )}
         <dt>{ind?.decision === 'ne_pas_traiter' ? 'Raison de ne pas traiter' : 'Traitement retenu'}</dt>
-        <dd>{ind?.decision === 'ne_pas_traiter' ? ind.raison : premiere ? premiere.libelle : ind && ind.decision !== 'traiter' && ind.decision !== 'urgence' ? LIBELLE_DECISION[ind.decision] : 'aucune option de 1re ligne'}</dd>
+        <dd>{ind?.decision === 'ne_pas_traiter' ? ind.raison : premiere ? premiere.libelle : ind && ind.decision !== 'traiter' && ind.decision !== 'urgence' ? LIBELLE_DECISION[ind.decision] : plan.options.length === 0 ? 'molécule non modélisée ou à choisir avec le SMIT — voir B' : 'aucune option de 1re ligne — voir les options conditionnelles en B'}</dd>
         <dt>Surveillance et contrôles</dt>
         <dd>
-          {plan.surveillance.length + plan.controles.length + (ind?.surveillance.length ?? 0) > 0 ? `${plan.surveillance.length} élément(s) de surveillance, ${plan.controles.length} contrôle(s)${ind?.surveillance.length ? ', surveillance clinique' : ''} — voir C` : 'aucun'}
+          {ind && ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'].includes(ind.decision) ? (ind.surveillance[0] ?? ind.actions[0] ?? 'aucun') + (plan.controles.length ? ` ; ${plan.controles.length} contrôle(s) — voir C` : '') : plan.surveillance.length + plan.controles.length > 0 ? `${plan.surveillance.length} élément(s) de surveillance, ${plan.controles.length} contrôle(s) — voir C` : 'aucun'}
         </dd>
         <dt>Sources</dt>
         <dd>{plan.sources.length} référence(s) — voir E</dd>

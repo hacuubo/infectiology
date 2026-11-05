@@ -55,8 +55,6 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
         )}
       </section>
 
-      <SectionIndication dossier={d} modifier={modifier} />
-
       <section className="carte" aria-labelledby="t-patient">
         <h2 id="t-patient">2. Patient</h2>
         <div className="grille-2">
@@ -159,6 +157,8 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('autre')))}>+ Autre</button>
         </div>
       </section>
+
+      <SectionIndication dossier={d} modifier={modifier} />
 
       <section className="carte" aria-labelledby="t-horaires">
         <h2 id="t-horaires">5. Horaires (pour dater le calendrier)</h2>

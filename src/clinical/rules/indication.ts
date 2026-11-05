@@ -40,17 +40,16 @@ export const R_INDICATION_ECBU: Regle = {
     const ev = ctx.evaluationECBU!;
     const f = new Fiche(ctx, ev.statut);
     f.c.indication = indicationDepuis(ev, 'R-INDICATION-ECBU');
-    const p = ctx.dossier.patient;
     switch (ev.decision) {
       case 'ne_pas_traiter':
-        f.situation(`ecbu-${ev.qualification}`, ev.qualification === 'contamination_possible' ? 'ECBU probablement contaminé, sans symptôme' : 'Bactériurie sans infection urinaire', 'couverte', ev.raison);
+        f.situation(`ecbu-${ev.qualification}`, ev.qualification === 'contamination_possible' ? 'ECBU probablement contaminé, sans symptôme' : 'Bactériurie sans infection urinaire', 'couverte', 'Conclusion détaillée en B.');
         break;
       case 'attendre_resultat':
-        f.situation('ecbu-a-refaire', 'ECBU à refaire avant de conclure', 'couverte', ev.raison);
+        f.situation('ecbu-a-refaire', 'ECBU à refaire avant de conclure', 'couverte', 'Conclusion détaillée en B.');
         f.controle({ id: 'ctl-ecbu-refaire', type: 'prelevement', categorie: 'indique', quoi: 'Nouvel ECBU dans de bonnes conditions (milieu de jet après toilette, ou sondage aller-retour ; jamais sur le sac collecteur)', quand: { ancre: 'avant_traitement', texte: 'Maintenant, avant toute antibiothérapie' }, pourquoi: 'Le premier prélèvement est d\'interprétation douteuse.', sources: ev.sources });
         break;
       case 'informations_insuffisantes':
-        f.situation('ecbu-indetermine', 'ECBU positif : indication non établie', 'couverte', ev.raison);
+        f.situation('ecbu-indetermine', 'ECBU positif : indication non établie', 'couverte', 'Les informations à compléter sont listées en B.');
         for (const q of ev.questions) f.manque(q, 'nécessaire pour conclure sur l\'indication d\'antibiothérapie', 'bloque_decision');
         break;
       case 'urgence':
@@ -60,7 +59,11 @@ export const R_INDICATION_ECBU: Regle = {
         }
         break;
       case 'traiter':
-        if (ev.forme === 'cystite') {
+        for (const q of ev.questions) f.manque(q, 'à confirmer pour l’indication et la forme clinique', ev.forme === 'a_preciser' ? 'bloque_decision' : 'affine');
+        if (ev.forme === 'cystite' && ctx.dossier.patient.grossesse === 'oui') {
+          f.situation('cystite-gravidique', 'Cystite gravidique', 'partielle', 'Cystite pendant la grossesse : traitement probabiliste sans attendre l’antibiogramme, molécules propres à la grossesse (non modélisées) : fiche HAS « Femme enceinte : colonisation urinaire et cystite ».');
+          f.avis('Choix et posologie : fiche HAS « Femme enceinte : colonisation urinaire et cystite ».', false, [S('HAS-2021-femme-enceinte-IU', 'cystite gravidique', 'Traitement probabiliste, à débuter sans attendre le résultat de l’antibiogramme', 'choix')]);
+        } else if (ev.forme === 'cystite') {
           f.situation('cystite', 'Cystite (signes urinaires sans fièvre)', 'partielle', 'Les molécules de la cystite (fosfomycine-trométamol, pivmécillinam…) ne sont pas modélisées dans l\'application : se référer à la fiche HAS « Cystite » ; ECBU selon la forme (simple, à risque de complication).');
           f.avis('Choix et posologie : fiche HAS « Cystite aiguë simple, à risque de complication ou récidivante, de la femme ».', false, [S('HAS-2021-cystite-femme', 'fiche mémo', undefined, 'choix')]);
         } else if (ev.forme === 'colonisation_gravidique') {
@@ -71,14 +74,15 @@ export const R_INDICATION_ECBU: Regle = {
           else f.avis('Amoxicilline non utilisable ou non renseignée : choisir selon l\'antibiogramme dans l\'ordre de la fiche HAS (pivmécillinam, fosfomycine-trométamol, triméthoprime, nitrofurantoïne…), molécules non modélisées ici.', false, HAS_GROSSESSE);
         } else if (ev.forme === 'colonisation_avant_geste') {
           f.situation('colonisation-avant-geste', 'Colonisation urinaire avant geste urologique', 'partielle', 'Traitement court adapté à l\'antibiogramme ; molécules de 1re intention non modélisées (fosfomycine-trométamol, nitrofurantoïne, pivmécillinam, triméthoprime) : posologies dans le texte AFU 2026.');
+        } else if (ev.foyerUrinaire && !['bgn', 'aucun'].includes(germePrincipal(ctx).g)) {
+          f.situation('iu-germe-non-modelise', 'Infection urinaire à germe non modélisé', 'partielle', 'Les schémas d’infection urinaire de l’application ne couvrent que les bacilles à Gram négatif.');
+          f.avis('Infection urinaire à germe autre qu’un bacille à Gram négatif : choix thérapeutique avec le SMIT.', false, ev.sources);
         } else if (ev.forme === 'a_preciser' || !ev.foyerUrinaire) {
           f.situation('iu-forme-a-preciser', ev.qualification === 'indeterminee' ? 'Fièvre sans foyer établi avec bactériurie' : 'Infection urinaire : forme à préciser', 'partielle', ev.raison);
-          for (const q of ev.questions) f.manque(q, 'cystite ou infection fébrile : le traitement diffère', 'bloque_decision');
           if (ev.qualification === 'indeterminee') f.avis('Antibiothérapie couvrant sources urinaires et non urinaires : avis SMIT.', false, ev.sources);
         }
         break;
     }
-    if (p.sexe === 'homme' && ev.forme === 'cystite') f.alerte('info', 'Chez l\'homme, toute infection urinaire relève des recommandations SPILF 2026 (IU masculine).');
     return f.fin();
   },
 };
@@ -95,8 +99,7 @@ export const R_SEPSIS_FOYER_INCONNU: Regle = {
     (ctx.dossier.patient.gravite === 'sepsis' || ctx.dossier.patient.gravite === 'choc_septique') &&
     ctx.foyer === 'inconnu' &&
     germePrincipal(ctx).g === 'aucun' &&
-    ctx.evaluationECBU === undefined &&
-    ctx.dossier.entree !== 'non_choisi',
+    ctx.evaluationECBU === undefined,
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const src = [S('SSC-2026', 'page SCCM', 'administering antimicrobial therapy immediately, ideally within 1 hr of recognition', 'autre'), S('HAS-2025-sepsis', 'fiche', undefined, 'autre')];
@@ -137,9 +140,9 @@ export const R_PRELEVEMENT_SUPERFICIEL: Regle = {
     const f = new Fiche(ctx, 'verifiee_ia');
     const c = ctx.dossier.clinique;
     const src = [
-      S('HAS-2019-infections-cutanees', 'p. 18', 'La présence de bactéries sur une plaie (chronique ou non) est constante.', 'definition'),
+      S('HAS-2019-infections-cutanees', 'p. 18 (plaies chroniques hors pied diabétique)', 'La présence de bactéries sur une plaie (chronique ou non) est constante.', 'definition'),
       S('HAS-2019-infections-cutanees', '3.3.1, p. 20 (AE)', 'La réalisation systématique d\'un prélèvement bactériologique d\'une plaie chronique n\'est pas recommandée.', 'controle_micro'),
-      S('IWGDF-IDSA-2023-pied-diabetique', 'rec. 11 (best practice)', 'Do not treat clinically uninfected foot ulcers with systemic or local antibiotic therapy', 'choix'),
+      S('IWGDF-IDSA-2023-pied-diabetique', 'rec. 11 (best practice), pied diabétique', 'Do not treat clinically uninfected foot ulcers with systemic or local antibiotic therapy when the goal is to reduce the risk of new infection, or to promote ulcer healing.', 'choix'),
     ];
     const base = { exceptions: [] as string[], surveillance: [] as string[], questions: [] as string[], sources: src, statut: 'verifiee_ia' as const, regleId: 'R-PRELEVEMENT-SUPERFICIEL' };
     if (c.signesInfectionLocale === 'non') {
