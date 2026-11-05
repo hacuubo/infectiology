@@ -7,6 +7,9 @@ import type { Contribution } from '../../engine/decider';
 import type {
   Alerte,
   CategorieSIR,
+  DonneesIsolat,
+  EtatPhenotype,
+  PhenotypeId,
   Couverture,
   DonneeManquante,
   LigneControle,
@@ -18,6 +21,8 @@ import type {
 } from '../types';
 import { calculerPrescription, type DureeDecidee } from '../../engine/posologie';
 import { regimen } from '../molecules';
+import { familleDe } from '../microbiologie/germes';
+import { resistanceAttendue } from '../microbiologie/analyse';
 
 export { S } from '../molecules/base';
 export type { DureeDecidee };
@@ -34,7 +39,7 @@ export interface ItemPrescription {
 
 /** Accumulateur d'une contribution de règle. */
 export class Fiche {
-  readonly c: Required<Omit<Contribution, 'situation' | 'urgence' | 'couvertureMax'>> & Pick<Contribution, 'situation' | 'urgence' | 'couvertureMax'> = {
+  readonly c: Required<Omit<Contribution, 'situation' | 'urgence' | 'couvertureMax' | 'indication'>> & Pick<Contribution, 'situation' | 'urgence' | 'couvertureMax' | 'indication'> = {
     alertes: [],
     options: [],
     controles: [],
@@ -170,17 +175,22 @@ export function bacteriemie(ctx: ContexteDecision): boolean {
 /* ------------------------------------------------------------------ */
 
 export interface LectureAtb {
+  /** Catégorie après lecture interprétative ; undefined = inconnu (non testé, en attente, non renseigné). */
   sir: (dci: string) => CategorieSIR | undefined;
   notes: { texte: string; sources: SourceRef[] }[];
-  meca: (m: string) => boolean;
+  /** Vrai seulement si le laboratoire a rapporté le mécanisme (« présent »). */
+  meca: (m: PhenotypeId) => boolean;
+  etat: (m: PhenotypeId) => EtatPhenotype;
 }
 
 const C3G = ['cefotaxime', 'ceftriaxone', 'ceftazidime', 'cefepime', 'cefixime', 'aztreonam'];
 
-export function lireAntibiogramme(p: Prelevement | undefined): LectureAtb {
+export function lireAntibiogramme(p: DonneesIsolat | undefined): LectureAtb {
   const brut = new Map<string, CategorieSIR>();
-  for (const r of p?.antibiogramme ?? []) brut.set(r.dci, r.categorie);
-  const mecas = new Set(p?.mecanismes ?? []);
+  // « NT » (non testé / en attente) n'est jamais interprété : la molécule reste inconnue.
+  for (const r of p?.antibiogramme ?? []) if (r.categorie !== 'NT') brut.set(r.dci, r.categorie);
+  const etats = p?.phenotypes ?? {};
+  const mecas = new Set((Object.keys(etats) as PhenotypeId[]).filter((k) => etats[k] === 'present'));
   const forces = new Map<string, CategorieSIR>();
   const notes: LectureAtb['notes'] = [];
   const casfm = (repere: string, extrait: string): SourceRef[] => [{ source: 'CASFM-2026-V1.0', repere, extrait, justifie: 'definition' }];
@@ -188,7 +198,7 @@ export function lireAntibiogramme(p: Prelevement | undefined): LectureAtb {
     for (const d of C3G) if (brut.get(d) && brut.get(d) !== 'R') forces.set(d, 'R');
     notes.push({ texte: 'BLSE : tout résultat S ou I aux C3G/C4G et à l\'aztréonam est interprété R (lecture interprétative CA-SFM 2026).', sources: casfm('ch. 5.1 Enterobacterales', 'pour les souches productrices de BLSE, il est recommandé d\'interpréter "résistant" tout résultat "sensible" ou "sensible à forte posologie" aux C3G, aux C4G ou à l\'aztréonam') });
   }
-  if (mecas.has('cephalosporinase_dereprimee')) {
+  if (mecas.has('ampc')) {
     for (const d of ['cefotaxime', 'ceftriaxone', 'ceftazidime', 'aztreonam', 'piperacilline_tazobactam']) if (brut.get(d) && brut.get(d) !== 'R') forces.set(d, 'R');
     notes.push({ texte: 'Céphalosporinase hyperproduite : C3G, aztréonam et pipéracilline(-tazobactam) interprétés R (CA-SFM 2026) ; céfépime privilégié.', sources: casfm('ch. 5.1 Enterobacterales', 'interpréter "résistant" tout résultat "sensible" ou "sensible à forte posologie" aux C3G, à l\'aztréonam, à la pipéracilline ou à la pipéracilline-tazobactam') });
   }
@@ -200,10 +210,25 @@ export function lireAntibiogramme(p: Prelevement | undefined): LectureAtb {
     for (const d of ['oxacilline', 'cefazoline', 'amoxicilline_clavulanate', 'piperacilline_tazobactam', 'cefotaxime', 'ceftriaxone', 'meropeneme', 'imipeneme']) forces.set(d, 'R');
     notes.push({ texte: 'SARM : résistance à toutes les bêta-lactamines sauf ceftaroline et ceftobiprole (CA-SFM 2026).', sources: casfm('ch. 5.7 Staphylococcus', 'doivent être rendues résistantes à toutes les β-lactamines, y compris les carbapénèmes, à l\'exception de la ceftaroline et du ceftobiprole') });
   }
+  // Règle 8 des règles expertes EUCAST : propre aux Enterobacterales, non généralisée aux autres germes.
+  const fam = familleDe(p?.organisme);
   const ciproR = brut.get('ciprofloxacine') === 'R';
-  if (ciproR) {
+  if (ciproR && (fam === 'enterobacterale' || fam === 'enterobacterale_groupe3')) {
     forces.set('levofloxacine', 'R');
     notes.push({ texte: 'Résistance à la ciprofloxacine : toutes les fluoroquinolones sont rendues R (EUCAST expert rule 8).', sources: [{ source: 'EUCAST-expert-rules-v3.3-enterobacterales', repere: 'règle 8', extrait: 'IF resistant to ciprofloxacin, THEN report as resistant to all fluoroquinolones', justifie: 'definition' }] });
+  }
+  // Résistances attendues (ex-« naturelles ») : un résultat S/I est lu R (EUCAST : « report as resistant »).
+  for (const [dci, cat] of brut) {
+    if (cat === 'R') continue;
+    const a = resistanceAttendue(p?.organisme, dci);
+    if (a) {
+      forces.set(dci, 'R');
+      notes.push({ texte: `${dci.replace(/_/g, ' ')} rendu ${cat} malgré une résistance attendue pour ce germe : lu R ; vérifier avec le laboratoire.`, sources: a.sources });
+    }
+  }
+  // Entérocoques : une résistance aux aminopénicillines s'étend aux uréidopénicillines et aux carbapénèmes (CA-SFM 2026 ch. 5.8).
+  if (p?.organisme && ['enterococcus_faecalis', 'enterococcus_faecium', 'enterocoque_non_identifie'].includes(p.organisme) && brut.get('amoxicilline') === 'R') {
+    for (const d of ['piperacilline_tazobactam', 'imipeneme', 'meropeneme', 'ertapeneme']) if (brut.get(d) && brut.get(d) !== 'R') forces.set(d, 'R');
   }
   if ([...brut.values()].includes('I')) {
     notes.push({
@@ -217,8 +242,22 @@ export function lireAntibiogramme(p: Prelevement | undefined): LectureAtb {
   return {
     sir: (d) => forces.get(d) ?? brut.get(d),
     notes,
-    meca: (m) => mecas.has(m as never),
+    meca: (m) => mecas.has(m),
+    etat: (m) => etats[m] ?? 'non_rapporte',
   };
+}
+
+/**
+ * Statut vis-à-vis de la méticilline : statut rapporté par le laboratoire, sinon dépistage céfoxitine/oxacilline.
+ * Deux informations contradictoires donnent « inconnu » (à vérifier), jamais un choix arbitraire.
+ */
+export function statutMeticilline(atb: LectureAtb): 'R' | 'S' | undefined {
+  const ph = atb.etat('SARM');
+  const test = atb.sir('oxacilline') ?? atb.sir('cefoxitine');
+  const t = test === 'R' ? 'R' : test === 'S' || test === 'I' ? 'S' : undefined;
+  const p = ph === 'present' ? 'R' : ph === 'absent' ? 'S' : undefined;
+  if (p && t && p !== t) return undefined;
+  return p ?? t;
 }
 
 export function utilisable(c: CategorieSIR | undefined): boolean {

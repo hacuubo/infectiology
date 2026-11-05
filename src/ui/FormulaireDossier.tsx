@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { Dossier } from '../engine/etat';
 import { nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
-import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, CategorieSIR, FoyerId, MecanismeResistance, OrganismeId, Prelevement, TraitementAssocie } from '../clinical/types';
-import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, GroupeRadio, Select } from './composants';
+import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, FoyerId, Prelevement, TraitementAssocie } from '../clinical/types';
+import { AntibiogrammeGuide, ChampReferentiel, ContexteECBUSaisie, IsolatsSupplementaires, SelectOrganisme } from './Microbiologie';
+import { SectionIndication } from './Indication';
+import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, Select } from './composants';
 import { creatininePlausible } from '../calc/renal';
-import { DCI_ANTIBIOGRAMME, FOYERS_ENTREE_A, GROUPES_ORGANISMES, LIBELLE_FOYER, LIBELLE_ORGANISME, LIBELLE_TRAITEMENT } from './libelles';
+import { FOYERS_ENTREE_A, LIBELLE_FOYER, LIBELLE_TRAITEMENT } from './libelles';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
 
@@ -52,6 +54,8 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           </p>
         )}
       </section>
+
+      <SectionIndication dossier={d} modifier={modifier} />
 
       <section className="carte" aria-labelledby="t-patient">
         <h2 id="t-patient">2. Patient</h2>
@@ -190,24 +194,15 @@ function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl
       {pertinentP('examenDirect', prl, d) && (
         <ChoixRadio libelle="Examen direct" valeur={prl.examenDirect ?? 'inconnu'} options={[{ v: 'bgn', l: 'Bacilles à Gram négatif' }, { v: 'cgp_amas', l: 'Cocci à Gram positif en amas' }, { v: 'cgp_chainettes', l: 'Cocci à Gram positif en chaînettes' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => (p.examenDirect = v))} />
       )}
-      {pertinentP('organisme', prl, d) && (
-        <Champ libelle="Organisme identifié" aide="Choisissez le groupe si l'espèce n'est pas encore connue (ex. « BGN non identifié »).">
-          <select aria-label="Organisme" value={prl.organisme ?? ''} onChange={(e) => maj((p) => (p.organisme = (e.target.value || undefined) as OrganismeId | undefined))}>
-            <option value="">— choisir —</option>
-            {GROUPES_ORGANISMES.map((g) => (
-              <optgroup key={g.titre} label={g.titre}>
-                {g.ids.map((id) => (
-                  <option key={id} value={id}>
-                    {LIBELLE_ORGANISME[id]}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          {prl.organisme === 'autre' && <input type="text" aria-label="Précisez l'organisme" placeholder="Précisez l'organisme" value={prl.organismeLibre ?? ''} onChange={(e) => maj((p) => (p.organismeLibre = e.target.value || undefined))} />}
-        </Champ>
+      {pertinentP('organisme', prl, d) && <SelectOrganisme valeur={prl.organisme} libre={prl.organismeLibre} onChange={(v) => maj((p) => (p.organisme = v))} onLibre={(v) => maj((p) => (p.organismeLibre = v))} />}
+      {pertinentP('urine', prl, d) && <ContexteECBUSaisie prl={prl} maj={maj} />}
+      {pertinentP('antibiogramme', prl, d) && prl.organisme && (
+        <>
+          <AntibiogrammeGuide iso={prl} prl={prl} dossier={d} maj={(fn) => maj((p) => fn(p))} />
+          <ChampReferentiel prl={prl} maj={maj} />
+        </>
       )}
-      {pertinentP('antibiogramme', prl, d) && <Antibiogramme prl={prl} maj={maj} />}
+      <IsolatsSupplementaires prl={prl} dossier={d} majPrl={maj} />
       {pertinentP('hemoc', prl, d) && prl.hemoc && (
         <div className="sous-bloc">
           <div className="grille-2">
@@ -227,53 +222,6 @@ function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl
       <Select libelle="Foyer suspecté ou confirmé" valeur={prl.foyer} options={(Object.keys(LIBELLE_FOYER) as FoyerId[]).map((f) => ({ v: f, l: LIBELLE_FOYER[f] }))} onChange={(v) => maj((p) => (p.foyer = v))} />
       {prl.foyer !== 'inconnu' && <ChoixRadio libelle="Statut du foyer" valeur={prl.foyerStatut} options={[{ v: 'suspecte', l: 'Suspecté' }, { v: 'confirme', l: 'Confirmé' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => (p.foyerStatut = v))} />}
       {pertinentP('signesInfectionMateriel', prl, d) && <ChoixTri libelle="Signes d'infection sur le matériel (inflammation au point d'insertion, descellement, douleur de prothèse, végétation sur sonde…)" valeur={prl.signesInfectionMateriel} onChange={(v) => maj((p) => (p.signesInfectionMateriel = v))} />}
-    </div>
-  );
-}
-
-function Antibiogramme({ prl, maj }: { prl: Prelevement; maj: (fn: (p: Prelevement) => void) => void }) {
-  const lignes = prl.antibiogramme ?? [];
-  const mecas: MecanismeResistance[] = ['BLSE', 'carbapenemase', 'cephalosporinase_dereprimee', 'SARM', 'ERV', 'aucun_documente'];
-  const libMeca: Record<MecanismeResistance, string> = { BLSE: 'BLSE', carbapenemase: 'Carbapénémase (EPC)', cephalosporinase_dereprimee: 'Céphalosporinase déréprimée (AmpC)', SARM: 'SARM (résistance à la méticilline)', ERV: 'Entérocoque résistant à la vancomycine', aucun_documente: 'Aucun mécanisme particulier documenté' };
-  return (
-    <div className="sous-bloc">
-      <ChampTexte libelle="Référentiel d'interprétation et version" aide="Ex. CA-SFM/EUCAST 2025 v1.0. La catégorie I signifie « sensible à forte posologie »." valeur={prl.referentiel} onChange={(v) => maj((p) => (p.referentiel = v))} />
-      <Champ libelle="Mécanismes de résistance documentés">
-        <div className="cases">
-          {mecas.map((m) => (
-            <label key={m}>
-              <input type="checkbox" checked={prl.mecanismes?.includes(m) ?? false} onChange={(e) => maj((p) => { const cur = p.mecanismes ?? []; p.mecanismes = e.target.checked ? [...cur, m] : cur.filter((y) => y !== m); })} />
-              {libMeca[m]}
-            </label>
-          ))}
-        </div>
-      </Champ>
-      <Champ libelle="Résultats S / I / R" aide="Ajoutez seulement les molécules rendues. CMI facultative (mg/L).">
-        <div className="liste-objets">
-          {lignes.map((l, i) => (
-            <div key={i} className="ligne">
-              <select aria-label={`Antibiotique ${i + 1}`} value={l.dci} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].dci = e.target.value; })}>
-                {DCI_ANTIBIOGRAMME.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.l}
-                  </option>
-                ))}
-              </select>
-              <GroupeRadio
-                libelle={`Catégorie S/I/R (antibiotique ${i + 1})`}
-                valeur={l.categorie}
-                options={(['S', 'I', 'R'] as CategorieSIR[]).map((c) => ({ v: c, l: c, aide: c === 'S' ? 'Sensible' : c === 'I' ? 'Sensible à forte posologie' : 'Résistant' }))}
-                onChange={(c) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].categorie = c; })}
-              />
-              <input type="number" inputMode="decimal" min={0} aria-label={`CMI (mg/L) de l'antibiotique ${i + 1}`} placeholder="CMI" style={{ width: 90 }} value={l.cmi ?? ''} onChange={(e) => maj((p) => { const v = e.target.value === '' ? undefined : Number(e.target.value); if (p.antibiogramme) p.antibiogramme[i].cmi = v !== undefined && Number.isFinite(v) && v >= 0 ? v : undefined; })} />
-              <button type="button" className="btn discret" aria-label={`Retirer l'antibiotique ${i + 1} de l'antibiogramme`} onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme.splice(i, 1); })}>Retirer</button>
-            </div>
-          ))}
-        </div>
-        <div>
-          <button type="button" className="btn secondaire" onClick={() => maj((p) => { p.antibiogramme = [...(p.antibiogramme ?? []), { dci: 'amoxicilline', categorie: 'S' }]; p.antibiogrammeDisponible = 'oui'; })}>+ Ajouter une molécule</button>
-        </div>
-      </Champ>
     </div>
   );
 }

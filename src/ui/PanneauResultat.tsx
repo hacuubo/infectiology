@@ -1,4 +1,6 @@
 import { useId } from 'react';
+import type { Dossier } from '../engine/etat';
+import { CarteIndication, EtapesParcours, LectureMicrobiologique, SyntheseDecision } from './Indication';
 import type { Alerte, NiveauUrgence, OptionTherapeutique, Plan, PrescriptionProposee } from '../clinical/types';
 import { Badge, BadgeStatut, ListeSources, RefsInline } from './composants';
 import { formaterDate, type EvenementFriseDetaille } from '../schedule/frise';
@@ -211,7 +213,9 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
   );
 }
 
-export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (id: string) => void }) {
+export function PanneauResultat({ plan, onRetenir, dossier }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier }) {
+  const ind = plan.indication;
+  const conclusionSansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
   const niveau = plan.urgence.niveau;
   const premieres = plan.options.filter((o) => o.rang === 'premiere_ligne');
   const autres = plan.options.filter((o) => o.rang !== 'premiere_ligne');
@@ -240,6 +244,9 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
         </p>
       )}
 
+      {dossier && <EtapesParcours plan={plan} dossier={dossier} />}
+      <SyntheseDecision plan={plan} />
+
       <div className="fiche-section">
         <h3>
           A. Situation retenue <Badge type={typeUrgence(niveau)}>{LIBELLE_URGENCE[niveau]}</Badge>
@@ -248,6 +255,7 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
           <strong>{plan.situation.libelle}</strong>
         </p>
         <p className="aide">{plan.situation.description}</p>
+        <LectureMicrobiologique plan={plan} />
         {urgentes.length > 0 && (
           <p className="aide">
             {urgentes.length} alerte{urgentes.length > 1 ? 's' : ''} urgente{urgentes.length > 1 ? 's' : ''} affichée{urgentes.length > 1 ? 's' : ''} en permanence en haut de l'écran.
@@ -275,8 +283,9 @@ export function PanneauResultat({ plan, onRetenir }: { plan: Plan; onRetenir?: (
       </div>
 
       <div className="fiche-section">
-        <h3>B. Traitement proposé</h3>
-        {plan.options.length === 0 && <p className="aide">Aucune proposition thérapeutique ne peut être formulée avec les données actuelles. Voir les informations manquantes et les critères d'avis spécialisé.</p>}
+        <h3>B. {conclusionSansTraitement ? 'Conclusion sur l\'indication' : 'Traitement proposé'}</h3>
+        {ind && (conclusionSansTraitement || ind.decision === 'urgence' || ind.actions.length > 0) && <CarteIndication indication={ind} />}
+        {plan.options.length === 0 && !conclusionSansTraitement && <p className="aide">Aucune proposition thérapeutique ne peut être formulée avec les données actuelles. Voir les informations manquantes et les critères d'avis spécialisé.</p>}
         {plan.options.length > 0 && premieres.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les options conditionnelles ci-dessous et les informations manquantes.</p>}
         {communs.length > 0 && (
           <div className="alerte attention avert-communs">

@@ -4,7 +4,7 @@
  */
 import type { Regle } from '../../engine/decider';
 import type { SourceRef } from '../types';
-import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, type DureeDecidee } from './outils';
+import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, type DureeDecidee, statutMeticilline } from './outils';
 
 const ESC = 'ESC-2023-endocardite';
 const AEPEI = 'SPILF-AEPEI-2025-endocardite';
@@ -43,8 +43,7 @@ export const R_ENDOCARDITE: Regle = {
       return f.fin();
     }
     if (g === 's_aureus' || g === 'scn' || g === 's_lugdunensis') {
-      const oxa = atb.sir('oxacilline') ?? atb.sir('cefoxitine');
-      const sarm = atb.meca('SARM') || oxa === 'R';
+      const sarm = statutMeticilline(atb) === 'R';
       const d = prothese ? dureeEI(6, 'Au moins 6 semaines (prothèse) ; gentamicine jusqu\'à stérilisation des hémocultures (SPILF/AEPEI) ou 2 semaines (ESC) ; rifampicine après stérilisation.', [S(ESC, 'Recommendation Table 8', 'with rifampin for at least 6 weeks and gentamicin for 2 weeks', 'duree'), S(AEPEI, 'diapo 15', 'Gentamicine [jusqu\'à] Hémocultures stériles ; Rifampicine [après] Hémocultures stériles', 'duree')]) : dureeEI(4, '4 semaines si hémocultures négatives à J3 et apyrexie rapide, 6 semaines sinon (SPILF/AEPEI ; ESC : 4-6 semaines).', [S(AEPEI, 'diapo 14', '4 semaines si hémocultures négatives à J3 […], 6 semaines sinon', 'duree'), S(ESC, 'Recommendation Table 8 (I B)', 'for 4-6 weeks', 'duree')]);
       const base = sarm ? [{ m: 'daptomycine', r: 'daptomycine-10-12' }] : [{ m: 'cefazoline', r: 'cefazoline-2g-x3' }];
       const items = prothese ? [...base, { m: 'rifampicine', r: 'rifampicine-900' }, { m: 'gentamicine', r: 'gentamicine-3-synergie' }] : base;

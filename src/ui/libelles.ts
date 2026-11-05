@@ -1,29 +1,6 @@
 import type { FoyerId, OrganismeId, TraitementAssocie } from '../clinical/types';
 
-export const LIBELLE_ORGANISME: Record<OrganismeId, string> = {
-  bgn_non_identifie: 'Bacille à Gram négatif non identifié',
-  enterobacterie_non_identifiee: 'Entérobactérie (espèce non précisée)',
-  escherichia_coli: 'Escherichia coli',
-  klebsiella_pneumoniae: 'Klebsiella pneumoniae',
-  enterobacter_cloacae: 'Enterobacter cloacae complex',
-  proteus_mirabilis: 'Proteus mirabilis',
-  pseudomonas_aeruginosa: 'Pseudomonas aeruginosa',
-  cgp_non_identifie: 'Cocci à Gram positif non identifié',
-  staphylococcus_aureus: 'Staphylococcus aureus',
-  staphylocoque_coagulase_negative: 'Staphylocoque à coagulase négative (espèce non précisée)',
-  staphylococcus_epidermidis: 'Staphylococcus epidermidis',
-  staphylococcus_lugdunensis: 'Staphylococcus lugdunensis',
-  streptococcus_pneumoniae: 'Streptococcus pneumoniae',
-  streptococcus_pyogenes: 'Streptococcus pyogenes (groupe A)',
-  streptococcus_agalactiae: 'Streptococcus agalactiae (groupe B)',
-  streptocoque_groupe_c_g: 'Streptocoque des groupes C/G (S. dysgalactiae)',
-  streptocoque_viridans: 'Streptocoque du groupe viridans (oraux)',
-  streptococcus_gallolyticus: 'Streptococcus gallolyticus (ex-bovis)',
-  enterococcus_faecalis: 'Enterococcus faecalis',
-  enterococcus_faecium: 'Enterococcus faecium',
-  enterocoque_non_identifie: 'Entérocoque (espèce non précisée)',
-  autre: 'Autre organisme',
-};
+export { LIBELLE_ORGANISME } from '../clinical/microbiologie/germes';
 
 export const GROUPES_ORGANISMES: { titre: string; ids: OrganismeId[] }[] = [
   { titre: 'Bacilles à Gram négatif', ids: ['bgn_non_identifie', 'enterobacterie_non_identifiee', 'escherichia_coli', 'klebsiella_pneumoniae', 'enterobacter_cloacae', 'proteus_mirabilis', 'pseudomonas_aeruginosa'] },

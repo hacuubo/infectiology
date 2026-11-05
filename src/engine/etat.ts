@@ -3,7 +3,7 @@
  * d'invalidation des réponses dépendantes devenues non pertinentes.
  * Aucune donnée n'est conservée en dehors de la session du navigateur.
  */
-import type { FoyerId, Patient, Prelevement } from '../clinical/types';
+import type { Clinique, DonneesIsolat, FoyerId, Isolat, Patient, Prelevement } from '../clinical/types';
 
 export type ModeEntree = 'syndrome' | 'microbiologie' | 'non_choisi';
 
@@ -12,6 +12,8 @@ export interface Dossier {
   /** Foyer / syndrome choisi en entrée A. */
   syndrome: FoyerId | 'non_choisi';
   patient: Patient;
+  /** Éléments cliniques de l'épisode (indication de traitement). */
+  clinique: Clinique;
   prelevements: Prelevement[];
   /** Horodatages réels saisis, pour transformer les calendriers relatifs en dates. */
   /** Option thérapeutique retenue par le prescripteur (le calendrier suit cette option). */
@@ -48,11 +50,16 @@ export function patientParDefaut(): Patient {
   };
 }
 
+export function cliniqueParDefaut(): Clinique {
+  return { fievre: 'inconnu', signesUrinaires: 'inconnu', signesNonSpecifiques: 'inconnu', autreFoyer: 'non_recherche', gesteUrologique: 'inconnu', signesInfectionLocale: 'inconnu' };
+}
+
 export function dossierParDefaut(): Dossier {
   return {
     entree: 'non_choisi',
     syndrome: 'non_choisi',
     patient: patientParDefaut(),
+    clinique: cliniqueParDefaut(),
     prelevements: [],
     horaires: {},
   };
@@ -70,7 +77,18 @@ export function nouveauPrelevement(type: Prelevement['type'] = 'hemoculture'): P
     foyerStatut: 'inconnu',
     signesInfectionMateriel: 'inconnu',
     hemoc: type === 'hemoculture' ? { origine: 'inconnu', persistance: 'inconnu' } : undefined,
+    urine: type === 'urine' ? { motif: 'inconnu', recueil: 'inconnu', nbEspeces: 'inconnu' } : undefined,
   };
+}
+
+export function nouvelIsolat(): Isolat {
+  compteur += 1;
+  return { id: `iso-${Date.now().toString(36)}-${compteur}` };
+}
+
+/** Isolats d'un prélèvement : le germe principal (porté par le prélèvement) puis les germes supplémentaires. */
+export function isolatsDe(p: Prelevement): (DonneesIsolat & { id: string })[] {
+  return [p, ...(p.isolatsSupplementaires ?? [])];
 }
 
 /* ------------------------------------------------------------------ */
@@ -186,6 +204,15 @@ export const REGLES_PERTINENCE: {
     },
   },
   {
+    champ: 'clinique.gesteUrologique',
+    libelle: 'Geste urologique prévu',
+    pertinent: (d) => d.prelevements.some((x) => x.type === 'urine'),
+    estRenseigne: (d) => (d.clinique?.gesteUrologique ?? 'inconnu') !== 'inconnu',
+    reinitialiser: (d) => {
+      d.clinique.gesteUrologique = 'inconnu';
+    },
+  },
+  {
     champ: 'horaires.premiereDoseISO',
     libelle: 'Horaire de la première dose',
     pertinent: (d) => d.entree !== 'non_choisi',
@@ -227,12 +254,22 @@ export const REGLES_PERTINENCE_PRELEVEMENT: {
     champ: 'antibiogramme',
     libelle: 'Antibiogramme',
     pertinent: (p) => p.stade === 'antibiogramme',
-    estRenseigne: (p) => (p.antibiogramme?.length ?? 0) > 0 || (p.mecanismes?.length ?? 0) > 0,
+    estRenseigne: (p) => (p.antibiogramme?.length ?? 0) > 0 || Object.keys(p.phenotypes ?? {}).length > 0,
     reinitialiser: (p) => {
       p.antibiogramme = undefined;
-      p.mecanismes = undefined;
+      p.phenotypes = undefined;
+      p.antibiogrammePour = undefined;
       p.referentiel = undefined;
       p.antibiogrammeDisponible = 'inconnu';
+    },
+  },
+  {
+    champ: 'urine',
+    libelle: "Contexte de l'ECBU",
+    pertinent: (p) => p.type === 'urine',
+    estRenseigne: (p) => p.urine !== undefined && (p.urine.motif !== 'inconnu' || p.urine.recueil !== 'inconnu' || p.urine.nbEspeces !== 'inconnu'),
+    reinitialiser: (p) => {
+      p.urine = undefined;
     },
   },
   {
@@ -285,6 +322,20 @@ export const REGLES_PERTINENCE_PRELEVEMENT: {
  */
 export function nettoyerDossier(d: Dossier): Invalidation[] {
   const invalidations: Invalidation[] = [];
+  if (!d.clinique) d.clinique = cliniqueParDefaut();
+  // Un antibiogramme saisi pour un germe ne doit jamais être réutilisé pour un autre germe.
+  for (const p of d.prelevements) {
+    for (const iso of isolatsDe(p)) {
+      const aDesResultats = (iso.antibiogramme?.length ?? 0) > 0 || Object.keys(iso.phenotypes ?? {}).length > 0;
+      if (aDesResultats && iso.antibiogrammePour !== undefined && iso.antibiogrammePour !== iso.organisme) {
+        const ancien = iso.antibiogrammePour;
+        iso.antibiogramme = undefined;
+        iso.phenotypes = undefined;
+        iso.antibiogrammePour = undefined;
+        invalidations.push({ champ: `${p.id}.${iso.id}.antibiogramme`, raison: `Le germe a changé : les résultats d'antibiogramme saisis pour « ${ancien.replace(/_/g, ' ')} » ne s'appliquent pas au nouveau germe et ont été effacés.` });
+      }
+    }
+  }
   for (const r of REGLES_PERTINENCE) {
     if (!r.pertinent(d) && r.estRenseigne(d)) {
       r.reinitialiser(d);
@@ -299,6 +350,7 @@ export function nettoyerDossier(d: Dossier): Invalidation[] {
       }
     }
     if (p.type === 'hemoculture' && !p.hemoc) p.hemoc = { origine: 'inconnu', persistance: 'inconnu' };
+    if (p.type === 'urine' && !p.urine) p.urine = { motif: 'inconnu', recueil: 'inconnu', nbEspeces: 'inconnu' };
   }
   // Un dossier en entrée « microbiologie » sans prélèvement n'a pas de sens ; on n'en crée pas d'office ici (l'interface le fait).
   return invalidations;

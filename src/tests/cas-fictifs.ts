@@ -116,7 +116,7 @@ export const CAS_SAB_ALLERGIE_IMMEDIATE = dossier({
 /** Cas 9 : SARM chez un patient hémodialysé, poids absent. */
 export const CAS_SARM_HEMODIALYSE = dossier({
   patient: { ...adulteStable, poidsKg: undefined, renal: { stabilite: 'inconnu', insuffisanceRenaleAigue: 'non', dialyse: 'hemodialyse_intermittente', horairesDialyse: undefined } },
-  prelevements: [hemoc({ stade: 'antibiogramme', organisme: 'staphylococcus_aureus', antibiogramme: [{ dci: 'oxacilline', categorie: 'R' }, { dci: 'vancomycine', categorie: 'S' }], mecanismes: ['SARM'] })],
+  prelevements: [hemoc({ stade: 'antibiogramme', organisme: 'staphylococcus_aureus', antibiogramme: [{ dci: 'oxacilline', categorie: 'R' }, { dci: 'vancomycine', categorie: 'S' }], phenotypes: { SARM: 'present' }, antibiogrammePour: 'staphylococcus_aureus' })],
 });
 
 /** Cas 10 : PNA masculine, E. coli rendu I à la ceftriaxone. */
@@ -144,6 +144,96 @@ export const CAS_BLSE_AMIKACINE = dossier({
   horaires: { premiereDoseISO: '2026-11-04T09:00', dureePerfusionMin: 30 },
 });
 
+/** ECBU fictif : un germe identifié, contexte de prélèvement renseigné. */
+export function urine(p: Partial<Prelevement>): Prelevement {
+  return {
+    id: 'ecbu-1',
+    type: 'urine',
+    stade: 'identification',
+    antibiogrammeDisponible: 'non',
+    foyer: 'inconnu',
+    foyerStatut: 'inconnu',
+    signesInfectionMateriel: 'inconnu',
+    urine: { motif: 'systematique', recueil: 'mi_jet', nbEspeces: 'une' },
+    ...p,
+  };
+}
+
+/** Patiente de 72 ans, bilan complet, sans matériel. */
+export const patiente72 = patient({
+  age: 72,
+  sexe: 'femme',
+  grossesse: 'non',
+  allaitement: 'non',
+  poidsKg: 64,
+  tailleCm: 162,
+  statutAllergie: 'aucune',
+  contexte: 'communautaire',
+  gravite: 'stable',
+  valve: 'native',
+  dispositifIntracardiaque: 'non',
+  protheseArticulaire: 'non',
+  materielVasculaire: 'aucun',
+  materielUrinaire: 'aucun',
+  renal: { creatinine: { valeur: 80, unite: 'umol/L', date: '2026-11-04' }, stabilite: 'stable', insuffisanceRenaleAigue: 'non', dialyse: 'aucune' },
+});
+const ecoliSensible = [
+  { dci: 'amoxicilline', categorie: 'S' as const },
+  { dci: 'ceftriaxone', categorie: 'S' as const },
+  { dci: 'cotrimoxazole', categorie: 'S' as const },
+  { dci: 'ciprofloxacine', categorie: 'S' as const },
+];
+
+/** Cas 14 : ECBU positif sans symptôme ni exception : colonisation. */
+export const CAS_ECBU_COLONISATION = dossier({
+  patient: patiente72,
+  clinique: { fievre: 'non', signesUrinaires: 'absents', signesNonSpecifiques: 'non', autreFoyer: 'non_recherche', gesteUrologique: 'aucun', signesInfectionLocale: 'inconnu' },
+  prelevements: [urine({ organisme: 'escherichia_coli', stade: 'antibiogramme', antibiogramme: ecoliSensible, antibiogrammePour: 'escherichia_coli' })],
+});
+
+/** Cas 15 : 88 ans, confusion et chute, sans fièvre ni signe urinaire, ECBU positif. */
+export const CAS_ECBU_SUJET_AGE = dossier({
+  patient: { ...patiente72, age: 88 },
+  clinique: { fievre: 'non', signesUrinaires: 'absents', signesNonSpecifiques: 'oui', autreFoyer: 'non_recherche', gesteUrologique: 'aucun', signesInfectionLocale: 'inconnu' },
+  prelevements: [urine({ organisme: 'escherichia_coli', urine: { motif: 'signes_non_specifiques', recueil: 'mi_jet', nbEspeces: 'une' } })],
+});
+
+/** Cas 16 : sonde à demeure, culture positive, sans fièvre ni signe général. */
+export const CAS_ECBU_SONDE = dossier({
+  patient: { ...patiente72, sexe: 'homme', grossesse: 'inconnu', allaitement: 'inconnu', materielUrinaire: 'sonde_vesicale' },
+  clinique: { fievre: 'non', signesUrinaires: 'absents', signesNonSpecifiques: 'non', autreFoyer: 'non_recherche', gesteUrologique: 'changement_ablation_sonde_vesicale', signesInfectionLocale: 'inconnu' },
+  prelevements: [urine({ organisme: 'klebsiella_pneumoniae', urine: { motif: 'systematique', recueil: 'sonde_a_demeure', nbEspeces: 'une' } })],
+});
+
+/** Cas 17 : colonisation avant urétéroscopie programmée. */
+export const CAS_ECBU_AVANT_GESTE = dossier({
+  patient: { ...patiente72, sexe: 'homme', grossesse: 'inconnu', allaitement: 'inconnu' },
+  clinique: { fievre: 'non', signesUrinaires: 'absents', signesNonSpecifiques: 'non', autreFoyer: 'non_recherche', gesteUrologique: 'ureteroscopie', signesInfectionLocale: 'inconnu' },
+  prelevements: [urine({ organisme: 'escherichia_coli', stade: 'antibiogramme', antibiogramme: ecoliSensible, antibiogrammePour: 'escherichia_coli', urine: { motif: 'avant_geste_urologique', recueil: 'mi_jet', nbEspeces: 'une' } })],
+});
+
+/** Cas 18 : pyélonéphrite, E. coli résistant aux C3G sans mécanisme rapporté. */
+export const CAS_ECBU_C3G_R = dossier({
+  patient: patiente72,
+  clinique: { fievre: 'oui', signesUrinaires: 'nouveaux', signesNonSpecifiques: 'non', autreFoyer: 'recherche_negative', gesteUrologique: 'aucun', signesInfectionLocale: 'inconnu' },
+  prelevements: [
+    urine({
+      organisme: 'escherichia_coli',
+      stade: 'antibiogramme',
+      antibiogrammePour: 'escherichia_coli',
+      antibiogramme: [
+        { dci: 'amoxicilline', categorie: 'R' },
+        { dci: 'ceftriaxone', categorie: 'R' },
+        { dci: 'temocilline', categorie: 'I' },
+        { dci: 'piperacilline_tazobactam', categorie: 'S' },
+        { dci: 'cotrimoxazole', categorie: 'R' },
+        { dci: 'ciprofloxacine', categorie: 'S' },
+      ],
+      urine: { motif: 'signes_urinaires', recueil: 'mi_jet', nbEspeces: 'une' },
+    }),
+  ],
+});
+
 export const CAS_FICTIFS: CasFictif[] = [
   { id: 'bgn-90', titre: '1. 90 ans, fièvre, IRA, BGN non identifié (données incomplètes)', description: 'Doit conduire à des questions et à des options conditionnelles, sans prescription définitive.', dossier: CAS_BGN_90 },
   { id: 'bgn-90-urinaire', titre: '2. Même patiente : foyer urinaire, E. coli et antibiogramme, sepsis', description: 'IU fébrile documentée chez une patiente âgée avec IRA.', dossier: CAS_BGN_90_URINAIRE },
@@ -158,4 +248,9 @@ export const CAS_FICTIFS: CasFictif[] = [
   { id: 'sab-persistant', titre: '11. S. aureus, hémocultures persistantes', description: 'Risque accru ; foyer profond.', dossier: CAS_SAB_PERSISTANT },
   { id: 'ei-faecalis', titre: '12. Endocardite à E. faecalis sur prothèse mécanique', description: 'Amoxicilline + ceftriaxone.', dossier: CAS_EI_FAECALIS },
   { id: 'blse-amk', titre: '13. 90 ans, BLSE urinaire, sepsis : amikacine et calendrier du pic', description: 'Horaires connus : calendrier daté.', dossier: CAS_BLSE_AMIKACINE },
+  { id: 'ecbu-colonisation', titre: '14. ECBU positif sans symptôme ni exception', description: 'Colonisation : pas d’antibiothérapie.', dossier: CAS_ECBU_COLONISATION },
+  { id: 'ecbu-age', titre: '15. 88 ans, confusion et chute, ECBU positif sans fièvre', description: 'Ne pas attribuer les signes à la bactériurie.', dossier: CAS_ECBU_SUJET_AGE },
+  { id: 'ecbu-sonde', titre: '16. Sonde à demeure, culture positive, sans signe', description: 'Colonisation sur sonde.', dossier: CAS_ECBU_SONDE },
+  { id: 'ecbu-geste', titre: '17. Colonisation avant urétéroscopie', description: 'Exception : traitement avant le geste.', dossier: CAS_ECBU_AVANT_GESTE },
+  { id: 'ecbu-c3gr', titre: '18. PNA à E. coli résistant aux C3G, mécanisme non rapporté', description: 'Résistance aux C3G sans BLSE démontrée.', dossier: CAS_ECBU_C3G_R },
 ];

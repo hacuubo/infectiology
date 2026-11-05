@@ -9,6 +9,13 @@ function tri(v: string): string {
 }
 
 /** Lignes du résumé (exportées pour les tests). Toutes les valeurs codées sont traduites en libellés lisibles. */
+const LIB_PHENOTYPE: Record<string, string> = { BLSE: 'BLSE', ampc: 'céphalosporinase', carbapenemase: 'carbapénémase', SARM: 'méticilline R', ERV: 'ERG/ERV', hnr_gentamicine: 'HNR gentamicine' };
+function mecanismesPresents(prl: { phenotypes?: Partial<Record<string, string>> }): string[] {
+  return Object.entries(prl.phenotypes ?? {})
+    .filter(([, v]) => v === 'present')
+    .map(([k]) => LIB_PHENOTYPE[k] ?? k);
+}
+
 export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, string][] {
   const p = dossier.patient;
   const r = ctx.renal;
@@ -55,7 +62,7 @@ export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, 
     const desc: string[] = [];
     if (prl.stade === 'examen_direct') desc.push(`examen direct : ${prl.examenDirect ? libelle(prl.examenDirect) : '?'}`);
     if (prl.organisme) desc.push(prl.organisme === 'autre' && prl.organismeLibre ? prl.organismeLibre : LIBELLE_ORGANISME[prl.organisme]);
-    if (prl.stade === 'antibiogramme') desc.push(`antibiogramme : ${prl.antibiogramme?.length ?? 0} molécule(s)${prl.mecanismes?.length ? ` ; ${prl.mecanismes.map(libelle).join(', ')}` : ''}`);
+    if (prl.stade === 'antibiogramme') desc.push(`antibiogramme : ${prl.antibiogramme?.length ?? 0} molécule(s)${mecanismesPresents(prl).length ? ` ; ${mecanismesPresents(prl).join(', ')}` : ''}${(prl.isolatsSupplementaires?.length ?? 0) > 0 ? ` ; + ${prl.isolatsSupplementaires!.length} autre(s) germe(s)` : ''}`);
     if (prl.hemoc) {
       if (prl.hemoc.nbSeriesPositives !== undefined) desc.push(`${prl.hemoc.nbSeriesPositives}/${prl.hemoc.nbSeriesPrelevees ?? '?'} séries positives`);
       if (prl.hemoc.persistance !== 'inconnu') desc.push(libelle(prl.hemoc.persistance));

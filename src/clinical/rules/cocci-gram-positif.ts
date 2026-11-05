@@ -5,7 +5,7 @@
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { SourceRef } from '../types';
-import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, type DureeDecidee } from './outils';
+import { Fiche, S, adulte, bacteriemie, germePrincipal, lireAntibiogramme, statutMeticilline, type DureeDecidee } from './outils';
 
 const IDSA26 = 'IDSA-ESCMID-2026-SAB';
 
@@ -50,6 +50,22 @@ export const R_SAB: Regle = {
     const { prl, g } = germePrincipal(ctx);
     const enAttente = g === 'cgp_amas';
     const fr = facteursRisqueSAB(ctx);
+    if (!enAttente)
+      f.c.indication = {
+        decision: ctx.dossier.patient.gravite === 'choc_septique' ? 'urgence' : 'traiter',
+        qualification: 'infection',
+        titre: 'Bactériémie à S. aureus : traitement indiqué',
+        raison: 'S. aureus est rarement un contaminant d’hémoculture : une seule hémoculture positive suffit à définir la bactériémie.',
+        conditions: ['S. aureus dans au moins une hémoculture'],
+        exceptions: [],
+        actions: [],
+        surveillance: [],
+        reconsiderer: [],
+        questions: [],
+        sources: [S(IDSA26, 'Table 1 (definitions)', 'S. aureus is rarely a blood culture contaminant.', 'definition'), S(IDSA26, 'Table 1 (definitions)', 'Any patient with ≥1 positive blood culture for S. aureus due to infection.', 'definition')],
+        statut: 'verifiee_ia',
+        regleId: 'R-BACTERIEMIE-S-AUREUS',
+      };
     const risqueAccru = fr.cles.length + fr.autres.length > 0;
     const p = ctx.dossier.patient;
     f.urgence('elevee').situation(
@@ -80,9 +96,9 @@ export const R_SAB: Regle = {
 
     const atb = lireAntibiogramme(prl);
     for (const n of atb.notes) f.alerte('info', n.texte, n.sources);
-    const oxa = atb.sir('oxacilline') ?? atb.sir('cefoxitine');
-    const sarm = atb.meca('SARM') || oxa === 'R';
-    const sasm = !sarm && (oxa === 'S' || oxa === 'I');
+    const meti = statutMeticilline(atb);
+    const sarm = meti === 'R';
+    const sasm = meti === 'S';
     const srcMol: SourceRef[] = [S('ESC-2023-endocardite', 'Recommendation Table 8', '(flu)cloxacillin or cefazolin', 'choix'), S('SPILF-2025-DESC-SAB-Tattevin', 'messages clés', 'Péni M (anti-staph) ou céfazoline > autres Beta-lactamines si SAMS', 'choix')];
     const commentaireMol = 'Le consensus IDSA/ESCMID 2026 (Partie 1) ne traite pas encore du choix des molécules ; référence : ESC 2023 et SPILF.';
     if (sasm) {
@@ -134,6 +150,17 @@ export const R_SCN: Regle = {
       // Audit relecteur 2 : la source ne vise que la durée ; considérer une série unique comme significative est un choix de l'application.
       f.alerte('attention', 'S. lugdunensis : durée alignée sur S. aureus (14 jours, SPILF/GPIP 2021) ; avis infectiologique. L\'application le traite comme une bactériémie vraie même sur une seule série : choix non sourcé, à confirmer par le clinicien (contrôle des hémocultures recommandé).', [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Staphylococcus aureus et Staphylococcus lugdunensis : 14 jours', 'duree')]);
     }
+    const srcDoern = S('DOERN-2019-contamination', 'Bacteria Associated with Contaminated Blood Cultures', 'These organisms may be considered contaminants unless recovered from multiple blood cultures obtained in sequence', 'definition');
+    const ind = (decision: 'traiter' | 'urgence' | 'attendre_resultat' | 'informations_insuffisantes', qualification: 'infection' | 'infection_probable' | 'contamination_possible' | 'indeterminee', titre: string, raison: string, extra: { actions?: string[]; reconsiderer?: string[]; questions?: string[]; conditions?: string[] } = {}) => {
+      f.c.indication = { decision, qualification, titre, raison, conditions: extra.conditions ?? [], exceptions: [], actions: extra.actions ?? [], surveillance: [], reconsiderer: extra.reconsiderer ?? [], questions: extra.questions ?? [], sources: [srcRec38, srcDoern, srcDef], statut: 'verifiee_ia', regleId: 'R-BACTERIEMIE-SCN' };
+    };
+    const grave = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
+    if (series === undefined && !lugd)
+      ind('informations_insuffisantes', 'indeterminee', 'Staphylocoque à coagulase négative : signification à établir', 'Ni contaminant automatique, ni indication automatique : le nombre de séries positives (même espèce, même antibiogramme) est indispensable.', { questions: ['Nombre de séries prélevées et positives'] });
+    else if (series !== undefined && series <= 1 && !lugd)
+      ind(grave ? 'urgence' : 'attendre_resultat', 'contamination_possible', grave ? 'Sepsis avec un SCN sur une seule série : traiter le sepsis sans attendre' : 'Contamination possible : refaire les hémocultures avant de traiter', grave ? 'Le sepsis impose une antibiothérapie immédiate ; la signification du SCN reste à établir par de nouvelles hémocultures.' : 'Un SCN isolé dans une seule série est souvent un contaminant, mais pas toujours (matériel). Refaire des hémocultures (périphérie et cathéter suspect) avant tout antibiotique ou retrait de cathéter.', { conditions: ['une seule série positive', materiel ? 'matériel présent' : 'pas de matériel déclaré'], actions: ['Nouvelles hémocultures périphériques et sur le cathéter suspect, avant antibiotique', ...(materiel ? ['Avis infectiologique avant de conclure à une contamination (matériel présent)'] : [])], reconsiderer: ['Même SCN (même antibiogramme) dans une 2e série', 'Signes d’infection du cathéter ou du matériel', 'Sepsis'] });
+    else if (series !== undefined && series >= 2)
+      ind(grave ? 'urgence' : 'traiter', 'infection', 'Bactériémie à SCN probable : traitement indiqué', 'Même espèce retrouvée dans au moins 2 séries : bactériémie vraie probable (vérifier l’identité des antibiogrammes).', { conditions: [`${series} séries positives`] });
     if (series === undefined) {
       f.situation('scn-a-qualifier', `Hémocultures à ${lugd ? 'S. lugdunensis' : 'staphylocoque à coagulase négative'} — signification à établir`, 'partielle', 'Le nombre de séries positives est indispensable : un SCN n\'est ni automatiquement un contaminant, ni automatiquement une indication d\'antibiothérapie.');
       f.manque('nombre de séries prélevées et positives', 'distinguer contamination probable et bactériémie vraie', 'bloque_decision');
@@ -155,7 +182,7 @@ export const R_SCN: Regle = {
       if (materielEndo) f.controle({ id: 'ctl-scn-eto', type: 'echocardiographie', categorie: 'conditionnel', quoi: 'ETT puis ETO', quand: { ancre: 'non_determine', texte: 'Sans délai si matériel intracardiaque' }, pourquoi: 'Patient à risque d\'endocardite (ETO suggérée si bactériémie persistante, quel que soit le germe).', sources: [S('SRLF-2020-catheters', 'R3.3b', 'quel que soit le micro-organisme (R3.3b), chez les patients à risque d\'endocardite', 'imagerie')] });
     }
     const atb = lireAntibiogramme(prl);
-    const oxa = atb.sir('oxacilline') ?? atb.sir('cefoxitine');
+    const oxa = statutMeticilline(atb);
     const duree: DureeDecidee = lugd
       ? { texte: '14 jours (S. lugdunensis, comme S. aureus) en l\'absence de foyer profond.', pointDeDepart: 'première hémoculture négative', dureePrevueJours: 14, sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Staphylococcus aureus et Staphylococcus lugdunensis : 14 jours', 'duree')] }
       : ctx.materielVasculairePresent
@@ -187,7 +214,9 @@ export const R_STREPTO: Regle = {
     f.situation('bacteriemie-streptocoque', g === 'cgp_chainettes' ? 'Cocci à Gram positif en chaînettes (streptocoque ou entérocoque) en attente d\'identification' : 'Bactériémie à streptocoque', g === 'cgp_chainettes' ? 'partielle' : 'couverte', 'Rechercher la porte d\'entrée et une endocardite selon l\'espèce.');
     const duree: DureeDecidee = { texte: '7 jours pour une bactériémie non compliquée sans porte d\'entrée profonde (durée du foyer sinon).', pointDeDepart: 'premier jour de traitement efficace (non précisé par la source)', dureePrevueJours: 7, sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'streptocoques, entérocoques : 7 jours', 'duree')] };
     const atb = lireAntibiogramme(prl);
-    const amox = atb.sir('amoxicilline') ?? atb.sir('penicilline_g');
+    // Déduction amoxicilline ← pénicilline G : règle CA-SFM 2026 (ch. 5.10) propre aux streptocoques A, B, C et G, non généralisée.
+    const abcg = org === 'streptococcus_pyogenes' || org === 'streptococcus_agalactiae' || org === 'streptocoque_groupe_c_g';
+    const amox = atb.sir('amoxicilline') ?? (abcg ? atb.sir('penicilline_g') : undefined);
     // Audit relecteur 2 (2026-11-05) : BLOQUÉ (brouillon). Aucune recommandation lue ne porte sur le choix de la molécule
     // dans la bactériémie à streptocoque hors endocardite : l'amoxicilline est extrapolée (CA-SFM = règle de lecture,
     // ESC 2023 T7 = endocardite). Seule la durée de 7 jours (SPILF/GPIP 2021) est sourcée.

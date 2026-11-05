@@ -6,6 +6,7 @@
 import type {
   Alerte,
   Couverture,
+  IndicationPlan,
   DonneeManquante,
   LigneControle,
   NiveauUrgence,
@@ -22,6 +23,8 @@ import { MOLECULES_PAR_ID } from '../clinical/molecules';
 import { construireFrise } from '../schedule/frise';
 import { VERSION_CLINIQUE } from '../clinical/version';
 import { REGLES } from '../clinical/rules';
+import { analyserIsolat } from '../clinical/microbiologie/analyse';
+import { isolatsDe } from './etat';
 
 export interface Contribution {
   situation?: Plan['situation'];
@@ -35,6 +38,8 @@ export interface Contribution {
   donneesManquantes?: DonneeManquante[];
   /** Plafonne la couverture de la situation retenue (ex. neutropénie → partielle). */
   couvertureMax?: Couverture;
+  /** Décision sur l'indication d'antibiothérapie (la règle de plus haute priorité l'emporte). */
+  indication?: IndicationPlan;
 }
 
 export interface Regle {
@@ -107,6 +112,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     },
     urgence: { niveau: 'standard', alertes: [] },
     options: [],
+    microbiologie: [],
     surveillance: [],
     controles: [],
     gestes: [],
@@ -121,6 +127,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
 
   const reevals: { texte: string; sources: SourceRef[]; offsetHeures?: number }[] = [];
   let situationFixee = false;
+  let regleSituation: RegleAppliquee | undefined;
   let couvertureMax: Couverture = 'couverte';
   const RANG_COUV: Record<Couverture, number> = { couverte: 2, partielle: 1, non_couverte: 0 };
   for (const r of applicables) {
@@ -130,7 +137,9 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     if (c.situation && !situationFixee) {
       plan.situation = c.situation;
       situationFixee = true;
+      regleSituation = ra;
     }
+    if (c.indication && !plan.indication) plan.indication = c.indication;
     if (c.couvertureMax && RANG_COUV[c.couvertureMax] < RANG_COUV[couvertureMax]) couvertureMax = c.couvertureMax;
     if (c.urgence && RANG_URGENCE[c.urgence] > RANG_URGENCE[plan.urgence.niveau]) plan.urgence.niveau = c.urgence;
     if (c.alertes) plan.urgence.alertes.push(...c.alertes);
@@ -144,7 +153,38 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     if (c.avisSpecialise) plan.avisSpecialise.push(...c.avisSpecialise);
     if (c.donneesManquantes) plan.donneesManquantes.push(...c.donneesManquantes);
   }
+  // Prélèvement polymicrobien : chaque antibiogramme reste rattaché à son isolat ; les propositions ne portent que sur le germe principal.
+  const poly = dossier.prelevements.filter((x) => (x.isolatsSupplementaires ?? []).some((i) => i.organisme !== undefined));
+  if (poly.length > 0) {
+    if (RANG_COUV.partielle < RANG_COUV[couvertureMax]) couvertureMax = 'partielle';
+    plan.urgence.alertes.push({ niveau: 'attention', texte: 'Prélèvement polymicrobien : au-delà du périmètre validé. Les propositions ne tiennent compte que du germe principal de chaque prélèvement ; la couverture des autres isolats (voir leurs antibiogrammes) est à vérifier avec le SMIT.' });
+  }
   if (RANG_COUV[couvertureMax] < RANG_COUV[plan.situation.couverture]) plan.situation.couverture = couvertureMax;
+
+  // Synthèse microbiologique de chaque isolat identifié.
+  for (const prl of dossier.prelevements) for (const iso of isolatsDe(prl)) if (iso.organisme) plan.microbiologie.push(analyserIsolat(ctx, prl, iso));
+
+  // Indication : une culture positive ne déclenche jamais, à elle seule, une proposition d'antibiotique.
+  if (!plan.indication && plan.options.length > 0 && regleSituation) {
+    plan.indication = {
+      decision: plan.urgence.niveau === 'immediate' ? 'urgence' : 'traiter',
+      qualification: 'infection',
+      titre: 'Indication de traitement retenue',
+      raison: `Situation infectieuse retenue : ${plan.situation.libelle}.`,
+      conditions: [],
+      exceptions: [],
+      actions: [],
+      surveillance: [],
+      reconsiderer: [],
+      questions: [],
+      sources: regleSituation.sources,
+      statut: regleSituation.statut,
+      regleId: regleSituation.id,
+    };
+  }
+  if (plan.indication && ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'].includes(plan.indication.decision) && plan.options.length > 0) {
+    plan.options = [];
+  }
 
   // 1. Sources retirées : toute option qui s'appuie sur une source retirée est exclue.
   const sourceRetiree = (refs: SourceRef[]) => refs.find((r) => SOURCES_PAR_ID[r.source]?.statutVigueur === 'retiree');

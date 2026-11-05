@@ -149,7 +149,7 @@ export function App() {
           <FormulaireDossier dossier={dossier} modifier={modifier} />
         </div>
         <div className={`colonne-resultat ${onglet === 'saisie' ? 'masque-etroit' : ''}`}>
-          <PanneauResultat plan={plan} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} />
+          <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} />
           <footer className="pied">
             Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
           </footer>

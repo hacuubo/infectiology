@@ -172,20 +172,7 @@ export const R_PERSISTANCE: Regle = {
   },
 };
 
-export const R_COLONISATION: Regle = {
-  id: 'R-COLONISATION-URINAIRE',
-  libelle: 'Bactériurie sans infection : ne pas traiter',
-  description: 'Une culture positive n\'est pas une indication d\'antibiothérapie (SPILF 2015, IDSA 2019, SPILF 2026).',
-  statut: 'verifiee_ia',
-  priorite: 50,
-  sources: [S('SPILF-2015-IU', 'p. 7', 'Les deux seules situations consensuelles pour le dépistage et le traitement des colonisations urinaires sont : avant une procédure urologique invasive programmée ; grossesse à partir du 4ème mois', 'choix')],
-  sApplique: (ctx) => adulte(ctx) && !bacteriemie(ctx) && ctx.urines.length > 0 && ctx.foyer !== 'urinaire',
-  appliquer: (ctx) =>
-    new Fiche(ctx, 'verifiee_ia')
-      .situation('colonisation-urinaire', 'Bactériurie sans infection urinaire déclarée', 'couverte', 'Un ECBU positif sans symptôme urinaire ni sepsis correspond à une colonisation : pas d\'antibiothérapie, sauf grossesse ou geste urologique programmé. Chez le sujet âgé, des signes aspécifiques (confusion, chute) imposent de chercher une autre cause.')
-      .alerte('info', 'Ne pas traiter une colonisation urinaire (hors grossesse et geste urologique). Si un foyer urinaire est cliniquement suspecté, choisissez le foyer « urinaire ».', [S('SPILF-2015-IU', 'p. 7', undefined, 'choix'), S('IDSA-2019-bacteriurie-asymptomatique', 'rec. IV.1, V.1', undefined, 'choix'), S('SPILF-2026-IUM', 'diapo 5', 'en l\'absence de sepsis, une surveillance clinique sans antibiothérapie est recommandée', 'choix')])
-      .fin(),
-};
+// R-COLONISATION-URINAIRE (version 2026.11.0) est remplacée par R-INDICATION-ECBU (src/clinical/rules/indication.ts).
 
 export const R_SYNDROME_NON_COUVERT: Regle = {
   id: 'R-SYNDROME-NON-COUVERT',
@@ -202,4 +189,4 @@ export const R_SYNDROME_NON_COUVERT: Regle = {
       .fin(),
 };
 
-export const REGLES_TRANSVERSALES = [R_PEDIATRIE, R_GRAVITE, R_TERRAIN, R_GROSSESSE, R_ALLERGIE, R_DONNEES, R_REEVALUATION, R_PERSISTANCE, R_COLONISATION, R_SYNDROME_NON_COUVERT];
+export const REGLES_TRANSVERSALES = [R_PEDIATRIE, R_GRAVITE, R_TERRAIN, R_GROSSESSE, R_ALLERGIE, R_DONNEES, R_REEVALUATION, R_PERSISTANCE, R_SYNDROME_NON_COUVERT];
