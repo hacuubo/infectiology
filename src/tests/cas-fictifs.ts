@@ -121,7 +121,7 @@ export const CAS_SARM_HEMODIALYSE = dossier({
 
 /** Cas 10 : PNA masculine, E. coli rendu I à la ceftriaxone. */
 export const CAS_ECOLI_I = dossier({
-  patient: { ...adulteStable, contexte: 'communautaire' },
+  patient: { ...adulteStable, contexte: 'communautaire', formeIUMasculine: 'pna' },
   prelevements: [hemoc({ stade: 'antibiogramme', organisme: 'escherichia_coli', antibiogramme: [{ dci: 'amoxicilline', categorie: 'R' }, { dci: 'ceftriaxone', categorie: 'I' }, { dci: 'ciprofloxacine', categorie: 'R' }, { dci: 'cotrimoxazole', categorie: 'R' }], foyer: 'urinaire', foyerStatut: 'confirme' })],
 });
 

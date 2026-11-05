@@ -72,6 +72,8 @@ export const ciprofloxacine: Molecule = {
   adaptationRenale: {
     methode: 'Cockcroft',
     statut: 'verifiee_ia',
+    // Audit relecteur 2 : paliers lus dans le RCP de la forme IV (Ciflox 200 mg/100 mL) ; ceux de la forme orale n'ont pas été lus.
+    texteGeneral: 'Paliers du RCP de la forme injectable (mL/min/1,73 m²) ; paliers de la forme orale non vérifiés (RCP oral non lu).',
     paliers: [
       { clcrMin: 60, texte: 'ClCr ≥ 60 mL/min : pas d\'adaptation.', sources: [S('RCP-ciprofloxacine', '§4.2', 'ClCr 30-60 mL/min/1,73 m² : 200-400 mg toutes les 12 h', 'adaptation_renale')] },
       { clcrMin: 30, clcrMax: 60, texte: 'ClCr 30-60 mL/min : 200-400 mg toutes les 12 h (IV).', sources: [S('RCP-ciprofloxacine', '§4.2', '« 200-400 mg toutes les 12 h »', 'adaptation_renale')] },
@@ -114,6 +116,8 @@ export const levofloxacine: Molecule = {
   adaptationRenale: {
     methode: 'Cockcroft',
     statut: 'verifiee_ia',
+    // Audit relecteur 2 : les paliers ci-dessous valent pour le schéma 500 mg/24 h ; pour 500 mg/12 h, le tableau (lu avec une confiance moyenne) indique 250 mg/12 h (50-20) puis 125 mg/12 h (19-10).
+    texteGeneral: 'Paliers indiqués pour le schéma 500 mg/24 h ; pour 500 mg/12 h : 250 mg/12 h (ClCr 50-20), 125 mg/12 h (19-10) — tableau du RCP lu avec une confiance moyenne (colonnes).',
     paliers: [
       { clcrMin: 50, texte: 'ClCr ≥ 50 mL/min : pas d\'adaptation.', sources: [S('RCP-levofloxacine', '§4.2', 'tableau par ClCr 50-20, 19-10, < 10', 'adaptation_renale')] },
       { clcrMin: 20, clcrMax: 50, texte: 'ClCr 20-49 mL/min : dose initiale normale puis entretien réduit (schéma 500 mg : 250 mg/24 h).', sources: [S('RCP-levofloxacine', '§4.2', '50-20 ml/min : puis 250 mg/24 h (schéma 500 mg)', 'adaptation_renale')] },
@@ -240,7 +244,8 @@ export const rifampicine: Molecule = {
       sources: [S('RCP-rifampicine', '§4.2', 'rifampicinémie « au 2ème ou 3ème jour du traitement »', 'surveillance')],
     },
   ],
-  grossesse: { statut: 'utilisable', texte: 'Utilisable quel que soit le terme ; rares hémorragies néonatales précoces (CRAT, résultat de recherche non lu en détail).', sources: [] },
+  // Audit relecteur 2 : « utilisable » sans source lue → « non_verifie » (fiche CRAT 8385 vue seulement en résultat de recherche).
+  grossesse: { statut: 'non_verifie', texte: 'Non vérifié : la fiche CRAT rifampicine n\'a été vue qu\'en résultat de recherche (utilisable quel que soit le terme ; rares hémorragies néonatales précoces), non lue.', sources: [] },
   interactionsPertinentes: [
     { avec: 'avk', texte: 'Diminution de l\'effet des AVK : INR rapprochés pendant le traitement et 8 jours après l\'arrêt.', sources: [S('RCP-rifampicine', '§4.5', 'AVK « pendant le traitement par la rifampicine et 8 jours après son arrêt »', 'surveillance')] },
     { avec: 'aod', texte: 'Diminution des concentrations des anticoagulants oraux directs (induction) : association à éviter / avis.', sources: [S('RCP-rifampicine', '§4.5', 'induction enzymatique', 'surveillance')] },

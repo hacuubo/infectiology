@@ -123,6 +123,15 @@ export const REGLES_PERTINENCE: {
     },
   },
   {
+    champ: 'patient.formeIUMasculine',
+    libelle: 'Forme de l\'infection urinaire masculine',
+    pertinent: (d) => d.patient.sexe === 'homme',
+    estRenseigne: (d) => (d.patient.formeIUMasculine ?? 'inconnu') !== 'inconnu',
+    reinitialiser: (d) => {
+      d.patient.formeIUMasculine = undefined;
+    },
+  },
+  {
     champ: 'patient.renal.horairesDialyse',
     libelle: 'Horaires de dialyse',
     pertinent: (d) => d.patient.renal.dialyse === 'hemodialyse_intermittente',

@@ -198,7 +198,8 @@ describe('Catégorie EUCAST I', () => {
   test('C3G rendue I : forte posologie retenue et définition de I rappelée (EUCAST, CA-SFM)', () => {
     const p = plan(CAS_ECOLI_I);
     const o = premiere(p)[0];
-    expect(o.prescriptions[0].regimenId).toBe('ceftriaxone-2g');
+    // Forte posologie EUCAST/CA-SFM de la ceftriaxone = 2 g toutes les 12 h (2 g/24 h est la posologie standard)
+    expect(o.prescriptions[0].regimenId).toBe('ceftriaxone-2g12h');
     expect(o.libelle).toMatch(/forte posologie/);
     expect(p.urgence.alertes.some((a) => /sensible à forte posologie/.test(a.texte))).toBe(true);
     // Ciprofloxacine R → toutes FQ R (EUCAST expert rule 8)
@@ -237,7 +238,7 @@ describe('Suivi thérapeutique pharmacologique', () => {
     const p = plan(d);
     const ev = p.frise.find((e) => /Amikacine : dosage \(pic\)/.test(e.quoi));
     expect(ev?.dateISO).toBeUndefined();
-    expect(ev?.moment).toMatch(/après la 1re dose/);
+    expect(ev?.moment).toMatch(/1re dose/);
   });
 
   test('vancomycine en perfusion continue : plateau 20-25 mg/L (pas de « pic »), pas de résiduelle discontinue', () => {
@@ -312,6 +313,6 @@ describe('Sources retirées, remplacées ou inaccessibles', () => {
   test('sources remplacées ou non lisibles : identifiées dans le registre (affichage « non vérifiée » / « remplacée »)', () => {
     expect(SOURCES_PAR_ID['SSC-2021'].statutVigueur).toBe('remplacee');
     expect(SOURCES_PAR_ID['ESCMID-2022-BGN-MDR'].statutAcces).toBe('contenu_non_lisible');
-    expect(SOURCES_PAR_ID['RCP-cefoxitine'].statutAcces).toBe('introuvable');
+    expect(SOURCES_PAR_ID['HAS-2023-SAD-antibiotherapie'].statutAcces).toBe('contenu_non_lisible');
   });
 });

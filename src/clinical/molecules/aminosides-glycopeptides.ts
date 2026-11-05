@@ -26,7 +26,9 @@ export const amikacine: Molecule = {
         S('ANSM-2011-aminosides', 'p. 5-6', 'amikacine : 15 à 30 mg/kg/jour ; perfusion de 30 minutes ; dose unique journalière', 'posologie'),
         S('RCP-amikacine', '§4.2', 'en se basant sur le poids corporel idéal estimé du patient et en ajoutant 40 % de l\'excédent', 'posologie'),
       ],
-      remarques: "Poids de référence : poids réel ; en cas d'obésité, poids idéal + 40 % de l'excédent (RCP). Le seuil d'obésité (ratio 1,25) est un choix de l'application, non sourcé.",
+      // Audit relecteur 2 (2026-11-05) : remarque complétée — le RCP plafonne la dose à 1,5 g/j, ce que la dose
+      // SPILF de 30 mg/kg dépasse dès 50 kg (divergence à afficher, pas à corriger : la dose SPILF est retenue).
+      remarques: "Poids de référence : poids réel ; en cas d'obésité, poids idéal + 40 % de l'excédent (RCP amikacine, formule du poids idéal non précisée ; l'application utilise Devine). Le seuil d'obésité (ratio 1,25) est un choix de l'application, non sourcé. Divergence : le RCP amikacine indique 15 mg/kg/j (jusqu'à 30) et une dose maximale de 1,5 g/j ; la dose de 30 mg/kg (SPILF 2015/2026, SPILF/SFPT/CA-SFM 25-30 mg/kg) dépasse ce plafond au-delà de 50 kg (hors RCP).",
     },
     {
       id: 'amikacine-15-mono',
@@ -100,18 +102,42 @@ export const amikacine: Molecule = {
       limites: 'Interprétation valable seulement si la perfusion a duré 30 min et le prélèvement 30 min après sa fin ; horaires réels requis.',
       conduite: 'Pic inférieur à la cible : augmenter la posologie de l\'injection suivante.',
       conditionId: 'patient_severe',
-      conditionTexte: 'si patient sévère (sepsis/choc, réanimation, obésité, IRA)',
+      // Audit relecteur 2 : liste alignée sur l'ANSM 2011 p. 8 ; l'IRA et l'EER sont des ajouts du moteur (modification PK probable), signalés comme tels.
+      conditionTexte: 'si patient sévère (ANSM 2011 : choc septique, réanimation sous ventilation, brûlé, neutropénie fébrile, obésité morbide, polytraumatisé) ; l\'application l\'applique aussi en cas de sepsis, d\'IRA ou d\'EER',
       statut: 'verifiee_ia',
       sources: [
         S('ANSM-2011-aminosides', 'p. 8, tableau 1', 'Les dosages du pic doivent être effectués 30 minutes après la fin de la perfusion (dont la durée doit également être de 30 minutes)', 'surveillance'),
+        S('ANSM-2011-aminosides', 'p. 8', 'Un dosage du pic plasmatique est conseillé après la 1re injection chez tous les patients sévères', 'surveillance'),
         S('RCP-amikacine', '§4.2', 'Pic 30 min après la fin de perfusion, cible 60 à 80 mg/L', 'surveillance'),
+      ],
+    },
+    {
+      // Audit relecteur 2 (2026-11-05) : ajout. En insuffisance rénale, la résiduelle conditionne CHAQUE réinjection
+      // (pas de réinjection tant qu'elle dépasse le seuil) : le 1er dosage se fait avant la 2e injection, et non
+      // « après 48 h » (délai que l'ANSM réserve aux traitements > 5 jours).
+      id: 'amikacine-residuelle-ir',
+      parametre: 'residuelle',
+      categorie: 'conditionnelle',
+      indication: 'Insuffisance rénale : dosage de la résiduelle avant toute réinjection (suivi « fortement recommandé » par le RCP ; réinjection seulement si la résiduelle est sous le seuil).',
+      premierPrelevement: { quand: 'avant la 2e injection (au moment prévu de la réinjection), puis avant chaque réinjection', position: 'juste avant la réinjection envisagée', numeroDose: 2, avantDoseSuivante: true },
+      repetition: 'avant chaque réinjection, avec la créatininémie',
+      cible: { max: 2.5, unite: 'mg/L', verifiee: true, texte: '< 2,5 mg/L avant réinjection (ANSM 2011, tableau 1)' },
+      limites: 'Sans épuration extrarénale : pas de réinjection tant que la résiduelle reste au-dessus du seuil ; l\'intervalle n\'est pas fixé à l\'avance.',
+      conduite: 'Résiduelle ≥ 2,5 mg/L : ne pas réinjecter, redoser ; espacer les injections sans réduire la dose unitaire.',
+      conditionId: 'insuffisance_renale',
+      conditionTexte: 'si insuffisance rénale (ClCr < 50 mL/min selon le RCP ; seuil du moteur : < 60 mL/min), IRA ou dialyse',
+      statut: 'verifiee_ia',
+      sources: [
+        S('RCP-amikacine', '§4.2', 'IR (ClCr < 50 mL/min) : DUJ, dosages pour adapter doses et intervalles, cures courtes (1-2 injections)', 'surveillance'),
+        S('ANSM-2011-aminosides', 'p. 8', 'Des taux résiduels (Cmin) supérieurs à ceux donnés dans le tableau 1, nécessitent d\'espacer les injections', 'surveillance'),
+        S('RCP-gentamicine', '§4.2', '[principe de classe] sans épuration extrarénale, pas de réinjection tant que la résiduelle reste au-dessus du seuil', 'surveillance'),
       ],
     },
     {
       id: 'amikacine-residuelle',
       parametre: 'residuelle',
       categorie: 'conditionnelle',
-      indication: 'Traitement > 5 jours (dosage à effectuer après 48 h de traitement) ou insuffisance rénale (« fortement recommandé » par le RCP).',
+      indication: 'Traitement > 5 jours (dosage à effectuer après 48 h de traitement) ; en insuffisance rénale, voir aussi le dosage avant chaque réinjection.',
       premierPrelevement: { quand: 'après 48 h de traitement', position: 'juste avant la dose suivante (position précisée par Abdul-Aziz 2020 ; non explicitée par l\'ANSM)', numeroDose: 3, avantDoseSuivante: true },
       repetition: '2 fois par semaine, avec surveillance de la fonction rénale',
       cible: { max: 2.5, unite: 'mg/L', verifiee: true, texte: '< 2,5 mg/L (ANSM 2011, tableau 1)' },
@@ -157,6 +183,23 @@ export const gentamicine: Molecule = {
         S('SPILF-AEPEI-2025-endocardite', 'diapo 16', 'Gentamicine : 3 mg/kg/j', 'posologie'),
         S(SRC_DOSES_2026, 'Annexe 9 (aminosides)', 'Pour les streptocoques et les entérocoques, une posologie plus faible de 3 mg/kg/jour est utilisable en cas d\'association synergique', 'posologie'),
       ],
+      remarques: 'Poids en cas d\'obésité : le RCP gentamicine indique poids idéal (Lorentz) + 0,43 × surcharge ; l\'application calcule Devine + 0,4 × excès (écart signalé au relecteur du moteur).',
+    },
+    {
+      // Audit relecteur 2 (2026-11-05) : ajout. Le schéma probabiliste SPILF/AEPEI de l'endocardite indique
+      // 5 mg/kg/j de gentamicine (sepsis uniquement) ; la règle affichait la dose synergique de 3 mg/kg.
+      id: 'gentamicine-5-ei-proba',
+      libelle: '5 mg/kg/j (endocardite, probabiliste, uniquement si sepsis — SPILF/AEPEI)',
+      indication: 'Endocardite sur valve native ou prothèse tardive, traitement probabiliste avec sepsis : amoxicilline + céfazoline + gentamicine (SPILF/AEPEI 2025).',
+      dose: { type: 'ponderale', valeur: 5, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'ajuste', seuilObesiteRatio: 1.25 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min, 1 dose par jour ; arrêt à l\'identification ou au plus tard à la négativation des hémocultures',
+      statut: 'verifiee_ia',
+      sources: [
+        S('SPILF-AEPEI-2025-endocardite', 'diapo 6', 'Amoxicilline IV (200 mg/kg/jour) + céfazoline IV (100 mg/kg/jour) + (gentamicine IV (5 mg/kg/jour) uniquement chez les patients en sepsis)', 'posologie'),
+        S('ANSM-2011-aminosides', 'p. 6', 'gentamicine, tobramycine : 3 à 8 mg/kg/jour', 'posologie'),
+      ],
+      remarques: 'ESC 2023 (Recommendation Table 10) : gentamicine 3 mg/kg/j dans le schéma empirique. Divergence affichée ; position SPILF/AEPEI retenue (ARBITRAGES).',
     },
     {
       id: 'gentamicine-6-7',
@@ -225,19 +268,39 @@ export const gentamicine: Molecule = {
       indication: 'Patients sévères (choc, réanimation, obésité morbide, neutropénie fébrile…) ; pas systématique si traitement ≤ 3 jours sans modification PK.',
       premierPrelevement: { quand: 'après la 1re dose', position: '30 minutes après la fin de la perfusion de 30 minutes', numeroDose: 1, offsetHeuresApresFinPerfusion: 0.5 },
       repetition: 'après modification de dose',
-      cible: { min: 30, max: 40, unite: 'mg/L', verifiee: true, texte: '30 à 40 mg/L (ANSM 2011, tableau 1) — pour la dose de 6-8 mg/kg ; non applicable à la dose synergique de 3 mg/kg' },
-      limites: 'Cible établie pour les doses élevées ; pas de cible de pic sourcée pour la dose synergique de 3 mg/kg.',
+      // Audit relecteur 2 : « pour la dose de 6-8 mg/kg » retiré du texte de cible (non écrit dans l'ANSM, qui applique le tableau 1 sans distinction de dose).
+      cible: { min: 30, max: 40, unite: 'mg/L', verifiee: true, texte: '30 à 40 mg/L (ANSM 2011, tableau 1)' },
+      limites: 'Les sources lues ne fixent pas de cible de pic pour la dose synergique de 3 mg/kg de l\'endocardite (ANSM 2011 p. 5 : schémas d\'endocardite traités à part) : interprétation par un pharmacologue dans ce contexte.',
       conduite: 'Pic inférieur à la cible : augmenter la posologie de l\'injection suivante.',
       conditionId: 'patient_severe',
-      conditionTexte: 'si patient sévère (sepsis/choc, réanimation, obésité, IRA)',
+      conditionTexte: 'si patient sévère (ANSM 2011 : choc septique, réanimation sous ventilation, brûlé, neutropénie fébrile, obésité morbide, polytraumatisé) ; l\'application l\'applique aussi en cas de sepsis, d\'IRA ou d\'EER',
       statut: 'verifiee_ia',
       sources: [S('ANSM-2011-aminosides', 'p. 8, tableau 1', 'gentamicine, nétilmicine, tobramycine : pic 30 à 40 mg/l', 'surveillance'), S('RCP-gentamicine', '§4.2', 'Pic : 30 min après la fin de la perfusion, après la première injection […] chez des patients sévères', 'surveillance')],
+    },
+    {
+      // Audit relecteur 2 (2026-11-05) : ajout (même raisonnement que l'amikacine ; RCP gentamicine explicite).
+      id: 'gentamicine-residuelle-ir',
+      parametre: 'residuelle',
+      categorie: 'conditionnelle',
+      indication: 'Insuffisance rénale : dosage de la résiduelle avant toute réinjection ; à défaut de dosage, réinjection selon la clairance (RCP : 36 h si 40-60, 48 h si 20-40 mL/min) ; < 20 mL/min : dosage impératif.',
+      premierPrelevement: { quand: 'avant la 2e injection (au moment prévu de la réinjection), puis avant chaque réinjection', position: 'juste avant la réinjection envisagée', numeroDose: 2, avantDoseSuivante: true },
+      repetition: 'avant chaque réinjection, avec la créatininémie',
+      cible: { max: 0.5, unite: 'mg/L', verifiee: true, texte: '< 0,5 mg/L avant réinjection (ANSM 2011, tableau 1)' },
+      limites: 'Sans épuration extrarénale : pas de réinjection tant que la résiduelle reste au-dessus du seuil.',
+      conduite: 'Résiduelle ≥ 0,5 mg/L : ne pas réinjecter, redoser ; réinjections à la même dose que la première.',
+      conditionId: 'insuffisance_renale',
+      conditionTexte: 'si insuffisance rénale (paliers RCP à partir de ClCr < 60 mL/min), IRA ou dialyse',
+      statut: 'verifiee_ia',
+      sources: [
+        S('RCP-gentamicine', '§4.2', 'réinjections à la même dose que celle de la première injection ; < 20 : dosage impératif de la résiduelle', 'surveillance'),
+        S('ANSM-2011-aminosides', 'p. 8', 'Des taux résiduels (Cmin) supérieurs à ceux donnés dans le tableau 1, nécessitent d\'espacer les injections', 'surveillance'),
+      ],
     },
     {
       id: 'gentamicine-residuelle',
       parametre: 'residuelle',
       categorie: 'conditionnelle',
-      indication: 'Traitement > 5 jours (après 48 h de traitement) ou insuffisance rénale ; en endocardite (traitement de 2 semaines) la résiduelle est donc indiquée.',
+      indication: 'Traitement > 5 jours (dosage après 48 h de traitement) ; en endocardite (traitement de 2 semaines) la résiduelle est donc indiquée ; en insuffisance rénale, voir aussi le dosage avant chaque réinjection.',
       premierPrelevement: { quand: 'après 48 h de traitement', position: 'juste avant la dose suivante (Abdul-Aziz 2020 ; non explicité par l\'ANSM)', numeroDose: 3, avantDoseSuivante: true },
       repetition: '2 fois par semaine, avec surveillance de la fonction rénale',
       cible: { max: 0.5, unite: 'mg/L', verifiee: true, texte: '< 0,5 mg/L (ANSM 2011, tableau 1)' },
@@ -280,7 +343,8 @@ export const vancomycine: Molecule = {
         S('SPILF-AEPEI-2025-endocardite', 'diapo 16', 'Vancomycine : 30 mg/kg/j IV perf continue après dose de charge de 20-30 mg/kg', 'posologie'),
         S('ASHP-IDSA-2020-vancomycine-STP', 'Rec. 10 ; dose de charge', 'a loading dose of 15 to 20 mg/kg, followed by daily maintenance CI of 30 to 40 mg/kg […] target steady-state concentration of 20 to 25 mg/L ; Loading doses should be based on actual body weight and not exceed 3,000 mg', 'posologie'),
       ],
-      remarques: 'Dose de charge : 20-30 mg/kg (SPILF/SFPT/CA-SFM), 25-30 (RCP), 20-35 (Rybak) : la valeur de 25 mg/kg est un choix médian de l\'application, plafonné à 3 g.',
+      // Audit relecteur 2 : attribution Rybak corrigée (20-35 mg/kg = administration discontinue ; 15-20 mg/kg = perfusion continue, Rec. 10).
+      remarques: 'Dose de charge : 20-30 mg/kg (SPILF/SFPT/CA-SFM ; SPILF/AEPEI), 25-30 mg/kg (RCP, présentation péjorative) ; Rybak 2020 : 15-20 mg/kg avant perfusion continue (Rec. 10), 20-35 mg/kg en discontinu. La valeur de 25 mg/kg est un choix médian de l\'application, plafonné à 3 g (Rybak). Vitesse : le RCP limite la perfusion à 10 mg/min (≥ 1 h), ce qu\'une charge de 2-3 g en 1-2 h dépasse : durée de perfusion à ajuster (divergence RCP / SPILF « 1 à 2 h »).',
     },
     {
       id: 'vancomycine-discontinu',
@@ -314,11 +378,14 @@ export const vancomycine: Molecule = {
       id: 'vancomycine-renal',
       type: 'biologique',
       categorie: 'systematique',
-      quoi: 'Créatininémie avant traitement puis régulièrement (quotidienne si instable ou néphrotoxiques associés)',
-      quand: { ancre: 'avant_traitement', texte: 'Avant la 1re dose, puis régulièrement (hebdomadaire si stable, quotidienne si instable : Rybak 2020 ; fréquence non chiffrée par le RCP)', repetition: 'selon stabilité' },
-      pourquoi: 'Néphrotoxicité (créatinine ≥ +0,5 mg/dL ou +50 %), majorée par les aminosides et la pipéracilline-tazobactam.',
+      // Audit relecteur 2 (2026-11-05) : correction. La fréquence « hebdomadaire / quotidienne » de Rybak 2020 porte sur
+      // les dosages de vancomycine (vérifié dans le texte OUP le 2026-11-05), pas sur la créatininémie : aucune source lue
+      // ne chiffre la fréquence de la créatininémie (cf. PERIMETRE, limites connues).
+      quoi: 'Créatininémie avant traitement puis régulièrement, en particulier avec chaque dosage de vancomycine',
+      quand: { ancre: 'avant_traitement', texte: 'Avant la 1re dose, puis « périodiquement » (RCP) ; fréquence non chiffrée par les sources lues — à rapprocher des dosages de vancomycine', repetition: 'périodique (non chiffrée)' },
+      pourquoi: 'Néphrotoxicité (définition Rybak 2020 : créatinine ≥ +0,5 mg/dL ou +50 % sur des dosages quotidiens consécutifs), majorée par les aminosides et la pipéracilline-tazobactam.',
       statut: 'verifiee_ia',
-      sources: [S('ASHP-IDSA-2020-vancomycine-STP', 'Rec. 4 ; néphrotoxicité', 'once-weekly monitoring for hemodynamically stable patients ; frequent or daily monitoring may be prudent for hemodynamically unstable patients', 'surveillance'), S('RCP-vancomycine', '§4.4', 'bilans « périodiquement » (NFS, urines, fonction rénale et hépatique)', 'surveillance')],
+      sources: [S('RCP-vancomycine', '§4.4', 'bilans « périodiquement » (NFS, urines, fonction rénale et hépatique)', 'surveillance'), S('ASHP-IDSA-2020-vancomycine-STP', 'néphrotoxicité (texte)', 'an increase in the serum creatinine (SCr) level of ≥0.5 mg/dL, or a 50% increase from baseline in consecutive daily readings', 'definition')],
     },
     {
       id: 'vancomycine-audition',
@@ -340,7 +407,7 @@ export const vancomycine: Molecule = {
       categorie: 'systematique',
       indication: 'Perfusion continue : concentration à l\'état d\'équilibre (plateau), à tout moment de la perfusion.',
       premierPrelevement: { quand: 'dès l\'état d\'équilibre, dans les 24-48 premières heures (Rybak : exposition cible « within the first 24 to 48 hours ») ; moment exact du 1er dosage non précisé par les sources françaises', position: 'à tout moment pendant la perfusion continue (Abdul-Aziz 2020)', jour: 2 },
-      repetition: 'hebdomadaire si stable ; quotidienne si instable ou néphrotoxiques associés (Rybak 2020)',
+      repetition: 'hebdomadaire si hémodynamique stable ; plus fréquente, voire quotidienne, si instable (Rybak 2020, Rec. 5 : fréquence « based on clinical judgment »)',
       cible: { min: 20, max: 25, unite: 'mg/L', verifiee: true, texte: '20 à 25 mg/L (SPILF/SFPT/CA-SFM 2026 ; Rybak 2020 ; Abdul-Aziz 2020) ; ASC 400-600 mg·h/L = plateau × 24' },
       limites: 'La cible « 20-30 mg/L » qui circule correspond à la téicoplanine, pas à la vancomycine. Interprétable seulement à l\'équilibre.',
       conduite: 'Ajuster le débit de perfusion ; prolonger l\'intervalle/réduire en cas de surdosage ou d\'élévation de la créatinine.',
@@ -358,8 +425,10 @@ export const vancomycine: Molecule = {
       parametre: 'residuelle',
       categorie: 'systematique',
       indication: 'Administration discontinue : résiduelle (et si possible ASC par approche bayésienne, méthode préférée du consensus 2020).',
-      premierPrelevement: { quand: 'le 2e jour de traitement (RCP) / dans les 24-48 h (Rybak)', position: 'immédiatement avant la dose suivante (résiduelle) ; pour l\'ASC : 1-2 h après la fin de perfusion et en fin d\'intervalle', jour: 2, avantDoseSuivante: true, numeroDose: 4 },
-      repetition: 'hebdomadaire si stable ; quotidienne si instable, insuffisance rénale ou néphrotoxiques associés',
+      // Audit relecteur 2 : numeroDose (4) retiré — avec un intervalle de 8 ou 12 h, la « 4e dose » ne correspond pas au J2
+      // du RCP et le calendrier la plaçait à H72 ; le jour 2 (RCP) est conservé comme repère.
+      premierPrelevement: { quand: 'le 2e jour de traitement (RCP) / dans les 24-48 h (Rybak)', position: 'immédiatement avant la dose suivante (résiduelle) ; pour l\'ASC : 1-2 h après la fin de perfusion et en fin d\'intervalle', jour: 2, avantDoseSuivante: true },
+      repetition: 'hebdomadaire si hémodynamique stable ; plus fréquente, voire quotidienne, si instable (Rybak 2020, Rec. 5 : fréquence « based on clinical judgment »)',
       cible: { min: 15, max: 20, unite: 'mg/L', verifiee: true, texte: 'résiduelle 15-20 mg/L et ASC/CMI 400-600 (CMI ≤ 1 mg/L) — SPILF/SFPT/CA-SFM 2026 ; Rybak 2020 : le creux seul « n\'est plus recommandé », préférer l\'ASC' },
       limites: 'Divergence : RCP 10-20 mg/L (15-20 si CMI ≥ 1) ; Rybak 2020 recommande le pilotage par l\'ASC plutôt que par la résiduelle seule.',
       conduite: 'Adapter la dose ou l\'intervalle ; prolonger l\'intervalle en insuffisance rénale.',

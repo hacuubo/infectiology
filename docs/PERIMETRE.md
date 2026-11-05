@@ -25,8 +25,9 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - **S. aureus avant la sensibilité à la méticilline** : choix probabiliste non tranché par les sources lues (brouillon).
 - **Infection ostéoarticulaire sur matériel** : recommandations SPILF 2026 présentées aux JNI, publication finale non localisée ; schéma probabiliste en brouillon.
 - **P. aeruginosa** documenté : forte posologie uniquement, avis spécialisé.
-- **Grossesse, immunodépression** : statut molécule par molécule (CRAT) mais pas de schéma dédié.
-- **Céfoxitine, céfixime, ertapénème** : RCP non consulté, adaptation rénale non vérifiée (brouillon).
+- **Grossesse, immunodépression** : statut molécule par molécule (CRAT) mais pas de schéma dédié ; l'IU de l'homme immunodéprimé est hors du champ SPILF 2026 (brouillon).
+- **Bloqués en brouillon par l'audit documentaire** : daptomycine seule dans l'endocardite à SARM (les sources la recommandent en association), molécules des bactériémies à streptocoque hors endocardite (extrapolées), vancomycine pour allergie dans les bactériémies à entérocoque, aztréonam dans l'IU associée aux soins.
+- **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 
 ## Non couvert (avis spécialisé, aucune proposition)
 
@@ -44,4 +45,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - La fréquence de la créatininémie sous vancomycine ou aminosides n'est chiffrée par aucune source française lue.
 - Le moment du premier dosage de vancomycine en perfusion continue n'est pas fixé par les sources françaises.
 - La position exacte de la résiduelle d'aminoside par rapport à la dose suivante vient du position paper Abdul-Aziz 2020, pas de l'ANSM.
+- L'analyse des allergies n'exploite pas encore le délai depuis la réaction (≤ 5 ans / > 5 ans) qui oriente la stratification SPILF 2026.
+- Une dose n > 1 n'est jamais datée dans la frise : l'intervalle réel entre doses dépend de la fonction rénale et des dosages.
+- Poids de référence des aminosides : poids idéal de Lorentz (RCP gentamicine) + 0,43 × surcharge (gentamicine) ou + 40 % de l'excédent (amikacine). Le RCP amikacine ne précise pas la formule du poids idéal ; Lorentz est retenu par cohérence.
 - La HAS (2023) demande d'adapter les posologies avec CKD-EPI alors que les RCP sont établis en Cockcroft-Gault : l'application utilise Cockcroft quand le poids est connu et affiche toujours la méthode et ses limites.

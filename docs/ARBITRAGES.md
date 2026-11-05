@@ -22,4 +22,8 @@ Principe : on ne fusionne pas des recommandations incompatibles. Pour chaque div
 | Surviving Sepsis Campaign | 2021 remplacée par 2026 | 2026 | remplacement officiel |
 | Allergie, réaction immédiate grave | JNI 2024 : pénicillines et céphalosporines à chaîne similaire contre-indiquées ; SPILF 2026 (d'après ESCMID 2026) : contre-indication aux bêta-lactamines, avis allergologique | SPILF 2026 | texte le plus récent ; prudence |
 
+| Forte posologie de la ceftriaxone (souche I) | EUCAST Dosages v16.0 : standard 2 g × 1, forte 2 g × 2 ; SPILF/SFPT/CA-SFM : forte 2 g toutes les 12 h | 2 g toutes les 12 h | corrigé par l'audit documentaire (2 g/24 h est la posologie standard) |
+| Durée de l'IU masculine | SPILF 2026 : selon la forme (PNA 7-10 j, prostatite 14 j, orchi-épididymite 10 j) | forme clinique demandée ; sans elle, aucune durée n'est fixée | évite d'appliquer 14 j par défaut |
+| Résiduelle d'aminoside en insuffisance rénale | ANSM 2011 et RCP : pas de réinjection tant que la résiduelle dépasse le seuil | dosage avant la 2e injection puis avant chaque réinjection | corrigé par l'audit documentaire |
+
 Une publication de recherche (essai BALANCE 2024 : 7 j vs 14 j) n'est pas transformée en recommandation : elle est citée comme contexte seulement.

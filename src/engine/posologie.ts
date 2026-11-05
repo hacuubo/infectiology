@@ -15,7 +15,8 @@ import type {
   SourceRef,
   SpecSTP,
 } from '../clinical/types';
-import { arrondi, poidsAjuste, poidsIdealDevine } from '../calc/renal';
+import { arrondi, poidsAjuste, poidsIdealDevine, poidsIdealLorentz } from '../calc/renal';
+import { formaterDose, nombreFr } from '../calc/format';
 import { moleculeEvitee, type ContexteDecision } from './contexte';
 import { resoudreCalendrier } from '../schedule/frise';
 
@@ -33,22 +34,48 @@ export interface ResultatPrescription {
   donneesManquantes: DonneeManquante[];
 }
 
-function formaterDose(valeur: number, unite: string): string {
-  if (unite === 'mg' && valeur >= 1000 && valeur % 100 === 0) return `${String(valeur / 1000).replace('.', ',')} g`;
-  return `${arrondi(valeur, valeur < 10 ? 2 : 0).toString().replace('.', ',')} ${unite}`;
+function texteMgKg(valeur: number, freq: number | undefined, continu?: boolean): string {
+  const v = nombreFr(valeur, 1);
+  if (continu) return `${v} mg/kg/24 h`;
+  if (freq && freq > 1) return `${v} mg/kg par administration (≈ ${nombreFr(valeur * freq)} mg/kg/j)`;
+  return `${v} mg/kg`;
 }
 
-function texteMgKg(valeur: number, freq: number | undefined, continu?: boolean): string {
-  const v = String(arrondi(valeur, 1)).replace('.', ',');
-  if (continu) return `${v} mg/kg/24 h`;
-  if (freq && freq > 1) return `${v} mg/kg par administration (≈ ${String(arrondi(valeur * freq)).replace('.', ',')} mg/kg/j)`;
-  return `${v} mg/kg`;
+function enMg(v: { valeur: number; unite: string }): number {
+  return v.unite === 'g' ? v.valeur * 1000 : v.valeur;
+}
+
+/**
+ * Dose pondérale (mg) plafonnée par la dose maximale par administration et, si la fréquence
+ * est connue, par la dose maximale journalière. L'arrondi (à 10 mg) est appliqué avant le
+ * plafonnement pour qu'un arrondi ne fasse jamais dépasser le plafond.
+ */
+export function dosePonderalePlafonnee(
+  mgParKg: number,
+  poidsKg: number,
+  opts: { maxParAdministration?: { valeur: number; unite: string }; maxParJour?: { valeur: number; unite: string }; frequenceParJour?: number; continue?: boolean },
+): { mg: number; plafonne: false | 'administration' | 'jour' } {
+  let mg = arrondi(mgParKg * poidsKg, -1);
+  let plafonne: false | 'administration' | 'jour' = false;
+  if (opts.maxParAdministration && mg > enMg(opts.maxParAdministration)) {
+    mg = enMg(opts.maxParAdministration);
+    plafonne = 'administration';
+  }
+  if (opts.maxParJour) {
+    const parJour = opts.continue ? 1 : opts.frequenceParJour;
+    if (parJour && mg * parJour > enMg(opts.maxParJour)) {
+      mg = Math.floor(enMg(opts.maxParJour) / parJour / 10) * 10;
+      plafonne = 'jour';
+    }
+  }
+  return { mg, plafonne };
 }
 
 function poidsPourDose(
   ref: 'total' | 'ideal' | 'ajuste' | undefined,
   seuilObesite: number | undefined,
   ctx: ContexteDecision,
+  moleculeId?: string,
 ): { poids?: number; type: string; manquant?: string; avertissement?: string } {
   const p = ctx.dossier.patient;
   if (p.poidsKg === undefined) return { type: 'poids réel', manquant: 'poids' };
@@ -61,11 +88,17 @@ function poidsPourDose(
       avertissement: `Poids ${ref === 'ideal' ? 'idéal' : 'ajusté'} non calculable sans taille et sexe : dose calculée sur le poids réel, à vérifier.`,
     };
   }
-  const pi = poidsIdealDevine(p.tailleCm, sexe);
-  if (ref === 'ideal') return { poids: pi, type: 'poids idéal (Devine)' };
+  // Aminosides : formules des RCP (gentamicine : Lorentz + 0,43 × surcharge ; amikacine : poids idéal + 40 % de l'excédent,
+  // formule du poids idéal non précisée par le RCP amikacine → Lorentz retenu par cohérence). Autres molécules : Devine.
+  const aminoside = moleculeId === 'gentamicine' || moleculeId === 'amikacine';
+  const k = moleculeId === 'gentamicine' ? 0.43 : 0.4;
+  const pi = aminoside ? poidsIdealLorentz(p.tailleCm, sexe) : poidsIdealDevine(p.tailleCm, sexe);
+  const nomPi = aminoside ? 'Lorentz' : 'Devine';
+  // Poids idéal : jamais supérieur au poids réel (patient maigre : poids réel).
+  if (ref === 'ideal') return pi < p.poidsKg ? { poids: pi, type: `poids idéal (${nomPi})` } : { poids: p.poidsKg, type: 'poids réel (inférieur au poids idéal)' };
   const seuil = seuilObesite ?? 1.25;
-  if (p.poidsKg / pi > seuil) return { poids: poidsAjuste(p.poidsKg, pi), type: `poids ajusté (PI + 0,4 × excès ; poids réel/PI > ${seuil})` };
-  return { poids: p.poidsKg, type: 'poids réel (pas d\'obésité selon le seuil du régime)' };
+  if (p.poidsKg / pi > seuil) return { poids: poidsAjuste(p.poidsKg, pi, k), type: `poids ajusté (PI ${nomPi} + ${nombreFr(k, 2)} × excès ; poids réel/PI > ${nombreFr(seuil, 2)})` };
+  return { poids: p.poidsKg, type: `poids réel (poids réel/PI ≤ ${nombreFr(seuil, 2)} : pas d'obésité selon le seuil du régime)` };
 }
 
 export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecision, opts: { dureePrevueJours?: number; coPrescriptions: string[]; continue?: boolean }): boolean | 'inconnu' {
@@ -181,30 +214,28 @@ export function calculerPrescription(args: {
   let doseAffichee: string;
   let doseCalculee: PrescriptionProposee['doseCalculee'];
   const freq = r.dose.frequenceParJour;
-  const freqTexte = r.dose.continue ? 'en perfusion continue sur 24 h' : freq ? `× ${freq}/24 h (toutes les ${arrondi(24 / freq, 1).toString().replace('.', ',')} h)` : '';
+  const freqTexte = r.dose.continue ? 'en perfusion continue sur 24 h' : freq ? `× ${freq}/24 h (toutes les ${nombreFr(24 / freq, 1)} h)` : '';
   if (r.dose.texte) {
     doseAffichee = r.dose.texte;
   } else if (r.dose.type === 'fixe') {
     doseAffichee = `${formaterDose(r.dose.valeur, r.dose.unite)} ${freqTexte}`.trim();
     doseCalculee = { valeurParAdministration: r.dose.valeur, unite: r.dose.unite, frequenceParJour: freq, continue: r.dose.continue };
   } else {
-    const pd = poidsPourDose(r.dose.poidsReference, r.dose.seuilObesiteRatio, ctx);
+    const pd = poidsPourDose(r.dose.poidsReference, r.dose.seuilObesiteRatio, ctx, m.id);
     if (pd.poids === undefined) {
       doseAffichee = `${texteMgKg(r.dose.valeur, freq, r.dose.continue)} ${freqTexte} — poids manquant : dose par administration non calculée`;
-      manquants.push({ champ: 'poids', pourquoi: `dose pondérale de ${m.dci} (${r.dose.valeur} ${r.dose.unite})`, impact: 'bloque_dose' });
+      manquants.push({ champ: 'poids', pourquoi: `dose pondérale (${m.dci} : ${nombreFr(r.dose.valeur, 1)} ${r.dose.unite})`, impact: 'bloque_dose' });
     } else {
-      let val = r.dose.valeur * pd.poids; // mg
-      let plafonne = false;
-      if (r.dose.doseMaxParAdministration) {
-        const max = r.dose.doseMaxParAdministration.unite === 'g' ? r.dose.doseMaxParAdministration.valeur * 1000 : r.dose.doseMaxParAdministration.valeur;
-        if (val > max) {
-          val = max;
-          plafonne = true;
-        }
-      }
-      doseAffichee = `${formaterDose(arrondi(val, -1), 'mg')} ${freqTexte} (${texteMgKg(r.dose.valeur, freq, r.dose.continue)} × ${String(arrondi(pd.poids, 1)).replace('.', ',')} kg, ${pd.type}${plafonne ? ' ; plafonné à la dose maximale' : ''})`;
-      doseCalculee = { valeurParAdministration: arrondi(val, -1), unite: 'mg', frequenceParJour: freq, continue: r.dose.continue, poidsUtilise: { valeur: arrondi(pd.poids, 1), type: pd.type } };
-      if (pd.avertissement) avert.push(pd.avertissement);
+      const { mg: val, plafonne } = dosePonderalePlafonnee(r.dose.valeur, pd.poids, {
+        maxParAdministration: r.dose.doseMaxParAdministration,
+        maxParJour: r.dose.doseMaxParJour,
+        frequenceParJour: freq,
+        continue: r.dose.continue,
+      });
+      const plafTexte = plafonne === 'administration' ? ' ; plafonné à la dose maximale par administration' : plafonne === 'jour' ? ' ; plafonné à la dose maximale journalière' : '';
+      doseAffichee = `${formaterDose(val, 'mg', { forcerMg: true })} ${freqTexte} (${texteMgKg(r.dose.valeur, freq, r.dose.continue)} × ${nombreFr(pd.poids, 1)} kg, ${pd.type}${plafTexte})`;
+      doseCalculee = { valeurParAdministration: val, unite: 'mg', frequenceParJour: freq, continue: r.dose.continue, poidsUtilise: { valeur: arrondi(pd.poids, 1), type: pd.type } };
+      if (pd.avertissement && !avert.includes(pd.avertissement)) avert.push(pd.avertissement);
     }
   }
 
@@ -213,9 +244,16 @@ export function calculerPrescription(args: {
     const c = r.chargeInitiale;
     if (c.type === 'fixe') chargeInitiale = `${c.libelle} : ${formaterDose(c.valeur, c.unite)}`;
     else {
-      const pd = poidsPourDose(c.poidsReference, c.seuilObesiteRatio, ctx);
-      chargeInitiale = pd.poids === undefined ? `${c.libelle} : ${c.valeur} ${c.unite} — poids manquant` : `${c.libelle} : ${formaterDose(arrondi(c.valeur * pd.poids, -1), 'mg')} (${c.valeur} ${c.unite} × ${arrondi(pd.poids, 1)} kg ${pd.type})`;
-      if (pd.poids === undefined) manquants.push({ champ: 'poids', pourquoi: `dose de charge de ${m.dci}`, impact: 'bloque_dose' });
+      const pd = poidsPourDose(c.poidsReference, c.seuilObesiteRatio, ctx, m.id);
+      if (pd.poids === undefined) {
+        chargeInitiale = `${c.libelle} : ${nombreFr(c.valeur, 1)} ${c.unite} — poids manquant : dose non calculée`;
+        manquants.push({ champ: 'poids', pourquoi: `dose de charge (${m.dci})`, impact: 'bloque_dose' });
+      } else {
+        // La dose de charge respecte aussi son plafond (ex. vancomycine 25 mg/kg, maximum 3 g).
+        const ch = dosePonderalePlafonnee(c.valeur, pd.poids, { maxParAdministration: c.doseMaxParAdministration });
+        chargeInitiale = `${c.libelle} : ${formaterDose(ch.mg, 'mg', { forcerMg: true })} (${nombreFr(c.valeur, 1)} ${c.unite} × ${nombreFr(pd.poids, 1)} kg, ${pd.type}${ch.plafonne ? ' ; plafonnée à la dose maximale' : ''})`;
+        if (pd.avertissement && !avert.includes(pd.avertissement)) avert.push(pd.avertissement);
+      }
     }
   }
 
@@ -241,7 +279,7 @@ export function calculerPrescription(args: {
         manquants.push({ champ: 'fonction rénale (créatininémie avec unité, âge, poids, sexe)', pourquoi: `adaptation posologique de ${m.dci} (méthode ${ar.methode})`, impact: m.famille === 'aminoside' || m.famille === 'glycopeptide' ? 'bloque_dose' : 'affine' });
       } else {
         const palier = ar.paliers.find((pl) => (pl.clcrMin === undefined || v.valeur >= pl.clcrMin) && (pl.clcrMax === undefined || v.valeur < pl.clcrMax));
-        const clTexte = `${v.methode} ≈ ${arrondi(v.valeur)} mL/min`;
+        const clTexte = `${v.methode} ≈ ${nombreFr(v.valeur)} mL/min`;
         if (palier) {
           adaptations.push(`${clTexte} : ${palier.texte}`);
           sources.push(...palier.sources);
@@ -253,7 +291,8 @@ export function calculerPrescription(args: {
           avert.push(`Fonction rénale instable / IRA : l'estimation (${clTexte}) n'est qu'indicative ; adapter sur la créatininémie quotidienne et, pour les molécules dosables, sur les concentrations.`);
         }
         for (const l of ctx.renal.limites) if (!avert.includes(l) && !(ctx.renal.applicable === false && /instable|dialysé/.test(l))) avert.push(l);
-        if (p.renal.dialyse === 'inconnu') manquants.push({ champ: 'dialyse (oui/non)', pourquoi: 'conditionne l\'adaptation posologique', impact: 'affine' });
+        // Même libellé que la règle transversale : les deux demandes fusionnent en une seule ligne.
+        if (p.renal.dialyse === 'inconnu') manquants.push({ champ: 'dialyse / épuration extrarénale (oui/non)', pourquoi: 'adaptation posologique', impact: 'affine' });
       }
     }
   }

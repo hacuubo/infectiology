@@ -9,7 +9,7 @@ export const cefotaxime: Molecule = {
   id: 'cefotaxime',
   dci: 'Céfotaxime',
   famille: 'cephalosporine',
-  chaineLaterale: 'aminothiazole-méthoxyimino (céfotaxime, ceftriaxone, céfépime, ceftazidime, céfixime)',
+  chaineLaterale: 'aminothiazolyl-oxyimino : R1 identique céfotaxime/ceftriaxone/céfépime, proche pour ceftazidime et céfixime (connaissance non vérifiée dans une source lue : tableaux SPILF/JNI en image)',
   statut: 'verifiee_ia',
   regimens: [
     {
@@ -51,7 +51,7 @@ export const ceftriaxone: Molecule = {
   id: 'ceftriaxone',
   dci: 'Ceftriaxone',
   famille: 'cephalosporine',
-  chaineLaterale: 'aminothiazole-méthoxyimino (céfotaxime, ceftriaxone, céfépime, ceftazidime, céfixime)',
+  chaineLaterale: 'aminothiazolyl-oxyimino : R1 identique céfotaxime/ceftriaxone/céfépime, proche pour ceftazidime et céfixime (connaissance non vérifiée dans une source lue : tableaux SPILF/JNI en image)',
   statut: 'verifiee_ia',
   regimens: [
     {
@@ -66,8 +66,9 @@ export const ceftriaxone: Molecule = {
     },
     {
       id: 'ceftriaxone-2g',
-      libelle: '2 g toutes les 24 h (gravité, bactériémie, obésité, souche « I »)',
-      indication: 'IU grave (SPILF 2015/2026), bactériémie, endocardite à streptocoque (ESC 2023 : 2 g/j), obésité IMC > 30 (HAS).',
+      libelle: '2 g toutes les 24 h (gravité, bactériémie, obésité)',
+      // Audit relecteur 2 : « souche I » retiré — 2 g/24 h est la posologie STANDARD (EUCAST 2 g × 1 ; SPILF/SFPT/CA-SFM 1 à 2 g/24 h) ; souche I → 2 g/12 h.
+      indication: 'IU grave (SPILF 2015/2026), bactériémie, endocardite à streptocoque (ESC 2023 : 2 g/j), obésité IMC > 30 (HAS). Pas pour une souche catégorisée I (forte posologie = 2 g toutes les 12 h).',
       dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 1 },
       voie: 'IV',
       modalites: 'perfusion de 30 min, 1 fois par 24 h',
@@ -76,8 +77,8 @@ export const ceftriaxone: Molecule = {
     },
     {
       id: 'ceftriaxone-2g12h',
-      libelle: '2 g toutes les 12 h (endocardite à E. faecalis en association ; forte posologie)',
-      indication: 'Endocardite à E. faecalis : amoxicilline + ceftriaxone 4 g/j en 2 doses (ESC 2023, SPILF/AEPEI 2025).',
+      libelle: '2 g toutes les 12 h (forte posologie : souche « I », endocardite à E. faecalis en association)',
+      indication: 'Endocardite à E. faecalis : amoxicilline + ceftriaxone 4 g/j en 2 doses (ESC 2023, SPILF/AEPEI 2025) ; souche catégorisée « sensible à forte posologie » (I) (SPILF/SFPT/CA-SFM : forte posologie 2 g toutes les 12 h ; EUCAST : 2 g × 2 ou 4 g × 1).',
       dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 2 },
       voie: 'IV',
       modalites: 'perfusion de 30 min toutes les 12 h',
@@ -97,7 +98,7 @@ export const ceftriaxone: Molecule = {
   },
   insuffisanceHepatique: { texte: 'Insuffisance hépatique sévère : aucune donnée d\'étude ; en cas d\'insuffisance rénale associée, surveiller et ne pas dépasser 2 g/jour.', sources: [S('RCP-ceftriaxone', '§4.2', 'insuffisance hépatique sévère : « Aucune donnée issue d\'études n\'est disponible »', 'adaptation_renale')] },
   surveillance: [
-    encephalopathieBetaLactamine('ceftriaxone-encephalopathie', 'RCP-ceftriaxone'),
+    encephalopathieBetaLactamine('ceftriaxone-encephalopathie', 'RCP-ceftriaxone', '§4.4', '[résumé de la fiche de vérification, non verbatim] encéphalopathie signalée surtout chez le sujet âgé et en insuffisance rénale grave'),
     {
       id: 'ceftriaxone-calcium',
       type: 'interaction',
@@ -165,7 +166,7 @@ export const cefazoline: Molecule = {
   id: 'cefazoline',
   dci: 'Céfazoline',
   famille: 'cephalosporine',
-  chaineLaterale: 'tétrazole (céfazoline : chaîne latérale propre, différente des pénicillines)',
+  chaineLaterale: 'céfazoline : chaînes latérales propres, différentes des pénicillines et des autres céphalosporines de la base (connaissance non vérifiée dans une source lue)',
   statut: 'verifiee_ia',
   regimens: [
     {
@@ -177,7 +178,7 @@ export const cefazoline: Molecule = {
       modalites: 'perfusion de 60 min toutes les 8 h (ou perfusion continue après dose de charge de 2 g)',
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 8 (EHJ p. 3980)', 'Cefazolin 6 g/day i.v. in 3 doses', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (céfazoline)', 'Céfazoline … 2 g toutes les 8 h ou 80 à 100 mg/kg/jour en 3 administrations', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 13, 16', 'Céfazoline Ou (Cl)oxacilline ; Céfazoline : 100mg/kg/j IV en 3 inj', 'choix'), S('SPILF-2025-DESC-SAB-Tattevin', 'messages clés', 'Péni M (anti-staph) ou céfazoline > autres Beta-lactamines si SAMS', 'choix')],
-      remarques: 'ESC 2023 note e : la céfazoline ne remplace la cloxacilline que chez les patients sans hypersensibilité de type immédiat aux pénicillines.',
+      remarques: 'ESC 2023 (Recommendation Table 8, note e) : « Cefazolin can replace cloxacillin only in patients with non-immediate-type hypersensitivity reactions to penicillin » — en cas d\'allergie à la pénicilline, la céfazoline ne remplace la cloxacilline que si la réaction n\'était pas immédiate. Divergence : SPILF 2026 (d\'après ESCMID 2026) admet une céphalosporine à chaînes latérales différentes en cas de réaction immédiate non grave. Rang 1 de la céfazoline = choix de l\'application (sources : céfazoline OU cloxacilline, à égalité).',
     },
   ],
   adaptationRenale: {
@@ -191,7 +192,7 @@ export const cefazoline: Molecule = {
     ],
     hemodialyse: { texte: 'Posologie « dépendra des conditions de dialyse » (RCP, sans chiffre) : avis pharmacologique.', sources: [S('RCP-cefazoline', '§4.2', 'la posologie dépendra des conditions de dialyse', 'adaptation_renale')] },
   },
-  surveillance: [encephalopathieBetaLactamine('cefazoline-encephalopathie', 'RCP-cefazoline'), stpBetaLactamineReanimation('cefazoline-stp')],
+  surveillance: [encephalopathieBetaLactamine('cefazoline-encephalopathie', 'RCP-cefazoline', '§4.4', 'L\'exposition aux bêta-lactamines est associée au risque d\'encéphalopathie'), stpBetaLactamineReanimation('cefazoline-stp')],
   grossesse: { statut: 'utilisable', texte: 'Utilisation possible, en particulier au-delà du 1er trimestre (CRAT).', sources: [S('CRAT-cephalosporines-grossesse', 'En pratique', "L'utilisation de la céfazoline est possible, en particulier au-delà du 1er trimestre", 'autre')] },
 };
 
@@ -200,7 +201,7 @@ export const amoxicilline: Molecule = {
   id: 'amoxicilline',
   dci: 'Amoxicilline',
   famille: 'penicilline',
-  chaineLaterale: 'aminopénicilline (amoxicilline, ampicilline ; chaîne latérale identique à céfadroxil/céfalexine)',
+  chaineLaterale: 'aminopénicilline (amoxicilline, ampicilline ; R1 identique ou proche de céfadroxil/céfalexine/céfaclor — connaissance non vérifiée dans une source lue)',
   statut: 'verifiee_ia',
   regimens: [
     {
@@ -384,7 +385,7 @@ export const piperacillineTazobactam: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('RCP-piperacilline-tazobactam', '§4.4', 'association vancomycine : « une augmentation de l\'incidence de lésion rénale aiguë »', 'surveillance'), S('ASHP-IDSA-2020-vancomycine-STP', 'néphrotoxicité', 'piperacillin/tazobactam and flucloxacillin have been reported to increase the risk for AKI', 'surveillance')],
     },
-    encephalopathieBetaLactamine('piptazo-encephalopathie', 'RCP-piperacilline-tazobactam'),
+    encephalopathieBetaLactamine('piptazo-encephalopathie', 'RCP-piperacilline-tazobactam', '§4.4', '[résumé de la fiche de vérification, non verbatim] convulsions possibles à fortes doses et en insuffisance rénale'),
     stpBetaLactamineReanimation('piptazo-stp'),
   ],
   grossesse: { statut: 'utilisable', texte: 'Envisageable quel que soit le terme, à posologies efficaces (CRAT).', sources: [S('CRAT-penicillines-grossesse', 'En pratique', 'envisageable quel que soit le terme de la grossesse, à posologies efficaces (pipéracilline ± tazobactam)', 'autre')] },
@@ -433,18 +434,20 @@ export const temocilline: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('RCP-temocilline', '§4.4', 'Des déterminations périodiques des électrolytes doivent être réalisées chez des patients avec de faibles réserves de potassium', 'surveillance')],
     },
-    encephalopathieBetaLactamine('temocilline-encephalopathie', 'RCP-temocilline'),
+    encephalopathieBetaLactamine('temocilline-encephalopathie', 'RCP-temocilline', '§4.4', '[résumé de la fiche de vérification, non verbatim] convulsions en cas de surdosage ou d\'insuffisance rénale'),
   ],
   grossesse: { statut: 'non_verifie', texte: 'Fiche CRAT non consultée : statut non vérifié.', sources: [] },
 };
 
 /* ------------------------------------------------------------------ */
+// Audit relecteur 2 (2026-11-05) : RCP lu sur la BDPM (CÉFOXITINE PANPHARMA 2 g, RCP mis à jour le 13/06/2022) :
+// posologie et adaptation rénale désormais sourcées → statut « verifiee_ia » (grossesse toujours non vérifiée).
 export const cefoxitine: Molecule = {
   id: 'cefoxitine',
   dci: 'Céfoxitine',
   famille: 'cephalosporine',
   chaineLaterale: 'céphamycine',
-  statut: 'brouillon',
+  statut: 'verifiee_ia',
   regimens: [
     {
       id: 'cefoxitine-6g',
@@ -452,15 +455,26 @@ export const cefoxitine: Molecule = {
       indication: 'IU masculine / PNA à E. coli ou Proteus BLSE (SPILF 2026 : 1er choix IV avec pipéracilline-tazobactam et témocilline ; uniquement E. coli/Proteus).',
       dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3 },
       voie: 'IV',
-      modalites: 'perfusion toutes les 8 h (répartition de 6 g/j retenue par l\'application ; modalités du RCP non vérifiées)',
-      statut: 'brouillon',
-      sources: [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'posologie'), S('SPILF-2026-info-antibio-109', 'posologies', 'céfoxitine 6g/24h', 'posologie'), S('RCP-cefoxitine', 'non consulté', undefined, 'adaptation_renale')],
-      remarques: 'RCP non consulté : adaptation rénale et modalités de perfusion à vérifier avant validation.',
+      modalites: 'IV toutes les 8 h (RCP : injection IV lente en 3 à 5 min ; modalités de perfusion non lues dans le RCP)',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-2026-IUM', 'diapo 17, 24', 'céfoxitine IV 6 g/jour (seulement si E. coli ou Proteus)', 'posologie'), S('SPILF-2026-info-antibio-109', 'posologies', 'céfoxitine 6g/24h', 'posologie'), S('RCP-cefoxitine', '§4.2', 'traitement curatif : 1 ou 2 g toutes les 8 heures, soit 3 à 6 g par jour', 'posologie')],
     },
   ],
-  adaptationRenale: { methode: 'non_precisee', statut: 'brouillon', texteGeneral: 'Adaptation rénale non renseignée (RCP non consulté) : avis pharmacologique.', paliers: [] },
+  adaptationRenale: {
+    methode: 'non_precisee',
+    statut: 'verifiee_ia',
+    texteGeneral: 'Dose de charge de 1 ou 2 g possible, puis entretien selon la clairance (RCP).',
+    paliers: [
+      { clcrMin: 50, texte: 'ClCr > 50 mL/min : pas d\'adaptation (le tableau du RCP commence à 50 mL/min).', sources: [S('RCP-cefoxitine', '§4.2 (tableau IR)', 'tableau d\'entretien à partir de 50 - 30 ml/min', 'adaptation_renale')] },
+      { clcrMin: 30, clcrMax: 50, texte: 'ClCr 30-50 mL/min : 1 à 2 g toutes les 8 à 12 h.', sources: [S('RCP-cefoxitine', '§4.2 (tableau IR)', '50 - 30 : 1 - 2 g toutes les 8 - 12 heures', 'adaptation_renale')] },
+      { clcrMin: 10, clcrMax: 30, texte: 'ClCr 10-29 mL/min : 1 à 2 g toutes les 12 à 24 h.', sources: [S('RCP-cefoxitine', '§4.2 (tableau IR)', '29 - 10 : 1 - 2 g toutes les 12 - 24 heures', 'adaptation_renale')] },
+      { clcrMin: 5, clcrMax: 10, texte: 'ClCr 5-9 mL/min : 0,5 à 1 g toutes les 12 à 24 h.', sources: [S('RCP-cefoxitine', '§4.2 (tableau IR)', '9 - 5 : 0,5 - 1 g toutes les 12 - 24 heures', 'adaptation_renale')] },
+      { clcrMax: 5, texte: 'ClCr < 5 mL/min : 0,5 à 1 g toutes les 24 à 48 h.', sources: [S('RCP-cefoxitine', '§4.2 (tableau IR)', 'inférieure à 5 : 0,5 - 1 g toutes les 24 - 48 heures', 'adaptation_renale')] },
+    ],
+    hemodialyse: { texte: 'Dose de charge de 1 à 2 g après chaque hémodialyse, entretien selon le tableau.', sources: [S('RCP-cefoxitine', '§4.2', 'la dose de charge de 1 - 2 g doit être donnée après chaque hémodialyse', 'adaptation_renale')] },
+  },
   surveillance: [],
-  grossesse: { statut: 'non_verifie', texte: 'Non vérifié.', sources: [] },
+  grossesse: { statut: 'non_verifie', texte: 'Non vérifié (fiche CRAT non consultée).', sources: [] },
 };
 
 /* ------------------------------------------------------------------ */
@@ -468,7 +482,7 @@ export const cefepime: Molecule = {
   id: 'cefepime',
   dci: 'Céfépime',
   famille: 'cephalosporine',
-  chaineLaterale: 'aminothiazole-méthoxyimino',
+  chaineLaterale: 'aminothiazolyl-oxyimino : R1 identique céfotaxime/ceftriaxone/céfépime, proche pour ceftazidime et céfixime (connaissance non vérifiée dans une source lue : tableaux SPILF/JNI en image)',
   statut: 'verifiee_ia',
   regimens: [
     {
@@ -488,9 +502,9 @@ export const cefepime: Molecule = {
     texteGeneral: 'Adapter dès que ClCr ≤ 50 mL/min (formule de Cockcroft citée par le RCP) ; neurotoxicité en cas de surdosage.',
     paliers: [
       { clcrMin: 50, texte: 'ClCr > 50 mL/min : pas d\'adaptation.', sources: [S('RCP-cefepime', '§4.4', 'adaptation pour des clairances de créatinine inférieures ou égales à 50 ml/min', 'adaptation_renale')] },
-      { clcrMin: 30, clcrMax: 50, texte: 'ClCr 30-50 mL/min : réduire selon le tableau du RCP (ex. 2 g ×3 → 2 g ×2 ; 1 g ×2 → 1 g ×1).', sources: [S('RCP-cefepime', '§4.2 (tableau IR)', 'paliers 50-30, 29-11, ≤ 10', 'adaptation_renale')] },
-      { clcrMin: 11, clcrMax: 30, texte: 'ClCr 11-29 mL/min : réduire selon le tableau du RCP (ex. 2 g ×3 → 2 g ×1 ; 1 g ×2 → 500 mg ×1) — vérifier le tableau complet.', sources: [S('RCP-cefepime', '§4.2 (tableau IR)', 'ex. 1 g ×2 → 1 g ×1 [50-30] → 500 mg ×1 [29-11]', 'adaptation_renale')] },
-      { clcrMax: 11, texte: 'ClCr ≤ 10 mL/min : palier le plus bas du tableau du RCP ; STP conseillé (neurotoxicité).', sources: [S('RCP-cefepime', '§4.2 (tableau IR)', 'palier ≤ 10', 'adaptation_renale')] },
+      { clcrMin: 30, clcrMax: 50, texte: 'ClCr 30-50 mL/min : 2 g ×3/j → 1 g ×3/j ; 2 g ×2/j → 2 g ×1/j ; 1 g ×2/j → 1 g ×1/j (tableau du RCP).', sources: [S('RCP-cefepime', '§4.2 (tableau IR, vérifié le 2026-11-05)', '2 g, 3 fois par jour → 1 g, 3 fois par jour [50-30]', 'adaptation_renale')] },
+      { clcrMin: 11, clcrMax: 30, texte: 'ClCr 11-29 mL/min : 2 g ×3/j → 1 g ×2/j ; 2 g ×2/j → 1 g ×1/j ; 1 g ×2/j → 500 mg ×1/j (tableau du RCP).', sources: [S('RCP-cefepime', '§4.2 (tableau IR, vérifié le 2026-11-05)', '2 g, 3 fois par jour → 1 g, 2 fois par jour [29-11]', 'adaptation_renale')] },
+      { clcrMax: 11, texte: 'ClCr ≤ 10 mL/min : 2 g ×3/j → 1 g ×1/j ; 2 g ×2/j → 500 mg ×1/j ; 1 g ×2/j → 250 mg ×1/j (tableau du RCP). Dosage plasmatique utile en cas de signes neurologiques (SFPT/SFAR 2018).', sources: [S('RCP-cefepime', '§4.2 (tableau IR, vérifié le 2026-11-05)', '2 g, 3 fois par jour → 1 g, 1 fois par jour [≤ 10]', 'adaptation_renale')] },
     ],
     hemodialyse: { texte: 'Dose de charge 1 g puis 500 mg une fois par jour ; les jours de dialyse, administrer après la séance.', sources: [S('RCP-cefepime', '§4.2', '« dose de charge : 1 g, suivi de 500 mg, 1 fois/jour » ; « une dose doit être administrée après la séance de dialyse »', 'adaptation_renale')] },
   },
@@ -541,7 +555,7 @@ export const meropeneme: Molecule = {
     hemodialyse: { texte: 'Administrer la dose requise après la fin de la séance d\'hémodialyse.', sources: [S('RCP-meropeneme', '§4.2', '« La dose requise doit être administrée après la fin de la séance d\'hémodialyse. »', 'adaptation_renale')] },
   },
   surveillance: [
-    { ...encephalopathieBetaLactamine('meropeneme-convulsions', 'RCP-meropeneme'), quoi: 'Surveillance neurologique (crises convulsives, peu fréquentes) et bilan hépatique' },
+    { ...encephalopathieBetaLactamine('meropeneme-convulsions', 'RCP-meropeneme', '§4.4', 'Des crises convulsives ont été peu fréquemment rapportées lors du traitement par les carbapénèmes'), quoi: 'Surveillance neurologique (crises convulsives, peu fréquentes) et bilan hépatique' },
     stpBetaLactamineReanimation('meropeneme-stp'),
   ],
   grossesse: { statut: 'non_verifie', texte: 'Fiche CRAT méropénème introuvable lors de la vérification ; l\'imipénème-cilastatine est « envisageable quel que soit le terme ».', sources: [] },
@@ -579,9 +593,10 @@ export const imipeneme: Molecule = {
     hemodialyse: { texte: 'Schéma ClCr 15-29 (500 mg/12 h), dose après la séance puis toutes les 12 h.', sources: [S('RCP-imipeneme', '§4.2', 'dialysés : schéma 15-29, dose après séance puis toutes les 12 h', 'adaptation_renale')] },
   },
   surveillance: [
-    { ...encephalopathieBetaLactamine('imipeneme-neuro', 'RCP-imipeneme'), categorie: 'systematique', conditionId: undefined, conditionTexte: undefined, quoi: 'Surveillance neurologique (myoclonies, confusion, convulsions) : respect strict des schémas posologiques adaptés à la fonction rénale' },
+    { ...encephalopathieBetaLactamine('imipeneme-neuro', 'RCP-imipeneme', '§4.4', 'Un respect strict des schémas posologiques recommandés s\'impose.'), categorie: 'systematique', conditionId: undefined, conditionTexte: undefined, quoi: 'Surveillance neurologique (myoclonies, confusion, convulsions) : respect strict des schémas posologiques adaptés à la fonction rénale' },
   ],
-  grossesse: { statut: 'utilisable', texte: 'Envisageable quel que soit le terme (CRAT, résultat de recherche non lu en détail).', sources: [S('CRAT-penicillines-grossesse', 'CRAT imipénem (fiche 13283, non lue en détail)', 'l\'utilisation de l\'association imipénem – cilastatine est envisageable quel que soit le terme de la grossesse', 'autre')] },
+  // Audit relecteur 2 : « utilisable » rétrogradé en « non_verifie » (fiche CRAT 13283 vue seulement en résultat de recherche, rattachée à tort à la fiche pénicillines).
+  grossesse: { statut: 'non_verifie', texte: 'Non vérifié : la fiche CRAT imipénem n\'a été vue qu\'en résultat de recherche (« envisageable quel que soit le terme »), non lue.', sources: [] },
 };
 
 /* ------------------------------------------------------------------ */
@@ -599,10 +614,20 @@ export const ertapeneme: Molecule = {
       voie: 'IV',
       modalites: 'perfusion de 30 min, 1 fois par 24 h',
       statut: 'verifiee_ia',
-      sources: [S('SPILF-2026-IUM', 'diapo 17', 'ertapénème IV 1 g/jour', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (ertapénème)', '1 g toutes les 24 h en 30 min', 'posologie')],
+      sources: [S('SPILF-2026-IUM', 'diapo 17', 'ertapénème IV 1 g/jour', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (ertapénème)', '1 g toutes les 24 h en 30 min', 'posologie'), S('RCP-ertapeneme', '§4.2', 'la dose d\'ERTAPENEM est de 1 gramme (g) administrée une fois par jour par voie intraveineuse ; perfusé pendant 30 minutes', 'posologie')],
     },
   ],
-  adaptationRenale: { methode: 'non_precisee', statut: 'brouillon', texteGeneral: 'RCP non consulté lors de la vérification : adaptation rénale à vérifier (avis pharmacologique).', paliers: [] },
+  // Audit relecteur 2 (2026-11-05) : adaptation rénale renseignée d'après le RCP (BDPM) — l'ertapénème ne doit pas être utilisé si ClCr ≤ 30 ni en hémodialyse.
+  adaptationRenale: {
+    methode: 'non_precisee',
+    statut: 'verifiee_ia',
+    texteGeneral: 'RCP : clairance exprimée en mL/min/1,73 m².',
+    paliers: [
+      { clcrMin: 30.01, texte: 'ClCr > 30 mL/min/1,73 m² : aucune adaptation posologique.', sources: [S('RCP-ertapeneme', '§4.2', 'Chez les patients dont la clairance de la créatinine est > 30 ml/min/1,73 m² […] aucune adaptation posologique n\'est nécessaire', 'adaptation_renale')] },
+      { clcrMax: 30.01, texte: 'ClCr ≤ 30 mL/min/1,73 m² : NE PAS UTILISER (données de sécurité et d\'efficacité insuffisantes) — choisir une autre molécule.', sources: [S('RCP-ertapeneme', '§4.2', 'les données de sécurité d\'emploi et d\'efficacité de l\'ertapénème sont insuffisantes […] l\'ertapénème ne doit pas être utilisé chez ces patients', 'adaptation_renale')] },
+    ],
+    hemodialyse: { texte: 'NE PAS UTILISER chez l\'hémodialysé (données insuffisantes).', sources: [S('RCP-ertapeneme', '§4.2', 'Chez les patients hémodialysés […] l\'ertapénème ne doit pas être utilisé chez ces patients', 'adaptation_renale')] },
+  },
   surveillance: [],
   grossesse: { statut: 'non_verifie', texte: 'Non vérifié.', sources: [] },
 };
@@ -657,8 +682,9 @@ export const cefixime: Molecule = {
   id: 'cefixime',
   dci: 'Céfixime',
   famille: 'cephalosporine',
-  chaineLaterale: 'aminothiazole-méthoxyimino',
-  statut: 'brouillon',
+  chaineLaterale: 'aminothiazolyl-oxyimino : R1 identique céfotaxime/ceftriaxone/céfépime, proche pour ceftazidime et céfixime (connaissance non vérifiée dans une source lue : tableaux SPILF/JNI en image)',
+  // Audit relecteur 2 (2026-11-05) : RCP lu (BDPM) → « verifiee_ia » ; grossesse non vérifiée.
+  statut: 'verifiee_ia',
   regimens: [
     {
       id: 'cefixime-200x2',
@@ -667,12 +693,19 @@ export const cefixime: Molecule = {
       dose: { type: 'fixe', valeur: 200, unite: 'mg', frequenceParJour: 2 },
       voie: 'PO',
       modalites: 'per os toutes les 12 h',
-      statut: 'brouillon',
-      sources: [S('SPILF-2026-IUM', 'diapo 23-24', 'Céfixime 200 mgx2/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'céfixime 200 ×2/j 10 j', 'posologie'), S('RCP-cefixime', 'non consulté', undefined, 'adaptation_renale')],
-      remarques: 'RCP non consulté : adaptation rénale non vérifiée.',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-2026-IUM', 'diapo 23-24', 'Céfixime 200 mgx2/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'céfixime 200 ×2/j 10 j', 'posologie'), S('RCP-cefixime', '§4.2', 'est de 400 mg/j, en deux administrations, à 12 heures d\'intervalle', 'posologie')],
     },
   ],
-  adaptationRenale: { methode: 'non_precisee', statut: 'brouillon', texteGeneral: 'Adaptation rénale non vérifiée (RCP non consulté).', paliers: [] },
+  adaptationRenale: {
+    methode: 'non_precisee',
+    statut: 'verifiee_ia',
+    paliers: [
+      { clcrMin: 20.01, texte: 'ClCr > 20 mL/min : pas d\'adaptation.', sources: [S('RCP-cefixime', '§4.2', 'Lorsque les valeurs de la clairance de la créatinine sont supérieures à 20 mL/min, il n\'est pas utile de modifier la posologie', 'adaptation_renale')] },
+      { clcrMax: 20.01, texte: 'ClCr ≤ 20 mL/min (y compris hémodialyse) : ne pas dépasser 200 mg/j en une prise.', sources: [S('RCP-cefixime', '§4.2', 'ne devra pas dépasser 200 mg/j, en une administration', 'adaptation_renale')] },
+    ],
+    hemodialyse: { texte: 'Ne pas dépasser 200 mg/j en une prise.', sources: [S('RCP-cefixime', '§4.2', 'y compris chez les patients hémodialysés : ne devra pas dépasser 200 mg/j, en une administration', 'adaptation_renale')] },
+  },
   surveillance: [],
   grossesse: { statut: 'non_verifie', texte: 'Non vérifié.', sources: [] },
 };

@@ -613,7 +613,7 @@
     "dateConsultation": "2026-11-04",
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur",
-    "notes": "Formule de Cockcroft citée pour l'estimation de la clairance."
+    "notes": "Formule de Cockcroft citée pour l'estimation de la clairance. Tableau d'insuffisance rénale relu par le relecteur 2 le 2026-11-05 : 2 g ×3 → 1 g ×3 (50-30), 1 g ×2 (29-11), 1 g ×1 (≤ 10) ; 2 g ×2 → 2 g ×1, 1 g ×1, 500 mg ×1 ; 1 g ×2 → 1 g ×1, 500 mg ×1, 250 mg ×1 ; hémodialyse : charge 1 g puis 500 mg/j, dose après la séance."
   },
   {
     "id": "RCP-aztreonam",
@@ -685,26 +685,38 @@
   {
     "id": "RCP-cefoxitine",
     "organisme": "ANSM — Base de données publique des médicaments",
-    "titre": "RCP céfoxitine IV (adaptation rénale et modalités) — non consulté lors de la vérification du 2026-11-04",
+    "titre": "RCP CÉFOXITINE PANPHARMA 2 g, poudre pour solution injectable (IV), section 4.2 (posologie, insuffisance rénale, hémodialyse) — RCP mis à jour le 13/06/2022",
     "annee": 2026,
     "type": "rcp",
-    "url": "https://base-donnees-publique.medicaments.gouv.fr/",
-    "dateConsultation": "2026-11-04",
-    "statutAcces": "introuvable",
-    "statutVigueur": "incertain",
-    "notes": "À vérifier avant validation : la posologie 6 g/j provient de SPILF 2026 ; l'adaptation rénale n'est pas renseignée."
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/medicament/67355243/extrait",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Lu par le relecteur 2 le 2026-11-05 (WebFetch BDPM) : 1-2 g/8 h (3-6 g/j) ; tableau IR 50-30 / 29-10 / 9-5 / < 5 ; dose de charge 1-2 g après chaque hémodialyse. Section 4.4 et modalités de perfusion non lues. Auparavant (2026-11-04) : introuvable."
   },
   {
     "id": "RCP-cefixime",
     "organisme": "ANSM — Base de données publique des médicaments",
-    "titre": "RCP céfixime 200 mg — non consulté lors de la vérification du 2026-11-04",
+    "titre": "RCP CEFIXIME VIATRIS 200 mg, comprimé pelliculé, sections 4.2 et 4.3 — RCP mis à jour le 03/06/2026",
     "annee": 2026,
     "type": "rcp",
-    "url": "https://base-donnees-publique.medicaments.gouv.fr/",
-    "dateConsultation": "2026-11-04",
-    "statutAcces": "introuvable",
-    "statutVigueur": "incertain",
-    "notes": "Posologie issue de SPILF 2015/2026 et HAS ; adaptation rénale non vérifiée."
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/medicament/62217516/extrait",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Lu par le relecteur 2 le 2026-11-05 (WebFetch BDPM) : 400 mg/j en 2 prises ; ClCr > 20 mL/min pas d'adaptation ; ≤ 20 (y compris hémodialyse) : max 200 mg/j en 1 prise ; pas de contre-indication rénale en 4.3. Auparavant (2026-11-04) : introuvable."
+  },
+  {
+    "id": "RCP-ertapeneme",
+    "organisme": "ANSM — Base de données publique des médicaments",
+    "titre": "RCP ERTAPENEM PANPHARMA 1 g, poudre pour solution à diluer pour perfusion, section 4.2 — RCP mis à jour le 31/10/2023",
+    "annee": 2026,
+    "type": "rcp",
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/medicament/69931556/extrait",
+    "dateConsultation": "2026-11-05",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Lu par le relecteur 2 le 2026-11-05 (WebFetch BDPM) : 1 g/24 h en 30 min ; ClCr > 30 mL/min/1,73 m² : pas d'adaptation ; insuffisance rénale sévère et hémodialyse : « ne doit pas être utilisé » (données insuffisantes)."
   },
   {
     "id": "ASHP-IDSA-2020-vancomycine-STP",

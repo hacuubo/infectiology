@@ -98,3 +98,55 @@ export const DCI_ANTIBIOGRAMME: { id: string; l: string }[] = [
   { id: 'clindamycine', l: 'Clindamycine' },
   { id: 'gentamicine_haut_niveau', l: 'Gentamicine haut niveau (entérocoques)' },
 ];
+
+/* Libellés lisibles (accents, termes cliniques) des valeurs codées, pour le résumé patient. */
+export const LIBELLE_VALEUR: Record<string, string> = {
+  femme: 'femme',
+  homme: 'homme',
+  communautaire: 'communautaire',
+  associe_aux_soins: 'associé aux soins',
+  stable: 'stable',
+  sepsis: 'sepsis',
+  choc_septique: 'choc septique',
+  inconnu: 'non renseigné',
+  inconnue: 'non renseignée',
+  native: 'native',
+  prothese_mecanique: 'prothèse mécanique',
+  prothese_biologique: 'prothèse biologique',
+  tavi: 'TAVI',
+  cvc: 'cathéter veineux central',
+  picc: 'PICC',
+  chambre_implantable: 'chambre implantable',
+  catheter_dialyse: 'cathéter de dialyse',
+  sonde_vesicale: 'sonde vésicale',
+  sonde_jj: 'sonde JJ',
+  nephrostomie: 'néphrostomie',
+  autre: 'autre',
+  hemodialyse_intermittente: 'hémodialyse intermittente',
+  eer_continue: 'EER continue',
+  dialyse_peritoneale: 'dialyse péritonéale',
+  immediate: 'immédiate',
+  retardee_benigne: 'retardée bénigne',
+  retardee_severe: 'retardée sévère',
+  intolerance_non_allergique: 'intolérance non allergique',
+  negativees: 'contrôles négativés',
+  persistantes: 'toujours positives',
+  non_controlees: 'pas encore contrôlées',
+  suspecte: 'suspecté',
+  confirme: 'confirmé',
+  bgn: 'BGN',
+  cgp_amas: 'CGP en amas',
+  cgp_chainettes: 'CGP en chaînettes',
+  BLSE: 'BLSE',
+  carbapenemase: 'carbapénémase',
+  cephalosporinase_dereprimee: 'céphalosporinase déréprimée',
+  SARM: 'SARM',
+  ERV: 'ERV',
+  EPC: 'EPC',
+  aucun_documente: 'aucun mécanisme documenté',
+};
+
+export function libelle(v: string | undefined): string {
+  if (v === undefined) return 'non renseigné';
+  return LIBELLE_VALEUR[v] ?? v.replace(/_/g, ' ');
+}

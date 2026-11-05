@@ -138,6 +138,8 @@ export interface Patient {
   materielVasculaire: MaterielVasculaire;
   materielVasculaireDatePose?: string;
   materielUrinaire: MaterielUrinaire;
+  /** Forme clinique de l'infection urinaire masculine (SPILF 2026 : la durée en dépend). */
+  formeIUMasculine?: 'pna' | 'prostatite' | 'orchi_epididymite' | 'inconnu';
   interventionRecente?: string;
 }
 

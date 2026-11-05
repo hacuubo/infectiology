@@ -71,6 +71,27 @@ export function dedupSources(refs: SourceRef[]): SourceRef[] {
   });
 }
 
+/**
+ * Regroupe les motifs répétés molécule par molécule :
+ * « détermine si « X » (A) est nécessaire ; détermine si « X » (B) est nécessaire »
+ * → « détermine si « X » est nécessaire (A, B) ». Les autres motifs sont dédoublonnés tels quels.
+ */
+export function regrouperPourquoi(pourquoi: string): string {
+  const morceaux = pourquoi.split(' ; ');
+  const groupes = new Map<string, string[]>();
+  const ordre: string[] = [];
+  for (const m of morceaux) {
+    const r = /^détermine si « (.+) » \((.+)\) est nécessaire$/.exec(m);
+    const cle = r ? `§${r[1]}` : m;
+    if (!groupes.has(cle)) {
+      groupes.set(cle, []);
+      ordre.push(cle);
+    }
+    if (r && !groupes.get(cle)!.includes(r[2])) groupes.get(cle)!.push(r[2]);
+  }
+  return ordre.map((cle) => (cle.startsWith('§') ? `détermine si « ${cle.slice(1)} » est nécessaire (${groupes.get(cle)!.join(', ')})` : cle)).join(' ; ');
+}
+
 export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   const ctx = construireContexte(dossier, opts.maintenant ?? new Date(dossier.horaires.maintenantISO ?? Date.now()));
   const reglesActives = REGLES.filter((r) => r.statut !== 'retiree').filter((r) => !opts.modeUsageClinique || r.statut === 'validee_humain' || r.statut === 'publiee');
@@ -185,10 +206,14 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   const parChamp = new Map<string, DonneeManquante>();
   for (const dm of plan.donneesManquantes) {
     const ex = parChamp.get(dm.champ);
-    if (!ex || poids[dm.impact] > poids[ex.impact]) parChamp.set(dm.champ, dm);
-    else if (ex && !ex.pourquoi.includes(dm.pourquoi)) ex.pourquoi = `${ex.pourquoi} ; ${dm.pourquoi}`;
+    if (!ex) parChamp.set(dm.champ, { ...dm });
+    else {
+      // Impact le plus fort conservé, motifs de toutes les demandes conservés (aucune perte d'information).
+      const pourquoi = ex.pourquoi.split(' ; ').includes(dm.pourquoi) ? ex.pourquoi : `${ex.pourquoi} ; ${dm.pourquoi}`;
+      parChamp.set(dm.champ, { ...ex, pourquoi, impact: poids[dm.impact] > poids[ex.impact] ? dm.impact : ex.impact });
+    }
   }
-  plan.donneesManquantes = [...parChamp.values()].sort((a, b) => poids[b.impact] - poids[a.impact]);
+  plan.donneesManquantes = [...parChamp.values()].map((dm) => ({ ...dm, pourquoi: regrouperPourquoi(dm.pourquoi) })).sort((a, b) => poids[b.impact] - poids[a.impact]);
 
   // Alertes : urgence en tête, dédoublonnées
   const rangAl = { urgence: 0, attention: 1, info: 2 };

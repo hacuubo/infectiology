@@ -40,7 +40,8 @@ export const R_GRAVITE: Regle = {
       f.urgence('immediate')
         .alerte('urgence', `${g === 'choc_septique' ? 'Choc septique' : 'Sepsis'} : antibiothérapie IV immédiate, idéalement dans l'heure ; hémocultures (au moins 40 mL, 2-3 paires) et lactate sans retarder l'antibiothérapie ; avis réanimation.`, [ssc1h, sscHc, has])
         .geste('Contrôle de la source le plus tôt possible, idéalement dans les 6 h du diagnostic (drainage, ablation de matériel infecté, levée d\'obstacle).', [sscSrc])
-        .avis(g === 'choc_septique' ? 'Avis réanimation immédiat (choc septique).' : 'Avis réanimation si dysfonction d\'organe persistante après traitement initial.', g === 'choc_septique', [has]);
+        // Audit relecteur 2 : source précisée (HAS 2025, page de présentation : admission en soins critiques si non-résolution).
+        .avis(g === 'choc_septique' ? 'Avis réanimation immédiat (choc septique).' : 'Avis réanimation si dysfonction d\'organe persistante après traitement initial.', g === 'choc_septique', [has, S('HAS-2025-sepsis', 'page de présentation', 'admission en soins critiques « en l\'absence de résolution des variables cliniques après traitement initial »', 'autre')]);
     } else if (g === 'inconnu') {
       f.urgence('elevee')
         .alerte('attention', 'Gravité non renseignée : rechercher un sepsis (dysfonction d\'organe, SOFA ≥ 2) ou un choc septique ; elle conditionne le délai (1 h si sepsis probable ou choc, 3 h si sepsis seulement possible) et le schéma (ajout d\'un aminoside).', [ssc1h, S('SSC-2026', 'page SCCM — sepsis possible', 'within 3 hours from the time when sepsis was first suspected', 'autre')])

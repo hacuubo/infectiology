@@ -101,7 +101,7 @@ export class Fiche {
       const { molecule, regimen: r } = regimen(i.m, i.r);
       const res = calculerPrescription({ molecule, regimen: r, ctx: this.ctx, duree: o.duree, coPrescriptions: ids.filter((x) => x !== i.m) });
       // Les données manquantes d'une option conditionnelle n'en bloquent pas d'autres : on les conserve mais en « affine ».
-      for (const dm of res.donneesManquantes) this.c.donneesManquantes.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' ? 'bloque_decision' : 'affine' });
+      for (const dm of res.donneesManquantes) this.c.donneesManquantes.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' || dm.impact === 'bloque_dose' ? dm.impact : 'affine' });
       return res.prescription;
     });
     const statut = statutMin(o.statut ?? this.statutRegle, ...prescriptions.map((p) => p.statut));

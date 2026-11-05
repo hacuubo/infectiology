@@ -75,7 +75,10 @@ describe('Base clinique', () => {
     expect(REGLES.every((r) => r.statut !== 'validee_humain' && r.statut !== 'publiee')).toBe(true);
   });
 
-  test('les molécules dont le RCP n\'a pas été consulté restent en brouillon', () => {
-    for (const id of ['cefoxitine', 'cefixime']) expect(MOLECULES.find((m) => m.id === id)?.statut).toBe('brouillon');
+  test('une molécule n\'est pas « vérifiée » si son RCP est marqué introuvable dans le registre', () => {
+    for (const m of MOLECULES) {
+      const rcp = SOURCES_PAR_ID[`RCP-${m.id}`];
+      if (rcp && rcp.statutAcces === 'introuvable') expect(m.statut, m.id).toBe('brouillon');
+    }
   });
 });

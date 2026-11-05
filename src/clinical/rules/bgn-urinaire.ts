@@ -27,7 +27,9 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
     f.plafond('partielle').avis('P. aeruginosa : avis infectiologique (forte posologie uniquement, STP du céfépime).', false, [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (céfépime)', 'Pseudomonas spp. et Acinetobacter spp. : forte posologie uniquement', 'posologie')]);
     if (utilisable(s('piperacilline_tazobactam'))) f.option({ id: 'doc-pa-piptazo', libelle: 'Pipéracilline-tazobactam forte posologie', type: doc, rang: 'premiere_ligne', items: [{ m: 'piperacilline_tazobactam', r: 'piptazo-4g6h-prolongee' }], duree, sources: [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (pipéracilline-tazobactam)', 'Pseudomonas spp. […] forte posologie uniquement', 'posologie')] });
     if (utilisable(s('cefepime'))) f.option({ id: 'doc-pa-cefepime', libelle: 'Céfépime forte posologie (avec STP)', type: doc, rang: utilisable(s('piperacilline_tazobactam')) ? 'alternative' : 'premiere_ligne', items: [{ m: 'cefepime', r: 'cefepime-2g8h' }], duree, sources: [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (céfépime)', 'forte posologie « et nécessite un suivi thérapeutique pharmacologique »', 'posologie')] });
-    if (utilisable(s('ciprofloxacine')) && site === 'urinaire') f.option({ id: 'doc-pa-cipro', libelle: 'Ciprofloxacine (relais, si S)', type: doc, rang: 'alternative', condition: 'relais oral après amélioration', items: [{ m: 'ciprofloxacine', r: 'cipro-po-500x2' }], duree, sources: [S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'P. aeruginosa « piperacilline-tazobactam, ceftazidime, ciprofloxacine »', 'choix')] });
+    // Audit relecteur 2 (2026-11-05) : l'option « ciprofloxacine 500 mg × 2 » est retirée pour P. aeruginosa : la
+    // ciprofloxacine n'y est utilisable qu'à forte posologie (0,75 g × 2 per os ou 0,4 g × 3 IV), régime oral absent de la base.
+    if (utilisable(s('ciprofloxacine')) && site === 'urinaire') f.alerte('info', 'P. aeruginosa sensible à la ciprofloxacine : relais oral possible (IUAS 2015 R.49) mais uniquement à forte posologie (750 mg toutes les 12 h per os ou 400 mg toutes les 8 h IV, SPILF/SFPT/CA-SFM) ; la posologie standard de 500 mg × 2 est inadaptée. À discuter avec l\'infectiologue.', [S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'P. aeruginosa « piperacilline-tazobactam, ceftazidime, ciprofloxacine »', 'choix'), S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (ciprofloxacine, p. 168 de la version 2025)', 'forte : 0,75 g per os toutes les 12 h ; 0,4 g iv toutes les 8 h ; Pseudomonas […] forte posologie uniquement', 'posologie')]);
     return;
   }
   if (atb.meca('cephalosporinase_dereprimee') || org === 'enterobacter_cloacae') {
@@ -62,7 +64,7 @@ function documenterBGN(f: Fiche, prl: Prelevement, site: 'urinaire' | 'autre', g
   }
   const c3g = s('ceftriaxone') ?? s('cefotaxime');
   if (utilisable(c3g)) {
-    f.option({ id: 'doc-c3g', libelle: `C3G (ceftriaxone)${c3g === 'I' ? ' — forte posologie (souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'ceftriaxone', r: c3g === 'I' || grave || site === 'autre' ? 'ceftriaxone-2g' : 'ceftriaxone-1g' }], duree, sources: [S('SPILF-2018-IU-Caron', 'p. 336', 'injectable 3GCs should be preferred', 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'Entérobactéries : amoxicilline, amoxicilline-acide clavulanique, cotrimoxazole, fluoroquinolones, cefotaxime, ceftriaxone', 'choix')] });
+    f.option({ id: 'doc-c3g', libelle: `C3G (ceftriaxone)${c3g === 'I' ? ' — forte posologie (souche I)' : ''}`, type: doc, rang: rang(), items: [{ m: 'ceftriaxone', r: c3g === 'I' ? 'ceftriaxone-2g12h' : grave || site === 'autre' ? 'ceftriaxone-2g' : 'ceftriaxone-1g' }], duree, sources: [S('SPILF-2018-IU-Caron', 'p. 336', 'injectable 3GCs should be preferred', 'choix'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.49', 'Entérobactéries : amoxicilline, amoxicilline-acide clavulanique, cotrimoxazole, fluoroquinolones, cefotaxime, ceftriaxone', 'choix'), ...(c3g === 'I' ? [S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (ceftriaxone, p. 165 de la version 2025)', 'forte posologie : 2 g toutes les 12 h', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Ceftriaxone 2 g x 1 iv [standard] ; 2 g x 2 iv ou 4 g x 1 iv [high]', 'posologie')] : [])] });
   }
   if (!utilisable(amox) && !utilisable(c3g)) {
     f.avis('Aucune bêta-lactamine de référence rendue S/I : avis infectiologique.', true, []);
@@ -80,7 +82,9 @@ function blseUrinaireNonGrave(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | unde
     return r;
   };
   if (utilisable(s('temocilline'))) f.option({ id: 'doc-blse-temo', libelle: 'Témocilline (BLSE, foyer urinaire)', type: 'documente', rang: next(), items: [{ m: 'temocilline', r: 'temocilline-2g8h' }], duree, sources: src });
-  if (utilisable(s('piperacilline_tazobactam'))) f.option({ id: 'doc-blse-piptazo', libelle: 'Pipéracilline-tazobactam (BLSE, foyer urinaire)', type: 'documente', rang: next(), items: [{ m: 'piperacilline_tazobactam', r: 'piptazo-4g8h' }], duree, sources: src });
+  // Audit relecteur 2 : souche I → forte posologie (4 g/6 h en 3 h) au lieu du schéma standard.
+  const ptz = s('piperacilline_tazobactam');
+  if (utilisable(ptz)) f.option({ id: 'doc-blse-piptazo', libelle: `Pipéracilline-tazobactam (BLSE, foyer urinaire)${ptz === 'I' ? ' — forte posologie (souche I)' : ''}`, type: 'documente', rang: next(), items: [{ m: 'piperacilline_tazobactam', r: ptz === 'I' ? 'piptazo-4g6h-prolongee' : 'piptazo-4g8h' }], duree, sources: src });
   if ((org === 'escherichia_coli' || org === 'proteus_mirabilis') && utilisable(s('cefoxitine'))) f.option({ id: 'doc-blse-cefoxitine', libelle: 'Céfoxitine (E. coli / Proteus BLSE)', type: 'documente', rang: next(), items: [{ m: 'cefoxitine', r: 'cefoxitine-6g' }], duree, sources: src });
   if (rang === rang0) {
     f.option({ id: 'doc-blse-carba-defaut', libelle: 'Carbapénème (à défaut d\'alternative)', type: 'documente', rang: next(), items: [{ m: 'meropeneme', r: 'meropeneme-1g8h' }], duree, sources: [S('SPILF-2026-IUM', 'diapo 17', 'à défaut « ertapénème IV 1 g/jour OU imipénème IV 3 g/jour OU méropénème IV 3 g/jour »', 'choix')] });
@@ -102,10 +106,14 @@ function relaisOral(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | undefined, sit
     return x;
   };
   if (!blse && utilisable(s('amoxicilline'))) f.option({ id: 'relais-amox', libelle: 'Relais : amoxicilline per os', type: 'documente', rang: r(), condition: cond, items: [{ m: 'amoxicilline', r: 'amoxicilline-po-1g8h' }], duree, sources: [src26, srcHas] });
-  if (utilisable(s('cotrimoxazole'))) f.option({ id: 'relais-smx', libelle: 'Relais : cotrimoxazole', type: 'documente', rang: r(), condition: cond, items: [{ m: 'cotrimoxazole', r: 'smx-tmp-800-160-x2' }], duree, sources: [src26, srcHas] });
+  // Audit relecteur 2 (2026-11-05) : les relais à posologie standard (cotrimoxazole 800/160 × 2, ciprofloxacine 500 × 2)
+  // sont réservés aux souches S ; une souche I impose la forte posologie (régimes oraux absents de la base) → alerte.
+  const srcFortePO = S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (p. 168 et 172 de la version 2025)', 'ciprofloxacine forte : 0,75 g per os toutes les 12 h ; cotrimoxazole forte : 0,32 g TMP + 1,6 g SMX toutes les 12 h', 'posologie');
+  if (s('cotrimoxazole') === 'I') f.alerte('info', 'Cotrimoxazole catégorisé I : relais possible seulement à forte posologie (320/1600 mg toutes les 12 h), non proposé automatiquement.', [srcFortePO]);
+  if (s('ciprofloxacine') === 'I') f.alerte('info', 'Ciprofloxacine catégorisée I : relais possible seulement à forte posologie (750 mg toutes les 12 h per os), monothérapie « prudente » (SPILF/SFPT/CA-SFM) ; non proposé automatiquement.', [srcFortePO]);
+  if (s('cotrimoxazole') === 'S') f.option({ id: 'relais-smx', libelle: 'Relais : cotrimoxazole', type: 'documente', rang: r(), condition: cond, items: [{ m: 'cotrimoxazole', r: 'smx-tmp-800-160-x2' }], duree, sources: [src26, srcHas] });
   if (!blse && utilisable(s('amoxicilline_clavulanate'))) f.option({ id: 'relais-amoxclav', libelle: 'Relais : amoxicilline-acide clavulanique per os', type: 'documente', rang: r(), condition: cond, items: [{ m: 'amoxicilline_clavulanate', r: 'amoxclav-po-1g8h' }], duree, sources: [src26, srcHas] });
-  const cipro = s('ciprofloxacine');
-  if (utilisable(cipro)) f.option({ id: 'relais-cipro', libelle: `Relais : ciprofloxacine${cipro === 'I' ? ' (souche I : forte posologie, monothérapie prudente)' : ''}`, type: 'documente', rang: r(), condition: cond, items: [{ m: 'ciprofloxacine', r: 'cipro-po-500x2' }], duree, sources: [src26, S('SPILF-SFPT-CASFM-2026-posologies', 'Annexe 9 (fluoroquinolones)', 'Dans les situations pour lesquelles la souche est catégorisée "SFP", l\'utilisation en monothérapie des fluoroquinolones doit être prudente.', 'choix')] });
+  if (s('ciprofloxacine') === 'S') f.option({ id: 'relais-cipro', libelle: 'Relais : ciprofloxacine', type: 'documente', rang: r(), condition: cond, items: [{ m: 'ciprofloxacine', r: 'cipro-po-500x2' }], duree, sources: [src26, srcHas] });
   if (!blse && utilisable(s('cefixime'))) f.option({ id: 'relais-cefixime', libelle: 'Relais : céfixime (dernier choix)', type: 'documente', rang: r(), condition: cond, items: [{ m: 'cefixime', r: 'cefixime-200x2' }], duree, sources: [src26] });
 }
 
@@ -114,6 +122,18 @@ function relaisOral(f: Fiche, s: (d: string) => 'S' | 'I' | 'R' | undefined, sit
 /* ------------------------------------------------------------------ */
 
 type Cadre = 'homme_spilf2026' | 'femme_spilf2015' | 'iuas';
+
+/**
+ * Audit relecteur 2 (2026-11-05) : facteurs de risque de complication de SPILF 2015 (p. 6, relus dans le PDF) :
+ * anomalie de l'arbre urinaire, sexe masculin, grossesse, sujet âgé (> 75 ans ou > 65 ans fragile),
+ * immunodépression grave, insuffisance rénale chronique sévère (clairance < 30 mL/min).
+ * Seul l'âge > 75 ans était pris en compte.
+ */
+function risqueComplicationSpilf2015(ctx: ContexteDecision): boolean {
+  const p = ctx.dossier.patient;
+  const clcr = ctx.renal.valeurPourPosologie?.valeur;
+  return (p.age !== undefined && p.age > 75) || p.immunodepression === 'oui' || p.grossesse === 'oui' || (clcr !== undefined && clcr < 30 && p.renal.insuffisanceRenaleAigue !== 'oui');
+}
 
 function cadreIU(ctx: ContexteDecision): Cadre {
   const p = ctx.dossier.patient;
@@ -129,9 +149,14 @@ function dureeIU(ctx: ContexteDecision, cadre: Cadre): DureeDecidee {
     return { texte: 'Pyélonéphrite associée aux soins : 10 jours ; prostatite : 14 jours ; cystite : 5 à 7 jours. La bactériémie n\'impose pas de prolongation.', pointDeDepart: 'premier jour d\'antibiothérapie active', dureePrevueJours: 10, sources: [S('SPILF-AFU-SF2H-2015-IUAS', 'R.51-R.54, p. 33-34', 'traiter 10 jours les pyélonéphrites ou orchi-épididymites associées aux soins (B-III) ; traiter 14 jours les prostatites associées aux soins (B-III)', 'duree'), S('EAU-2026-urological-infections', '3.7.3.a.4', 'Routine extension of therapy duration is unnecessary in cases of uncomplicated bacteremia', 'duree')] };
   }
   if (cadre === 'homme_spilf2026') {
-    return { texte: 'PNA masculine : 7 jours si bêta-lactamine parentérale, fluoroquinolone ou cotrimoxazole ; 10 jours avec une autre molécule ; 5 jours si amikacine seule. Prostatite : 14 jours. Le 21 jours n\'est plus recommandé.', pointDeDepart: 'premier jour d\'antibiothérapie active', dureePrevueJours: 14, sources: [S('SPILF-2026-IUM', 'diapo 18, 25', '7 jours : si traitement par béta-lactamine parentérale et/ou fluoroquinolone et/ou sulfaméthoxazole-triméthoprime ; 10 jours : si autre(s) antibiotique(s) utilisé(s) ; Prostatite : 14 jours', 'duree'), S('EAU-2026-urological-infections', '3.6.3', 'a minimum treatment duration of two weeks is recommended (divergence)', 'duree')] };
+    const forme = p.formeIUMasculine ?? 'inconnu';
+    const base = { pointDeDepart: 'premier jour d\'antibiothérapie active', sources: [S('SPILF-2026-IUM', 'diapo 18, 25, 35', '7 jours : si traitement par béta-lactamine parentérale et/ou fluoroquinolone et/ou sulfaméthoxazole-triméthoprime ; 10 jours : si autre(s) antibiotique(s) utilisé(s) ; Prostatite : 14 jours ; épididymite : 10 jours', 'duree'), S('EAU-2026-urological-infections', '3.6.3', 'a minimum treatment duration of two weeks is recommended (divergence)', 'duree')] };
+    if (forme === 'pna') return { ...base, texte: 'PNA masculine : 7 jours si bêta-lactamine parentérale, fluoroquinolone ou cotrimoxazole ; 10 jours avec une autre molécule ; 5 jours si amikacine seule. (EAU 2026 : au moins 14 jours — divergence.)', dureePrevueJours: 7 };
+    if (forme === 'prostatite') return { ...base, texte: 'Prostatite aiguë : 14 jours. Le schéma de 21 jours n\'est plus recommandé.', dureePrevueJours: 14 };
+    if (forme === 'orchi_epididymite') return { ...base, texte: 'Orchi-épididymite : 10 jours.', dureePrevueJours: 10 };
+    return { ...base, texte: 'Durée selon la forme clinique (à préciser) : PNA 7 jours (10 si autre molécule), prostatite 14 jours, orchi-épididymite 10 jours.' };
   }
-  const risque = p.age !== undefined && p.age > 75;
+  const risque = risqueComplicationSpilf2015(ctx);
   return {
     texte: risque || p.gravite === 'sepsis' || p.gravite === 'choc_septique'
       ? 'PNA à risque de complication ou grave : 10 jours si souche sensible et évolution rapidement favorable (10 à 14 jours selon SPILF 2015). La bactériémie à entérobactérie ne modifie ni le choix ni la durée.'
@@ -155,9 +180,14 @@ export const R_IU_FEBRILE: Regle = {
     return g === 'aucun' || g === 'bgn';
   },
   appliquer: (ctx) => {
-    const f = new Fiche(ctx, 'verifiee_ia');
+    const p0 = ctx.dossier.patient;
+    // Audit relecteur 2 : l'homme immunodéprimé est exclu de SPILF 2026 et le chapitre masculin de SPILF 2015 est remplacé :
+    // aucune recommandation lue en vigueur → propositions bloquées en brouillon (avis spécialisé).
+    const hommeImmuno = p0.sexe === 'homme' && p0.immunodepression === 'oui';
+    const f = new Fiche(ctx, hommeImmuno ? 'brouillon' : 'verifiee_ia');
     const p = ctx.dossier.patient;
     const cadre = cadreIU(ctx);
+    if (hommeImmuno) f.alerte('attention', 'Homme immunodéprimé : exclu du périmètre de SPILF 2026 (IU masculines) ; le chapitre masculin de SPILF 2015 est remplacé. Les options sont extrapolées (brouillon) : avis infectiologique.', [S('SPILF-2026-IUM', 'diapo 3', 'patient immunodéprimé (exclusion du périmètre)', 'autre')]);
     const duree = dureeIU(ctx, cadre);
     const { prl } = germePrincipal(ctx);
     const grave = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
@@ -165,14 +195,16 @@ export const R_IU_FEBRILE: Regle = {
     const libCadre = { homme_spilf2026: 'IU masculine fébrile (SPILF 2026)', femme_spilf2015: 'Pyélonéphrite aiguë (SPILF 2015/2018)', iuas: 'IU associée aux soins / sur matériel (SPILF/AFU/SF2H 2015)' }[cadre];
     f.situation('iu-febrile', `${libCadre}${bacteriemie(ctx) ? ' avec bactériémie à BGN' : ''}`, 'couverte', `${p.age !== undefined && p.age > 75 ? 'Patient de plus de 75 ans : IU à risque de complication. ' : ''}${grave ? 'Forme grave (sepsis/choc). ' : ''}La bactériémie ne modifie ni le choix ni la durée lorsque l\'évolution est simple.`);
     if (p.sexe === 'inconnu') f.manque('sexe', 'cadre IU masculine (SPILF 2026) ou féminine (SPILF 2015)', 'bloque_decision');
+    if (cadre === 'homme_spilf2026' && (p.formeIUMasculine ?? 'inconnu') === 'inconnu') f.manque('forme clinique de l\'IU masculine (PNA, prostatite, orchi-épididymite)', 'durée de traitement et imagerie (SPILF 2026)', 'bloque_decision');
     if (p.materielUrinaire === 'inconnu') f.manque('matériel urinaire (sonde, JJ, néphrostomie)', 'cadre IU associée aux soins, changement de sonde', 'bloque_decision');
 
     // Contrôles et imagerie
     f.controle({ id: 'ctl-iu-ecbu', type: 'prelevement', categorie: 'indique', quoi: 'ECBU avant toute antibiothérapie', quand: { ancre: 'avant_traitement', texte: 'Maintenant, avant la 1re dose' }, pourquoi: 'Documentation et antibiogramme.', sources: [S('SPILF-2026-IUM', 'diapo 6', 'ECBU avant tout traitement ; Bandelette urinaire Non recommandée', 'controle_micro'), S('HAS-2021-PNA-femme', 'Examens', 'ECBU systématique', 'controle_micro')] });
     if (grave || bacteriemie(ctx)) f.controle({ id: 'ctl-iu-hc', type: 'hemoculture', categorie: 'indique', quoi: 'Hémocultures avant antibiothérapie', quand: { ancre: 'avant_traitement', texte: 'Maintenant, avant la 1re dose (sans la retarder)' }, pourquoi: 'Systématiques dans la PNA grave.', sources: [S('SPILF-2015-IU', 'p. 22-23', 'Les hémocultures sont systématiques (IV-C).', 'controle_micro')] });
-    f.controle({ id: 'ctl-iu-hc-controle', type: 'hemoculture', categorie: 'non_systematique', quoi: 'Hémocultures de contrôle', quand: { ancre: 'non_determine', texte: 'Non systématiques : seulement en cas d\'évolution défavorable ou de persistance de la fièvre' }, pourquoi: 'Aucune recommandation lue ne les exige pour une bactériémie à entérobactérie d\'origine urinaire d\'évolution favorable.', sources: [S('SRLF-2020-catheters', 'R3.2', 'contrôle seulement si persistance', 'controle_micro'), S('EAU-2026-urological-infections', '3.7.2.d', 'Blood cultures are indicated for patients presenting with sepsis or severe illness or when Staphylococcus aureus is isolated from the urine.', 'controle_micro')] });
+    f.controle({ id: 'ctl-iu-hc-controle', type: 'hemoculture', categorie: 'non_systematique', quoi: 'Hémocultures de contrôle', quand: { ancre: 'non_determine', texte: 'Non systématiques : seulement en cas d\'évolution défavorable ou de persistance de la fièvre' }, pourquoi: 'Aucune recommandation lue ne les exige pour une bactériémie à entérobactérie d\'origine urinaire d\'évolution favorable (absence de recommandation, pas recommandation de ne pas faire) ; la bactériémie ne modifie ni le choix ni la durée (SPILF 2015).', sources: [S('SPILF-2015-IU', 'p. 18-20', 'La présence d\'une bactériémie à entérobactérie ne modifie ni le pronostic, ni le choix et la durée du traitement antibiotique (IV-C)', 'controle_micro'), S('SRLF-2020-catheters', 'R3.2 (info-antibio 2019)', 'La persistance d\'HC positives après 3j de traitement bien conduit définit une bactériémie (fongémie) persistante', 'controle_micro')] });
     f.controle({ id: 'ctl-iu-ecbu-controle', type: 'prelevement', categorie: 'non_systematique', quoi: 'ECBU de contrôle sous ou après traitement', quand: { ancre: 'non_determine', texte: 'Non recommandé si évolution favorable ; indiqué si échec clinique à 72 h (ou PNA sur lithiase après traitement)' }, pourquoi: 'Absence de bénéfice démontré.', sources: [S('SPILF-2015-IU', 'p. 20-22', 'Il est recommandé de ne pas prévoir d\'ECBU de contrôle sous et après traitement (II-B).', 'controle_micro'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.55', 'ne pas réaliser un ECBU de contrôle 48-72 heures après le début d\'un traitement sauf en cas de non réponse clinique', 'controle_micro')] });
-    const risque = (p.age !== undefined && p.age > 75) || cadre !== 'femme_spilf2015' || grave;
+    const risque = risqueComplicationSpilf2015(ctx) || cadre !== 'femme_spilf2015' || grave;
+    if (cadre === 'femme_spilf2015' && !risque) f.manque('facteurs de risque de complication (anomalie de l\'arbre urinaire, > 65 ans avec ≥ 3 critères de Fried)', 'PNA à risque de complication : uroscanner sous 24 h et durée (SPILF 2015 p. 6)', 'affine');
     if (cadre === 'homme_spilf2026') {
       f.controle({ id: 'ctl-iu-scanner-h', type: 'imagerie', categorie: 'indique', quoi: 'Scanner abdomino-pelvien injecté (PNA masculine) — en urgence si sepsis, douleur non contrôlée, obstacle, matériel endo-urétéral ou IRA', quand: grave ? { ancre: 'avant_traitement', texte: 'En urgence' } : { ancre: 'debut_traitement', offsetHeures: 48, texte: 'Dans les 48-72 h' }, pourquoi: 'Rechercher une uropathie ou un obstacle. Attention à la fonction rénale (produit de contraste).', sources: [S('SPILF-2026-IUM', 'diapo 20', 'Scanner abdomino-pelvien injecté systématique dans les 48-72h pour rechercher une uropathie', 'imagerie')] });
     } else if (risque) {
@@ -200,7 +232,7 @@ export const R_IU_FEBRILE: Regle = {
       : cadre === 'iuas'
         ? [S('SPILF-AFU-SF2H-2015-IUAS', 'R.47', 'En cas de sepsis grave ou de choc septique… : Cas général : ajouter l\'amikacine.', 'choix')]
         : [S('SPILF-2015-IU', 'p. 22-23', 'Une association C3G parentérale + amikacine est recommandée en première intention (IV-C).', 'choix'), S('SPILF-2018-IU-Caron', 'p. 336-337', 'must receive a 3GC (cefotaxime or ceftriaxone) associated with amikacin', 'choix')];
-    const srcChoc: SourceRef[] = [S('SPILF-2026-IUM', 'diapo 15, 22', 'choc septique avec ≥ 1 FdR « Imipénème IV 3 g/jour OU méropénème IV 6 g/jour ET amikacine IV 30 mg/kg, dose unique »', 'choix'), S('SPILF-2015-IU', 'p. 23', 'En cas de choc septique, avec au moins un facteur de risque d\'IU à EBLSE : carbapénème… + amikacine', 'choix')];
+    const srcChoc: SourceRef[] = [S('SPILF-2026-IUM', 'diapo 15, 22', 'choc septique avec ≥ 1 FdR « Imipénème IV 3 g/jour OU méropénème IV 6 g/jour ET amikacine IV 30 mg/kg, dose unique »', 'choix'), S('SPILF-2015-IU', 'p. 23', 'En cas de choc septique, avec au moins un facteur de risque d\'IU à EBLSE : carbapénème… + amikacine', 'choix'), ...(cadre === 'iuas' ? [S('SPILF-AFU-SF2H-2015-IUAS', 'R.47, p. 31', 'Choc septique et facteur de risque d\'EBLSE : imipénème ou méropénème + amikacine.', 'choix')] : [])];
     const srcNonGrave: SourceRef[] = cadre === 'iuas'
       ? [S('SPILF-AFU-SF2H-2015-IUAS', 'R.45', 'En 1ère intention : pipéracilline + tazobactam (intérêt du spectre sur Pseudomonas aeruginosa et entérocoque), ceftriaxone, cefotaxime', 'choix')]
       : cadre === 'homme_spilf2026'
@@ -217,8 +249,9 @@ export const R_IU_FEBRILE: Regle = {
       }
     };
     const ajouterGrave = (rang: OptionTherapeutique['rang'], condition?: string) => {
-      if (cadre === 'femme_spilf2015' && atcdBLSE) {
-        f.option({ id: 'proba-iu-grave-blse', libelle: 'Carbapénème + amikacine (antécédent de BLSE < 6 mois)', type: proba, rang, condition, items: [{ m: 'meropeneme', r: 'meropeneme-1g8h' }, { m: 'amikacine', r: 'amikacine-30-du' }], duree, sources: [S('SPILF-2015-IU', 'p. 23', 'En cas d\'antécédent de colonisation urinaire ou IU à EBLSE < 6 mois : carbapénème (imipénème ou méropénème) + amikacine (I-A)', 'choix')] });
+      // Audit relecteur 2 : étendu au cadre IUAS (R.47), qui prévoit le même schéma.
+      if ((cadre === 'femme_spilf2015' || cadre === 'iuas') && atcdBLSE) {
+        f.option({ id: 'proba-iu-grave-blse', libelle: 'Carbapénème + amikacine (antécédent de BLSE < 6 mois)', type: proba, rang, condition, items: [{ m: 'meropeneme', r: 'meropeneme-1g8h' }, { m: 'amikacine', r: 'amikacine-30-du' }], duree, sources: cadre === 'iuas' ? [S('SPILF-AFU-SF2H-2015-IUAS', 'R.47, p. 31', 'Antécédent d\'infection ou de colonisation urinaire à EBLSE dans les 6 mois: imipénème ou méropénème + amikacine.', 'choix')] : [S('SPILF-2015-IU', 'p. 23', 'En cas d\'antécédent de colonisation urinaire ou IU à EBLSE < 6 mois : carbapénème (imipénème ou méropénème) + amikacine (I-A)', 'choix')] });
         return;
       }
       f.option({ id: 'proba-iu-grave', libelle: cadre === 'iuas' ? 'Pipéracilline-tazobactam + amikacine' : 'C3G forte dose + amikacine (dose unique)', type: proba, rang, condition, items: cadre === 'iuas' ? [{ m: 'piperacilline_tazobactam', r: 'piptazo-4g6h-prolongee' }, { m: 'amikacine', r: 'amikacine-30-du' }] : [{ m: 'cefotaxime', r: 'cefotaxime-fort' }, { m: 'amikacine', r: 'amikacine-30-du' }], duree, sources: srcGrave, commentaire: 'Amikacine : dose unique (SPILF 2026) ou 1 à 3 jours (SPILF 2015), à arrêter dès l\'antibiogramme.' });
@@ -228,8 +261,11 @@ export const R_IU_FEBRILE: Regle = {
     };
     const allergieBL = ctx.allergie.famillesAEviter.has('penicilline') && ctx.allergie.famillesAEviter.has('cephalosporine');
     if (allergieBL) {
-      f.option({ id: 'proba-iu-allergie', libelle: grave ? 'Aztréonam + amikacine (allergie aux bêta-lactamines)' : 'Aztréonam (allergie aux bêta-lactamines)', type: proba, rang: 'premiere_ligne', condition: 'si l\'allergie n\'implique pas la ceftazidime/céfidérocol et n\'est pas une réaction retardée sévère à toute la classe', items: grave ? [{ m: 'aztreonam', r: 'aztreonam-2g8h' }, { m: 'amikacine', r: 'amikacine-30-du' }] : [{ m: 'aztreonam', r: 'aztreonam-2g8h' }], duree, sources: [S('SPILF-2015-IU', 'p. 22-23 ; annexe 1', 'allergie « aztréonam + amikacine »', 'choix')] });
-      f.option({ id: 'proba-iu-allergie-fq', libelle: grave ? 'Fluoroquinolone IV + amikacine' : 'Fluoroquinolone', type: proba, rang: 'alternative', items: grave ? [{ m: 'ciprofloxacine', r: 'cipro-iv-400x3' }, { m: 'amikacine', r: 'amikacine-30-du' }] : [{ m: 'ciprofloxacine', r: 'cipro-po-500x2' }], duree, sources: [S('SPILF-2026-IUM', 'diapo 28-29', 'Ciprofloxacine IV 400 mgx3/jour OU lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'choix')] });
+      // Audit relecteur 2 (2026-11-05) : SPILF 2026 (homme) place la fluoroquinolone en 1re intention et ne cite pas l'aztréonam ;
+      // IUAS 2015 R.45 propose les aminosides (pas l'aztréonam) → aztréonam en alternative chez l'homme, en brouillon en IUAS.
+      const fqDabord = cadre === 'homme_spilf2026';
+      f.option({ id: 'proba-iu-allergie', libelle: grave ? 'Aztréonam + amikacine (allergie aux bêta-lactamines)' : 'Aztréonam (allergie aux bêta-lactamines)', type: proba, rang: fqDabord ? 'alternative' : 'premiere_ligne', condition: 'si l\'allergie n\'implique pas la ceftazidime/céfidérocol et n\'est pas une réaction retardée sévère à toute la classe', items: grave ? [{ m: 'aztreonam', r: 'aztreonam-2g8h' }, { m: 'amikacine', r: 'amikacine-30-du' }] : [{ m: 'aztreonam', r: 'aztreonam-2g8h' }], duree, statut: cadre === 'iuas' ? 'brouillon' : undefined, commentaire: cadre === 'iuas' ? 'IUAS 2015 R.45 : « Si allergie aux bêta-lactamines : aminosides » — l\'aztréonam est extrapolé de SPILF 2015 (communautaire) : à valider.' : fqDabord ? 'Aztréonam non cité par SPILF 2026 (IU masculine) ; extrapolé de SPILF 2015.' : undefined, sources: [S('SPILF-2015-IU', 'p. 22-23 ; annexe 1', 'allergie « aztréonam + amikacine »', 'choix')] });
+      f.option({ id: 'proba-iu-allergie-fq', libelle: grave ? 'Fluoroquinolone IV + amikacine' : 'Fluoroquinolone', type: proba, rang: fqDabord ? 'premiere_ligne' : 'alternative', items: grave ? [{ m: 'ciprofloxacine', r: 'cipro-iv-400x3' }, { m: 'amikacine', r: 'amikacine-30-du' }] : [{ m: 'ciprofloxacine', r: 'cipro-po-500x2' }], duree, sources: [S('SPILF-2026-IUM', 'diapo 28-29', 'sans sepsis « Ciprofloxacine PO 500 mgx2/jour OU lévofloxacine PO 500 mg/jour » ; sepsis : Ciprofloxacine IV 400 mgx3/jour OU lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'choix')] });
     }
     if (p.gravite === 'inconnu') {
       ajouterNonGrave('conditionnelle', 'si absence de sepsis');

@@ -1,53 +1,144 @@
-import type { ReactNode } from 'react';
+import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { SourceRef, StatutValidation, TriState } from '../clinical/types';
 import { SOURCES_PAR_ID } from '../clinical/sources';
 
-let idc = 0;
-function nextId(prefix: string) {
-  idc += 1;
-  return `${prefix}-${idc}`;
-}
-
-export function Champ({ libelle, aide, children, id }: { libelle: string; aide?: string; children: ReactNode; id?: string }) {
+export function Champ({ libelle, aide, children, id, libelleId }: { libelle: string; aide?: string; children: ReactNode; id?: string; libelleId?: string }) {
+  // L'aide est reliée au contrôle par aria-describedby (identifiant dérivé de celui du contrôle).
+  const aideId = id ? `${id}-aide` : libelleId ? `${libelleId}-aide` : undefined;
   return (
     <div className="champ">
-      {id ? <label htmlFor={id}>{libelle}</label> : <span className="libelle">{libelle}</span>}
-      {aide && <span className="aide">{aide}</span>}
+      {id ? (
+        <label htmlFor={id} id={libelleId}>
+          {libelle}
+        </label>
+      ) : (
+        <span className="libelle" id={libelleId}>
+          {libelle}
+        </span>
+      )}
+      {aide && (
+        <span className="aide" id={aideId}>
+          {aide}
+        </span>
+      )}
       {children}
     </div>
   );
 }
 
-export function ChoixTri({ libelle, aide, valeur, onChange, ouiLibelle = 'Oui', nonLibelle = 'Non' }: { libelle: string; aide?: string; valeur: TriState; onChange: (v: TriState) => void; ouiLibelle?: string; nonLibelle?: string }) {
+/**
+ * Groupe de boutons radio accessible (motif ARIA « radio group ») :
+ * un seul arrêt de tabulation (l'option cochée, sinon la première), flèches
+ * gauche/droite/haut/bas pour se déplacer et cocher, Début/Fin, Espace pour cocher.
+ */
+export function GroupeRadio<T extends string>({
+  libelle,
+  libelleId,
+  valeur,
+  options,
+  onChange,
+  classeOption,
+  decritPar,
+}: {
+  libelle?: string;
+  libelleId?: string;
+  decritPar?: string;
+  valeur: T | undefined;
+  options: { v: T; l: string; aide?: string }[];
+  onChange: (v: T) => void;
+  classeOption?: (v: T) => string;
+}) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const indexCoche = options.findIndex((o) => o.v === valeur);
+  const focusable = indexCoche >= 0 ? indexCoche : 0;
+  const deplacer = (i: number) => {
+    const n = options.length;
+    const j = ((i % n) + n) % n;
+    refs.current[j]?.focus();
+    onChange(options[j].v);
+  };
+  const clavier = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        deplacer(i + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        deplacer(i - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        deplacer(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        deplacer(options.length - 1);
+        break;
+      default:
+    }
+  };
   return (
-    <Champ libelle={libelle} aide={aide}>
-      <div className="boutons-choix" role="radiogroup" aria-label={libelle}>
-        {(['oui', 'non', 'inconnu'] as TriState[]).map((v) => (
-          <button key={v} type="button" role="radio" aria-checked={valeur === v} className={(valeur === v ? 'actif ' : '') + (v === 'inconnu' ? 'inconnu' : '')} onClick={() => onChange(v)}>
-            {v === 'oui' ? ouiLibelle : v === 'non' ? nonLibelle : 'Inconnu'}
-          </button>
-        ))}
-      </div>
+    <div className="boutons-choix" role="radiogroup" aria-label={libelleId ? undefined : libelle} aria-labelledby={libelleId} aria-describedby={decritPar}>
+      {options.map((o, i) => (
+        <button
+          key={o.v}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={valeur === o.v}
+          tabIndex={i === focusable ? 0 : -1}
+          title={o.aide}
+          className={`${valeur === o.v ? 'actif ' : ''}${classeOption ? classeOption(o.v) : ''}`.trim()}
+          onClick={() => onChange(o.v)}
+          onKeyDown={(e) => clavier(e, i)}
+        >
+          {o.l}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const classeInconnu = (v: string) => (v === 'inconnu' || v === 'inconnue' ? 'inconnu' : '');
+
+export function ChoixTri({ libelle, aide, valeur, onChange, ouiLibelle = 'Oui', nonLibelle = 'Non' }: { libelle: string; aide?: string; valeur: TriState; onChange: (v: TriState) => void; ouiLibelle?: string; nonLibelle?: string }) {
+  const id = useId();
+  return (
+    <Champ libelle={libelle} aide={aide} libelleId={id}>
+      <GroupeRadio
+        libelle={libelle}
+        libelleId={id}
+        valeur={valeur}
+        options={[
+          { v: 'oui' as TriState, l: ouiLibelle },
+          { v: 'non' as TriState, l: nonLibelle },
+          { v: 'inconnu' as TriState, l: 'Inconnu' },
+        ]}
+        onChange={onChange}
+        classeOption={classeInconnu}
+        decritPar={aide ? `${id}-aide` : undefined}
+      />
     </Champ>
   );
 }
 
 export function ChoixRadio<T extends string>({ libelle, aide, valeur, options, onChange }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string; aide?: string }[]; onChange: (v: T) => void }) {
+  const id = useId();
   return (
-    <Champ libelle={libelle} aide={aide}>
-      <div className="boutons-choix" role="radiogroup" aria-label={libelle}>
-        {options.map((o) => (
-          <button key={o.v} type="button" role="radio" aria-checked={valeur === o.v} title={o.aide} className={(valeur === o.v ? 'actif ' : '') + (o.v === 'inconnu' || o.v === 'inconnue' ? 'inconnu' : '')} onClick={() => onChange(o.v)}>
-            {o.l}
-          </button>
-        ))}
-      </div>
+    <Champ libelle={libelle} aide={aide} libelleId={id}>
+      <GroupeRadio libelle={libelle} libelleId={id} valeur={valeur} options={options} onChange={onChange} classeOption={classeInconnu} decritPar={aide ? `${id}-aide` : undefined} />
     </Champ>
   );
 }
 
 export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, step }: { libelle: string; aide?: string; valeur: number | undefined; onChange: (v: number | undefined) => void; unite?: string; min?: number; max?: number; step?: number }) {
-  const id = nextId('n');
+  const id = useId();
+  const horsBornes = valeur !== undefined && ((min !== undefined && valeur < min) || (max !== undefined && valeur > max));
   return (
     <Champ libelle={libelle} aide={aide} id={id}>
       <div className="ligne">
@@ -59,28 +150,38 @@ export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, 
           max={max}
           step={step ?? 'any'}
           value={valeur ?? ''}
-          onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+          aria-invalid={horsBornes || undefined}
+          aria-describedby={[aide ? `${id}-aide` : '', horsBornes ? `${id}-err` : ''].filter(Boolean).join(' ') || undefined}
+          onChange={(e) => {
+            const v = e.target.value === '' ? undefined : Number(e.target.value);
+            onChange(v !== undefined && Number.isFinite(v) ? v : undefined);
+          }}
         />
         {unite && <span>{unite}</span>}
       </div>
+      {horsBornes && (
+        <span className="erreur" id={`${id}-err`}>
+          Valeur hors des bornes attendues ({min ?? '…'} à {max ?? '…'}{unite ? ` ${unite}` : ''}) : vérifier la saisie.
+        </span>
+      )}
     </Champ>
   );
 }
 
 export function ChampTexte({ libelle, aide, valeur, onChange, type = 'text' }: { libelle: string; aide?: string; valeur: string | undefined; onChange: (v: string | undefined) => void; type?: 'text' | 'datetime-local' | 'date' }) {
-  const id = nextId('t');
+  const id = useId();
   return (
     <Champ libelle={libelle} aide={aide} id={id}>
-      <input id={id} type={type} value={valeur ?? ''} onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)} />
+      <input id={id} type={type} aria-describedby={aide ? `${id}-aide` : undefined} value={valeur ?? ''} onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)} />
     </Champ>
   );
 }
 
 export function Select<T extends string>({ libelle, aide, valeur, options, onChange }: { libelle: string; aide?: string; valeur: T; options: { v: T; l: string }[]; onChange: (v: T) => void }) {
-  const id = nextId('s');
+  const id = useId();
   return (
     <Champ libelle={libelle} aide={aide} id={id}>
-      <select id={id} value={valeur} onChange={(e) => onChange(e.target.value as T)}>
+      <select id={id} aria-describedby={aide ? `${id}-aide` : undefined} value={valeur} onChange={(e) => onChange(e.target.value as T)}>
         {options.map((o) => (
           <option key={o.v} value={o.v}>
             {o.l}
@@ -91,8 +192,12 @@ export function Select<T extends string>({ libelle, aide, valeur, options, onCha
   );
 }
 
-export function Badge({ children, type }: { children: ReactNode; type?: 'urgence' | 'attention' | 'ok' | 'accent' }) {
-  return <span className={`badge ${type ?? ''}`}>{children}</span>;
+export function Badge({ children, type, titre }: { children: ReactNode; type?: 'urgence' | 'attention' | 'ok' | 'accent'; titre?: string }) {
+  return (
+    <span className={`badge ${type ?? ''}`} title={titre}>
+      {children}
+    </span>
+  );
 }
 
 export const LIBELLE_STATUT: Record<StatutValidation, string> = {
@@ -103,9 +208,22 @@ export const LIBELLE_STATUT: Record<StatutValidation, string> = {
   retiree: 'retirée',
 };
 
-export function BadgeStatut({ statut }: { statut: StatutValidation }) {
+/** Libellés courts des badges ; le libellé complet reste disponible (infobulle et texte masqué). */
+export const LIBELLE_STATUT_COURT: Record<StatutValidation, string> = {
+  brouillon: 'brouillon',
+  verifiee_ia: 'vérifiée par IA',
+  validee_humain: 'validée',
+  publiee: 'publiée',
+  retiree: 'retirée',
+};
+
+export function BadgeStatut({ statut, court }: { statut: StatutValidation; court?: boolean }) {
   const type = statut === 'publiee' || statut === 'validee_humain' ? 'ok' : statut === 'retiree' ? 'urgence' : 'attention';
-  return <Badge type={type}>{LIBELLE_STATUT[statut]}</Badge>;
+  return (
+    <Badge type={type} titre={LIBELLE_STATUT[statut]}>
+      {court ? LIBELLE_STATUT_COURT[statut] : LIBELLE_STATUT[statut]}
+    </Badge>
+  );
 }
 
 function urlAvecAncre(ref: SourceRef): string | undefined {

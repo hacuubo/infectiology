@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import type { Dossier } from '../engine/etat';
 import { nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
 import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, CategorieSIR, FoyerId, MecanismeResistance, OrganismeId, Prelevement, TraitementAssocie } from '../clinical/types';
-import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, Select } from './composants';
+import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, GroupeRadio, Select } from './composants';
+import { creatininePlausible } from '../calc/renal';
 import { DCI_ANTIBIOGRAMME, FOYERS_ENTREE_A, GROUPES_ORGANISMES, LIBELLE_FOYER, LIBELLE_ORGANISME, LIBELLE_TRAITEMENT } from './libelles';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
@@ -68,28 +70,8 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
 
         <h3>Fonction rénale</h3>
         <div className="grille-2">
-          <Champ libelle="Créatininémie" aide="Avec son unité. Elle permet Cockcroft-Gault (méthode des RCP) et CKD-EPI.">
-            <div className="ligne">
-              <input type="number" inputMode="decimal" aria-label="Valeur de la créatininémie" value={p.renal.creatinine?.valeur ?? ''} onChange={(e) => modifier((x) => (x.patient.renal.creatinine = e.target.value === '' ? undefined : { valeur: Number(e.target.value), unite: x.patient.renal.creatinine?.unite ?? 'umol/L', date: x.patient.renal.creatinine?.date }))} />
-              <select aria-label="Unité de la créatininémie" value={p.renal.creatinine?.unite ?? 'umol/L'} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.unite = e.target.value as 'umol/L' | 'mg/dL'; else x.patient.renal.creatinine = { valeur: 0, unite: e.target.value as 'umol/L' | 'mg/dL' }; })}>
-                <option value="umol/L">µmol/L</option>
-                <option value="mg/dL">mg/dL</option>
-              </select>
-              <input type="date" aria-label="Date de la créatininémie" value={p.renal.creatinine?.date ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.date = e.target.value || undefined; })} />
-            </div>
-          </Champ>
-          <Champ libelle="DFG ou clairance déjà calculés (facultatif)" aide="Précisez la méthode : un DFG CKD-EPI (mL/min/1,73 m²) n'est pas une clairance de Cockcroft (mL/min).">
-            <div className="ligne">
-              <input type="number" inputMode="decimal" aria-label="Valeur du DFG" value={p.renal.dfg?.valeur ?? ''} onChange={(e) => modifier((x) => (x.patient.renal.dfg = e.target.value === '' ? undefined : { valeur: Number(e.target.value), methode: x.patient.renal.dfg?.methode ?? 'CKD-EPI' }))} />
-              <select aria-label="Méthode du DFG" value={p.renal.dfg?.methode ?? 'CKD-EPI'} onChange={(e) => modifier((x) => { if (x.patient.renal.dfg) x.patient.renal.dfg.methode = e.target.value as never; })}>
-                <option value="CKD-EPI">CKD-EPI (mL/min/1,73 m²)</option>
-                <option value="MDRD">MDRD (mL/min/1,73 m²)</option>
-                <option value="Cockcroft">Cockcroft-Gault (mL/min)</option>
-                <option value="mesure">Mesuré</option>
-                <option value="inconnue">Méthode inconnue</option>
-              </select>
-            </div>
-          </Champ>
+          <ChampCreatinine creatinine={p.renal.creatinine} modifier={modifier} />
+          <ChampDfg dfg={p.renal.dfg} modifier={modifier} />
         </div>
         <div className="grille-2">
           <ChoixTri libelle="Insuffisance rénale aiguë en cours ?" valeur={p.renal.insuffisanceRenaleAigue} onChange={(v) => modifier((x) => (x.patient.renal.insuffisanceRenaleAigue = v))} />
@@ -151,6 +133,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           )}
           <ChoixRadio libelle="Matériel vasculaire" valeur={p.materielVasculaire} options={[{ v: 'aucun', l: 'Aucun' }, { v: 'cvc', l: 'Cathéter veineux central' }, { v: 'picc', l: 'PICC' }, { v: 'chambre_implantable', l: 'Chambre implantable' }, { v: 'catheter_dialyse', l: 'Cathéter de dialyse' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.materielVasculaire = v))} />
           {pertinent('patient.materielVasculaireDatePose', d) && <ChampTexte libelle="Date de pose du matériel vasculaire" type="date" valeur={p.materielVasculaireDatePose} onChange={(v) => modifier((x) => (x.patient.materielVasculaireDatePose = v))} />}
+          {p.sexe === 'homme' && (d.syndrome === 'urinaire' || d.prelevements.some((x) => x.foyer === 'urinaire')) && (
+            <ChoixRadio libelle="Forme de l'infection urinaire masculine" aide="La durée dépend de la forme (SPILF 2026) : PNA 7 j, prostatite 14 j, orchi-épididymite 10 j." valeur={p.formeIUMasculine ?? 'inconnu'} options={[{ v: 'pna', l: 'Pyélonéphrite' }, { v: 'prostatite', l: 'Prostatite' }, { v: 'orchi_epididymite', l: 'Orchi-épididymite' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.formeIUMasculine = v))} />
+          )}
           <ChoixRadio libelle="Matériel urinaire" valeur={p.materielUrinaire} options={[{ v: 'aucun', l: 'Aucun' }, { v: 'sonde_vesicale', l: 'Sonde vésicale' }, { v: 'sonde_jj', l: 'Sonde JJ' }, { v: 'nephrostomie', l: 'Néphrostomie' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.materielUrinaire = v))} />
         </div>
         <ChampTexte libelle="Intervention ou geste récent (facultatif)" valeur={p.interventionRecente} onChange={(v) => modifier((x) => (x.patient.interventionRecente = v))} />
@@ -191,12 +176,12 @@ function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl
     });
   const titre = { hemoculture: 'Hémocultures', urine: 'ECBU', profond: 'Prélèvement profond / opératoire', superficiel: 'Prélèvement superficiel', respiratoire: 'Prélèvement respiratoire', autre: 'Autre prélèvement' }[prl.type];
   return (
-    <div className="objet">
+    <div className="objet" role="group" aria-label={`Prélèvement ${index + 1} — ${titre}`}>
       <div className="entete">
         <strong>
           Prélèvement {index + 1} — {titre}
         </strong>
-        <button type="button" className="btn discret" onClick={() => modifier((x) => (x.prelevements = x.prelevements.filter((y) => y.id !== prl.id)))}>
+        <button type="button" className="btn discret" aria-label={`Retirer le prélèvement ${index + 1} (${titre})`} onClick={() => modifier((x) => (x.prelevements = x.prelevements.filter((y) => y.id !== prl.id)))}>
           Retirer
         </button>
       </div>
@@ -267,22 +252,21 @@ function Antibiogramme({ prl, maj }: { prl: Prelevement; maj: (fn: (p: Preleveme
         <div className="liste-objets">
           {lignes.map((l, i) => (
             <div key={i} className="ligne">
-              <select aria-label="Antibiotique" value={l.dci} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].dci = e.target.value; })}>
+              <select aria-label={`Antibiotique ${i + 1}`} value={l.dci} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].dci = e.target.value; })}>
                 {DCI_ANTIBIOGRAMME.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.l}
                   </option>
                 ))}
               </select>
-              <div className="boutons-choix" role="radiogroup" aria-label="Catégorie">
-                {(['S', 'I', 'R'] as CategorieSIR[]).map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={l.categorie === c} className={l.categorie === c ? 'actif' : ''} onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].categorie = c; })}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-              <input type="number" inputMode="decimal" aria-label="CMI (mg/L)" placeholder="CMI" style={{ width: 90 }} value={l.cmi ?? ''} onChange={(e) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].cmi = e.target.value === '' ? undefined : Number(e.target.value); })} />
-              <button type="button" className="btn discret" onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme.splice(i, 1); })}>Retirer</button>
+              <GroupeRadio
+                libelle={`Catégorie S/I/R (antibiotique ${i + 1})`}
+                valeur={l.categorie}
+                options={(['S', 'I', 'R'] as CategorieSIR[]).map((c) => ({ v: c, l: c, aide: c === 'S' ? 'Sensible' : c === 'I' ? 'Sensible à forte posologie' : 'Résistant' }))}
+                onChange={(c) => maj((p) => { if (p.antibiogramme) p.antibiogramme[i].categorie = c; })}
+              />
+              <input type="number" inputMode="decimal" min={0} aria-label={`CMI (mg/L) de l'antibiotique ${i + 1}`} placeholder="CMI" style={{ width: 90 }} value={l.cmi ?? ''} onChange={(e) => maj((p) => { const v = e.target.value === '' ? undefined : Number(e.target.value); if (p.antibiogramme) p.antibiogramme[i].cmi = v !== undefined && Number.isFinite(v) && v >= 0 ? v : undefined; })} />
+              <button type="button" className="btn discret" aria-label={`Retirer l'antibiotique ${i + 1} de l'antibiogramme`} onClick={() => maj((p) => { if (p.antibiogramme) p.antibiogramme.splice(i, 1); })}>Retirer</button>
             </div>
           ))}
         </div>
@@ -304,10 +288,10 @@ function Allergies({ liste, onChange }: { liste: Allergie[]; onChange: (l: Aller
     <div className="liste-objets">
       {liste.length === 0 && <p className="aide">Aucune allergie déclarée. Si l'information n'est pas connue, laissez vide et précisez-le dans la prise de décision.</p>}
       {liste.map((a, i) => (
-        <div key={i} className="objet">
+        <div key={i} className="objet" role="group" aria-label={`Allergie ${i + 1}`}>
           <div className="entete">
             <strong>Allergie {i + 1}</strong>
-            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+            <button type="button" className="btn discret" aria-label={`Retirer l'allergie ${i + 1}`} onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
           </div>
           <ChampTexte libelle="Molécule ou famille" aide="Ex. amoxicilline, pénicillines, céphalosporines, bêta-lactamine non précisée, vancomycine…" valeur={a.molecule} onChange={(v) => maj(i, (x) => (x.molecule = v ?? ''))} />
           <ChoixRadio
@@ -344,7 +328,7 @@ function AntibiotiquesRecents({ liste, onChange }: { liste: AntibiotiqueRecent[]
         <div key={i} className="objet">
           <div className="entete">
             <strong>{a.dci || `Antibiotique ${i + 1}`}</strong>
-            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+            <button type="button" className="btn discret" aria-label={`Retirer l'antibiotique récent ${i + 1}`} onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
           </div>
           <div className="grille-2">
             <ChampTexte libelle="DCI" valeur={a.dci} onChange={(v) => maj(i, (x) => (x.dci = v ?? ''))} />
@@ -375,7 +359,7 @@ function AntecedentsMicro({ liste, onChange }: { liste: AntecedentMicrobiologiqu
         <div key={i} className="objet">
           <div className="entete">
             <strong>Antécédent {i + 1}</strong>
-            <button type="button" className="btn discret" onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
+            <button type="button" className="btn discret" aria-label={`Retirer l'antécédent ${i + 1}`} onClick={() => onChange(liste.filter((_, j) => j !== i))}>Retirer</button>
           </div>
           <div className="grille-2">
             <ChampTexte libelle="Organisme" valeur={a.organisme} onChange={(v) => maj(i, (x) => (x.organisme = v ?? ''))} />
@@ -388,5 +372,102 @@ function AntecedentsMicro({ liste, onChange }: { liste: AntecedentMicrobiologiqu
         <button type="button" className="btn secondaire" onClick={() => onChange([...liste, { organisme: '', resistance: 'BLSE' }])}>+ Ajouter un antécédent</button>
       </div>
     </div>
+  );
+}
+
+type Creatinine = Dossier['patient']['renal']['creatinine'];
+type UniteCreat = 'umol/L' | 'mg/dL';
+
+/**
+ * Créatininémie : l'unité peut être choisie AVANT la valeur sans créer une créatininémie
+ * fictive à 0 (anomalie corrigée : choisir « mg/dL » enregistrait une valeur 0 → DFG « NaN »).
+ * Une valeur non plausible pour l'unité est signalée et n'est pas utilisée par les calculs.
+ */
+function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; modifier: Modifier }) {
+  const [unitePendante, setUnitePendante] = useState<UniteCreat>('umol/L');
+  const unite = creatinine?.unite ?? unitePendante;
+  const verif = creatinine ? creatininePlausible(creatinine.valeur, creatinine.unite) : undefined;
+  return (
+    <Champ libelle="Créatininémie" aide="Avec son unité. Elle permet Cockcroft-Gault (méthode des RCP) et CKD-EPI.">
+      <div className="ligne">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          aria-label="Valeur de la créatininémie"
+          aria-invalid={verif && !verif.plausible ? true : undefined}
+          value={creatinine?.valeur ?? ''}
+          onChange={(e) => {
+            const v = e.target.value === '' ? undefined : Number(e.target.value);
+            setUnitePendante(unite); // l'unité choisie est conservée si la valeur est effacée
+            modifier((x) => (x.patient.renal.creatinine = v === undefined || !Number.isFinite(v) ? undefined : { valeur: v, unite, date: x.patient.renal.creatinine?.date }));
+          }}
+        />
+        <select
+          aria-label="Unité de la créatininémie"
+          value={unite}
+          onChange={(e) => {
+            const u = e.target.value as UniteCreat;
+            setUnitePendante(u);
+            modifier((x) => {
+              if (x.patient.renal.creatinine) x.patient.renal.creatinine.unite = u;
+            });
+          }}
+        >
+          <option value="umol/L">µmol/L</option>
+          <option value="mg/dL">mg/dL</option>
+        </select>
+        <input type="date" aria-label="Date de la créatininémie" disabled={!creatinine} value={creatinine?.date ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.date = e.target.value || undefined; })} />
+      </div>
+      {verif && !verif.plausible && (
+        <span className="erreur" role="alert">
+          Valeur non utilisée : {verif.raison}
+        </span>
+      )}
+    </Champ>
+  );
+}
+
+type Dfg = Dossier['patient']['renal']['dfg'];
+type MethodeDfg = NonNullable<Dfg>['methode'];
+
+/** DFG/clairance déjà calculés : la méthode peut être choisie avant la valeur. */
+function ChampDfg({ dfg, modifier }: { dfg: Dfg; modifier: Modifier }) {
+  const [methodePendante, setMethodePendante] = useState<MethodeDfg>('CKD-EPI');
+  const methode = dfg?.methode ?? methodePendante;
+  return (
+    <Champ libelle="DFG ou clairance déjà calculés (facultatif)" aide="Précisez la méthode : un DFG CKD-EPI (mL/min/1,73 m²) n'est pas une clairance de Cockcroft (mL/min).">
+      <div className="ligne">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          aria-label="Valeur du DFG"
+          value={dfg?.valeur ?? ''}
+          onChange={(e) => {
+            const v = e.target.value === '' ? undefined : Number(e.target.value);
+            setMethodePendante(methode);
+            modifier((x) => (x.patient.renal.dfg = v === undefined || !Number.isFinite(v) || v <= 0 ? undefined : { valeur: v, methode }));
+          }}
+        />
+        <select
+          aria-label="Méthode du DFG"
+          value={methode}
+          onChange={(e) => {
+            const m = e.target.value as MethodeDfg;
+            setMethodePendante(m);
+            modifier((x) => {
+              if (x.patient.renal.dfg) x.patient.renal.dfg.methode = m;
+            });
+          }}
+        >
+          <option value="CKD-EPI">CKD-EPI (mL/min/1,73 m²)</option>
+          <option value="MDRD">MDRD (mL/min/1,73 m²)</option>
+          <option value="Cockcroft">Cockcroft-Gault (mL/min)</option>
+          <option value="mesure">Mesuré</option>
+          <option value="inconnue">Méthode inconnue</option>
+        </select>
+      </div>
+    </Champ>
   );
 }

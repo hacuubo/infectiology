@@ -26,6 +26,25 @@ export function creatinineEnMgDl(valeur: number, unite: 'umol/L' | 'mg/dL'): num
 }
 
 /**
+ * Bornes de plausibilité de la créatininémie selon l'unité (adulte). Hors bornes, l'unité
+ * est très probablement erronée (ex. 1,2 saisi en µmol/L au lieu de mg/dL) : la valeur n'est
+ * pas utilisée plutôt que de produire une clairance aberrante (ex. 5 000 mL/min).
+ * µmol/L : 15 à 2 500 ; mg/dL : 0,17 à 28 (mêmes bornes converties, facteur 88,4).
+ */
+export const BORNES_CREATININE = { 'umol/L': { min: 15, max: 2500 }, 'mg/dL': { min: 0.17, max: 28.3 } } as const;
+
+export function creatininePlausible(valeur: number, unite: 'umol/L' | 'mg/dL'): { plausible: boolean; raison?: string } {
+  if (!Number.isFinite(valeur) || valeur <= 0) return { plausible: false, raison: 'valeur nulle, négative ou non numérique' };
+  const b = BORNES_CREATININE[unite];
+  const u = unite === 'umol/L' ? 'µmol/L' : 'mg/dL';
+  if (valeur < b.min || valeur > b.max) {
+    const autre = unite === 'umol/L' ? 'mg/dL' : 'µmol/L';
+    return { plausible: false, raison: `${String(valeur).replace('.', ',')} ${u} est hors des valeurs plausibles (${String(b.min).replace('.', ',')} à ${String(b.max).replace('.', ',')} ${u}) ; s'agit-il de ${autre} ?` };
+  }
+  return { plausible: true };
+}
+
+/**
  * Cockcroft-Gault : ClCr (mL/min) = (140 − âge) × poids / (72 × créat mg/dL), × 0,85 si femme.
  * Avec créatinine en µmol/L : (140 − âge) × poids / (0,814 × créat µmol/L) [équivalent].
  * Poids réel dans la formule originale. Limites : obésité, sujet âgé, sarcopénie,
@@ -39,7 +58,7 @@ export function cockcroftGault(params: {
   sexe: 'femme' | 'homme';
 }): number {
   const creatMgDl = creatinineEnMgDl(params.creatinine, params.unite);
-  if (creatMgDl <= 0) return NaN;
+  if (!(creatMgDl > 0) || !(params.poidsKg > 0) || params.ageAns >= 140) return NaN;
   const base = ((140 - params.ageAns) * params.poidsKg) / (72 * creatMgDl);
   return params.sexe === 'femme' ? base * 0.85 : base;
 }
@@ -56,7 +75,7 @@ export function ckdEpi2021(params: {
   sexe: 'femme' | 'homme';
 }): number {
   const scr = creatinineEnMgDl(params.creatinine, params.unite);
-  if (scr <= 0) return NaN;
+  if (!(scr > 0)) return NaN;
   const femme = params.sexe === 'femme';
   const kappa = femme ? 0.7 : 0.9;
   const alpha = femme ? -0.241 : -0.302;
@@ -81,9 +100,17 @@ export function poidsIdealDevine(tailleCm: number, sexe: 'femme' | 'homme'): num
   return base + 0.9 * (tailleCm - 152);
 }
 
-/** Poids ajusté = PI + 0,4 × (poids réel − PI), utilisé pour les aminosides en cas d'obésité. */
-export function poidsAjuste(poidsReelKg: number, poidsIdealKg: number): number {
-  return poidsIdealKg + 0.4 * (poidsReelKg - poidsIdealKg);
+/**
+ * Poids idéal de Lorentz, formule citée par le RCP de la gentamicine (Panpharma, §4.2) :
+ * homme = T − 100 − (T − 150)/4 ; femme = T − 100 − (T − 150)/2 (taille en cm, adulte, 140-220 cm).
+ */
+export function poidsIdealLorentz(tailleCm: number, sexe: 'femme' | 'homme'): number {
+  return tailleCm - 100 - (tailleCm - 150) / (sexe === 'femme' ? 2 : 4);
+}
+
+/** Poids ajusté = PI + k × (poids réel − PI). k = 0,43 (RCP gentamicine), 0,40 (RCP amikacine) ; 0,4 par défaut. */
+export function poidsAjuste(poidsReelKg: number, poidsIdealKg: number, k = 0.4): number {
+  return poidsIdealKg + k * (poidsReelKg - poidsIdealKg);
 }
 
 export interface EntreesRenales {
@@ -117,12 +144,16 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
     res.limites.push("Stabilité de la fonction rénale non renseignée : l'estimation suppose un état d'équilibre.");
   }
 
-  if (e.dfg) {
+  if (e.dfg && Number.isFinite(e.dfg.valeur) && e.dfg.valeur > 0) {
     res.dfgSaisi = e.dfg;
   }
 
   const sexeConnu = e.sexe === 'femme' || e.sexe === 'homme';
-  if (e.creatinine) {
+  const verifCreat = e.creatinine ? creatininePlausible(e.creatinine.valeur, e.creatinine.unite) : undefined;
+  if (e.creatinine && verifCreat && !verifCreat.plausible) {
+    res.manquants.push(`créatininémie valide (${verifCreat.raison})`);
+    res.limites.push(`Créatininémie non utilisée : ${verifCreat.raison}. Vérifier la valeur et l'unité (µmol/L ou mg/dL).`);
+  } else if (e.creatinine) {
     if (e.ageAns === undefined) res.manquants.push('âge');
     if (!sexeConnu) res.manquants.push('sexe');
     if (e.ageAns !== undefined && sexeConnu) {
@@ -173,7 +204,7 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
     res.limites.push(
       "DFG indexé utilisé tel quel pour les paliers RCP (méthode Cockcroft) : approximation à signaler, surtout si la corpulence s'éloigne de 1,73 m².",
     );
-  } else if (res.ckdEpi2021 !== undefined) {
+  } else if (res.ckdEpi2021 !== undefined && Number.isFinite(res.ckdEpi2021)) {
     res.valeurPourPosologie = {
       valeur: res.ckdEpi2021,
       methode: 'CKD-EPI 2021 (indexé, non désindexé : poids/taille absents)',

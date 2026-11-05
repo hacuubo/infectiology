@@ -6,7 +6,17 @@ export function S(source: string, repere?: string, extrait?: string, justifie?: 
 }
 
 /** Surveillance commune aux bêta-lactamines : neurotoxicité (encéphalopathie) en cas d'insuffisance rénale ou de surdosage. */
-export function encephalopathieBetaLactamine(id: string, sourceRcp: string, repere = '§4.4'): ElementSurveillance {
+/**
+ * Audit relecteur 2 (2026-11-05) : l'extrait est désormais propre à chaque RCP. L'ancien extrait unique
+ * (« Les bêtalactamines exposent au risque d'encéphalopathie […] ») n'est textuel que pour les RCP céfotaxime,
+ * céfépime et cloxacilline ; les autres RCP formulent le risque autrement (convulsions, respect des schémas…).
+ */
+export function encephalopathieBetaLactamine(
+  id: string,
+  sourceRcp: string,
+  repere = '§4.4',
+  extrait = 'Les bêtalactamines exposent au risque d\'encéphalopathie […] en cas de surdosage ou d\'insuffisance rénale',
+): ElementSurveillance {
   return {
     id,
     type: 'clinique',
@@ -18,7 +28,7 @@ export function encephalopathieBetaLactamine(id: string, sourceRcp: string, repe
     conditionId: 'insuffisance_renale',
     conditionTexte: 'si insuffisance rénale ou sujet âgé',
     statut: 'verifiee_ia',
-    sources: [S(sourceRcp, repere, 'Les bêtalactamines exposent au risque d\'encéphalopathie […] en cas de surdosage ou d\'insuffisance rénale', 'surveillance')],
+    sources: [S(sourceRcp, repere, extrait, 'surveillance')],
   };
 }
 
