@@ -5,6 +5,7 @@
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { OptionTherapeutique, Prelevement, SourceRef } from '../types';
+import { choisirEstimation } from '../../calc/renal';
 import { Fiche, S, adulte, bacteriemie, germePrincipal, groupe, lireAntibiogramme, utilisable, type DureeDecidee, pireC3G } from './outils';
 
 /* ------------------------------------------------------------------ */
@@ -156,12 +157,24 @@ type Cadre = 'homme_spilf2026' | 'femme_spilf2015' | 'iuas';
  * immunodépression grave, insuffisance rénale chronique sévère (clairance < 30 mL/min).
  * Seul l'âge > 75 ans était pris en compte.
  */
+/**
+ * « Insuffisance rénale chronique sévère (clairance < 30 mL/min) » (SPILF 2015) : estimation en mL/min, ou DFG indexé
+ * lorsque le palier est le même quelle que soit la surface corporelle. Discordance entre estimations : risque retenu.
+ * Sans estimation utilisable : « inconnu » (donnée signalée).
+ */
+export function irChroniqueSevere(ctx: ContexteDecision): boolean | 'inconnu' {
+  const r = ctx.dossier.patient.renal;
+  if (r.dialyse === 'hemodialyse_intermittente' || r.dialyse === 'dialyse_peritoneale') return true;
+  if (r.insuffisanceRenaleAigue === 'oui') return false;
+  const c = choisirEstimation(ctx.renal, { grandeur: 'clairance_creatinine', unite: 'mL/min', sources: [] }, (v) => (Math.round(v) < 30 ? 0 : 1));
+  if (c.valeur !== undefined) return Math.round(c.valeur) < 30;
+  if (c.discordance) return true;
+  return 'inconnu';
+}
+
 function risqueComplicationSpilf2015(ctx: ContexteDecision): boolean {
   const p = ctx.dossier.patient;
-  // « Clairance < 30 mL/min » (SPILF 2015) : toute estimation recevable en mL/min (Cockcroft-Gault ou DFG désindexé).
-  const valeurs = ctx.renal.applicable ? ctx.renal.estimations.filter((e) => e.unite === 'mL/min' && e.calculable).map((e) => e.valeur!) : [];
-  const clcr = valeurs.length ? Math.min(...valeurs) : undefined;
-  return (p.age !== undefined && p.age > 75) || p.immunodepression === 'oui' || p.grossesse === 'oui' || (clcr !== undefined && clcr < 30 && p.renal.insuffisanceRenaleAigue !== 'oui');
+  return (p.age !== undefined && p.age > 75) || p.immunodepression === 'oui' || p.grossesse === 'oui' || irChroniqueSevere(ctx) === true;
 }
 
 function cadreIU(ctx: ContexteDecision): Cadre {
@@ -259,6 +272,8 @@ export const R_IU_FEBRILE: Regle = {
     f.controle({ id: 'ctl-iu-hc-controle', type: 'hemoculture', categorie: 'non_systematique', quoi: 'Hémocultures de contrôle', quand: { ancre: 'non_determine', texte: 'Non systématiques : seulement en cas d\'évolution défavorable ou de persistance de la fièvre' }, pourquoi: 'Aucune recommandation lue ne les exige pour une bactériémie à entérobactérie d\'origine urinaire d\'évolution favorable (absence de recommandation, pas recommandation de ne pas faire) ; la bactériémie ne modifie ni le choix ni la durée (SPILF 2015).', sources: [S('SPILF-2015-IU', 'p. 18-20', 'La présence d\'une bactériémie à entérobactérie ne modifie ni le pronostic, ni le choix et la durée du traitement antibiotique (IV-C)', 'controle_micro'), S('SRLF-2020-catheters', 'R3.2 (info-antibio 2019)', 'La persistance d\'HC positives après 3j de traitement bien conduit définit une bactériémie (fongémie) persistante', 'controle_micro')] });
     f.controle({ id: 'ctl-iu-ecbu-controle', type: 'prelevement', categorie: 'non_systematique', quoi: 'ECBU de contrôle sous ou après traitement', quand: { ancre: 'non_determine', texte: 'Non recommandé si évolution favorable ; indiqué si échec clinique à 72 h (ou PNA sur lithiase après traitement)' }, pourquoi: 'Absence de bénéfice démontré.', sources: [S('SPILF-2015-IU', 'p. 20-22', 'Il est recommandé de ne pas prévoir d\'ECBU de contrôle sous et après traitement (II-B).', 'controle_micro'), S('SPILF-AFU-SF2H-2015-IUAS', 'R.55', 'ne pas réaliser un ECBU de contrôle 48-72 heures après le début d\'un traitement sauf en cas de non réponse clinique', 'controle_micro')] });
     const risque = risqueComplicationSpilf2015(ctx) || cadre !== 'femme_spilf2015' || grave;
+    if (cadre === 'femme_spilf2015' && !risque && irChroniqueSevere(ctx) === 'inconnu')
+      f.manque('insuffisance rénale chronique sévère (clairance < 30 mL/min) : fonction rénale en mL/min (créatininémie, poids, taille)', 'insuffisance rénale chronique sévère (clairance < 30 mL/min) = PNA à risque de complication : durée et uroscanner (SPILF 2015 §1.2)', 'bloque_duree');
     if (cadre === 'femme_spilf2015' && !risque) f.manque('facteurs de risque de complication (anomalie de l\'arbre urinaire, > 65 ans avec ≥ 3 critères de Fried)', 'PNA à risque de complication : uroscanner sous 24 h et durée (SPILF 2015 p. 6)', 'affine');
     if (cadre === 'homme_spilf2026') {
       f.controle({ id: 'ctl-iu-scanner-h', type: 'imagerie', categorie: 'indique', quoi: 'Scanner abdomino-pelvien injecté (PNA masculine) — en urgence si sepsis, douleur non contrôlée, obstacle, matériel endo-urétéral ou IRA', quand: grave ? { ancre: 'avant_traitement', texte: 'En urgence' } : { ancre: 'debut_traitement', offsetHeures: 48, texte: 'Dans les 48-72 h' }, pourquoi: 'Rechercher une uropathie ou un obstacle. Attention à la fonction rénale (produit de contraste).', sources: [S('SPILF-2026-IUM', 'diapo 20', 'Scanner abdomino-pelvien injecté systématique dans les 48-72h pour rechercher une uropathie', 'imagerie')] });

@@ -242,7 +242,7 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 .carte-renale summary { cursor: pointer; font-weight: 600; }
 .estimations, .apercu-renal ul { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
 .estimation .valeur { font-weight: 700; font-size: 1.05em; }
-.estimation.non-calculable { opacity: 0.85; }
+.estimation.non-calculable .valeur { font-weight: 400; }
 .labo { margin: 6px 0; }
 @media (max-width: 600px) {
   .motif-dl { grid-template-columns: 1fr; }

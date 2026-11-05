@@ -25,6 +25,7 @@ const clcr = (rcp: string, extrait: string): ReferenceRenale => ({
 });
 
 export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
+  // RCP vancomycine : formule de structure Cockcroft-Gault, non nommée, intitulée « eGFR » ; paliers en « clairance de la créatinine ».
   vancomycine: {
     grandeur: 'clairance_creatinine',
     unite: 'mL/min',
@@ -37,9 +38,9 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
     formuleCitee: 'cockcroft_gault',
     sources: [S('RCP-cefepime', '§4.2', "l'équation de Cockcroft peut être utilisée pour estimer la clairance à la créatinine", 'adaptation_renale')],
   },
-  amoxicilline: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', 'tableau en DFG (mL/min) : > 30 : pas d’adaptation ; 10-30 ; < 10', 'adaptation_renale')] },
+  amoxicilline: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-amoxicilline', '§4.2 (tableau)', 'd’après le tableau : en-tête « DFG (ml/min) », lignes « Supérieur à 30 », « 10 à 30 », « inférieur à 10 »', 'adaptation_renale')] },
   ertapeneme: { grandeur: 'clairance_creatinine', unite: 'mL/min/1,73 m²', sources: [S('RCP-ertapeneme', '§4.2', 'Chez les patients dont la clairance de la créatinine est > 30 ml/min/1,73 m² […] aucune adaptation posologique n’est nécessaire', 'adaptation_renale')] },
-  ciprofloxacine: { grandeur: 'clairance_creatinine', unite: 'mL/min/1,73 m²', sources: [S('RCP-ciprofloxacine', '§4.2', 'ClCr 30-60 mL/min/1,73 m² : 200-400 mg toutes les 12 h', 'adaptation_renale')] },
+  ciprofloxacine: { grandeur: 'clairance_creatinine', unite: 'mL/min/1,73 m²', sources: [S('RCP-ciprofloxacine', '§4.2', 'd’après le tableau : « Clairance de la créatinine [ml/min/1,73 m2] » 30-60 → 200-400 mg toutes les 12 h (les seuils de créatininémie du RCP ne sont pas utilisés)', 'adaptation_renale')] },
   gentamicine: clcr('RCP-gentamicine', 'ClCr 90-60 ml/min : 24 h ; 60-40 : 36 h ; 40-20 : 48 h'),
   amikacine: clcr('RCP-amikacine', 'IR (ClCr < 50 mL/min)'),
   daptomycine: clcr('RCP-daptomycine', 'ClCr < 30 mL/min : 4 ou 6 mg/kg toutes les 48 heures'),

@@ -8,6 +8,7 @@ import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, Select } from './
 import { creatininePlausible } from '../calc/renal';
 import { FOYERS_ENTREE_A, LIBELLE_FOYER, LIBELLE_TRAITEMENT } from './libelles';
 import { ApercuRenal } from './FonctionRenale';
+import { GardeLocale } from './Explication';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
 
@@ -68,8 +69,8 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
             onChange={(v) => modifier((x) => (x.patient.sexe = v))}
             cible="patient.sexe"
           />
-          <ChampNombre libelle="Poids (facultatif)" aide="Nécessaire pour les doses pondérales, Cockcroft-Gault et la désindexation du DFG ; pas pour le DFG indexé." valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={20} max={300} cible="patient.poidsKg" />
-          <ChampNombre libelle="Taille (facultatif)" aide="Nécessaire pour la surface corporelle (désindexation du DFG) et les poids idéal/ajusté ; pas pour le DFG indexé." valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={100} max={250} cible="patient.tailleCm" />
+          <ChampNombre libelle="Poids (facultatif)" aide="Nécessaire pour les doses pondérales, Cockcroft-Gault et la désindexation du DFG ; pas pour le DFG indexé." valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={25} max={300} cible="patient.poidsKg" />
+          <ChampNombre libelle="Taille (facultatif)" aide="Nécessaire pour la surface corporelle (désindexation du DFG) et les poids idéal/ajusté ; pas pour le DFG indexé." valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={120} max={230} cible="patient.tailleCm" />
         </div>
         {pertinent('patient.grossesse', d) && (
           <div className="grille-2">
@@ -120,7 +121,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
             />
           </div>
         </details>
-        <ApercuRenal dossier={d} />
+        <GardeLocale nom="aperçu de la fonction rénale" cle={d}>
+          <ApercuRenal dossier={d} />
+        </GardeLocale>
 
         <h3>Terrain</h3>
         <div className="grille-2">
@@ -196,7 +199,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
         </div>
       </section>
 
-      <SectionIndication dossier={d} modifier={modifier} />
+      <GardeLocale nom="questions d’indication" cle={d}>
+        <SectionIndication dossier={d} modifier={modifier} />
+      </GardeLocale>
 
       <section className="carte" aria-labelledby="t-horaires">
         <h2 id="t-horaires">5. Horaires (pour dater le calendrier)</h2>
@@ -236,7 +241,9 @@ function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl
       {pertinentP('urine', prl, d) && <ContexteECBUSaisie prl={prl} maj={maj} />}
       {pertinentP('antibiogramme', prl, d) && prl.organisme && (
         <>
-          <AntibiogrammeGuide iso={prl} prl={prl} dossier={d} maj={(fn) => maj((p) => fn(p))} />
+          <GardeLocale nom="antibiogramme guidé" cle={d}>
+            <AntibiogrammeGuide iso={prl} prl={prl} dossier={d} maj={(fn) => maj((p) => fn(p))} />
+          </GardeLocale>
           <ChampReferentiel prl={prl} maj={maj} />
         </>
       )}

@@ -73,7 +73,7 @@ function CarteMotif({ m, allerAuChamp }: { m: MotifSortie; allerAuChamp?: AllerA
               ))}
             </ul>
           ) : (
-            'Rien de plus à ce stade.'
+            'Aucune proposition de l’application à ce stade : voir la prochaine action.'
           )}
         </dd>
         {m.aCompleter.length > 0 && (
@@ -85,7 +85,7 @@ function CarteMotif({ m, allerAuChamp }: { m: MotifSortie; allerAuChamp?: AllerA
                   <li key={`${x.texte}-${x.impact}`}>
                     <Badge type={x.impact === 'affine' ? undefined : 'attention'}>{LIBELLE_IMPACT[x.impact]}</Badge> <strong>{x.texte}</strong> — <span className="aide">{x.role}</span>{' '}
                     {x.cible && allerAuChamp && (
-                      <button type="button" className="btn discret" onClick={() => allerAuChamp(x.cible!)}>
+                      <button type="button" className="btn discret" aria-label={`${m.type === 'incoherence' ? 'Corriger' : 'Compléter'} : ${x.texte}`} onClick={() => allerAuChamp(x.cible!)}>
                         {m.type === 'incoherence' ? 'Corriger' : 'Compléter'}
                       </button>
                     )}
@@ -120,7 +120,7 @@ export function ExplicationSortie({ sortie, allerAuChamp }: { sortie: EtatSortie
     <section className="explication-sortie" aria-label={titre}>
       <h4>{titre}</h4>
       {sortie.urgence && sortie.traitement !== 'complet' && (
-        <div className="alerte urgence" role="alert">
+        <div className="alerte urgence">
           <strong>Urgence : ne pas attendre une proposition complète.</strong>
           {sortie.actionsUrgentes.length > 0 ? (
             <ul>
@@ -167,6 +167,18 @@ export function PanneauErreurTechnique({ sortie, onReessayer }: { sortie: EtatSo
   return (
     <section className="carte fiche erreur-technique" role="alert" aria-labelledby="t-erreur">
       <h2 id="t-erreur">{m?.statut ?? 'Erreur technique'}</h2>
+      {sortie.urgence && (
+        <div className="alerte urgence">
+          <strong>Urgence déclarée : ne pas attendre l’application.</strong>
+          <ul>
+            {sortie.actionsUrgentes.map((a) => (
+              <li key={a.texte}>
+                {a.texte} {a.sources.length > 0 && <RefsInline refs={a.sources} />}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <p>{m?.motif}</p>
       <p>
         <strong>Ce n’est pas une conclusion médicale :</strong> l’absence de fiche ne signifie ni qu’une antibiothérapie est inutile, ni qu’elle est indiquée.
@@ -176,6 +188,28 @@ export function PanneauErreurTechnique({ sortie, onReessayer }: { sortie: EtatSo
         Réessayer
       </button>
     </section>
+  );
+}
+
+/**
+ * Garde locale : une panne d'un bloc (aperçu rénal, antibiogramme guidé, résumé…) n'efface ni le reste de
+ * l'écran ni les données saisies, et n'est jamais présentée comme une conclusion médicale.
+ */
+export function GardeLocale({ nom, cle, children }: { nom: string; cle: unknown; children: ReactNode }) {
+  return (
+    <GardeErreur
+      cle={cle}
+      rendu={(message, reessayer) => (
+        <div className="alerte urgence erreur-locale" role="alert">
+          <strong>Erreur technique ({nom}) — ce n’est pas une conclusion médicale.</strong> {message}. Les données saisies sont conservées.{' '}
+          <button type="button" className="btn discret" onClick={reessayer}>
+            Réessayer
+          </button>
+        </div>
+      )}
+    >
+      {children}
+    </GardeErreur>
   );
 }
 

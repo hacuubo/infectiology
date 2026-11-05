@@ -208,7 +208,7 @@ describe('Fonction rénale dans les propositions', () => {
     const p = plan(SARM_STABLE);
     const v = prescription(p, 'vancomycine')!;
     expect(v.adaptations.join(' ')).toMatch(/Clairance estimée de la créatinine \(Cockcroft-Gault\) ≈ \d+ mL\/min/);
-    expect(v.adaptations.join(' ')).toMatch(/cite la formule de Cockcroft-Gault/);
+    expect(v.adaptations.join(' ')).toMatch(/formule de structure Cockcroft-Gault/);
     expect(v.sources.some((s) => s.source === 'RCP-vancomycine' && /Hommes/.test(s.extrait ?? ''))).toBe(true);
   });
 

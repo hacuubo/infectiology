@@ -10,6 +10,11 @@ function cleOption(o: Plan['options'][number]) {
   return o.id;
 }
 
+/** Retire les valeurs estimées (« ≈ 42 mL/min ») : seul un changement de palier ou de conduite est signalé. */
+function sansValeurs(t: string): string {
+  return t.replace(/≈ ?[0-9][0-9  ,]*(mL\/min(\/1,73 m²)?)?/g, '≈ …').replace(/entre [0-9]+ et [0-9]+/g, 'entre … et …');
+}
+
 export function comparerPlans(avant: Plan | undefined, apres: Plan): string[] {
   if (!avant) return [];
   const res: string[] = [];
@@ -30,8 +35,8 @@ export function comparerPlans(avant: Plan | undefined, apres: Plan): string[] {
       const pa = a.prescriptions.find((x) => x.moleculeId === p.moleculeId);
       if (!pa) continue;
       if (pa.doseAffichee !== p.doseAffichee) res.push(`${p.dci} : dose modifiée (${p.doseAffichee}).`);
-      const adA = pa.adaptations.join(' | ');
-      const adB = p.adaptations.join(' | ');
+      const adA = sansValeurs(pa.adaptations.join(' | '));
+      const adB = sansValeurs(p.adaptations.join(' | '));
       if (adA !== adB) res.push(`${p.dci} : adaptation rénale modifiée — ${(p.adaptations[0] ?? 'aucune').replace(/\.+$/, '')}.`);
       if (pa.surveillance.length !== p.surveillance.length) res.push(`${p.dci} : surveillance modifiée (${pa.surveillance.length} → ${p.surveillance.length} élément(s)).`);
     }

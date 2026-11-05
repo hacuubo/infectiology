@@ -19,7 +19,7 @@ function LigneEstimation({ e, detail }: { e: Estimation; detail: boolean }) {
           : <span className="valeur">{nombreFr(e.valeur!)}</span> {e.unite}
         </>
       ) : (
-        <span className="aide">— non calculé ({e.manquants.join(', ')})</span>
+        <span className="aide">— non calculé{e.manquants.length ? ` (${e.manquants.join(', ')})` : ''}</span>
       )}
       <div className="aide">
         {e.formule}, version {e.version}
@@ -70,7 +70,7 @@ export function ApercuRenal({ dossier }: { dossier: Dossier }) {
   const r = contexteUI(dossier).renal;
   if (!dossier.patient.renal.creatinine && !dossier.patient.renal.dfg) return null;
   return (
-    <div className="apercu-renal" role="status" aria-live="polite">
+    <div className="apercu-renal">
       <strong>Estimations calculées par l’application</strong> (non interchangeables)
       {!r.applicable && r.raisonNonApplicable && <p className="alerte attention">Non utilisées pour personnaliser une dose : {r.raisonNonApplicable}</p>}
       <ul>

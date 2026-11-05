@@ -343,7 +343,14 @@ export function deciderSansPanne(dossier: Dossier, opts: OptionsMoteur = {}): Re
     return { ok: true, plan: decider(dossier, opts) };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return { ok: false, erreur: message, sortie: sortieErreurTechnique(message) };
+    // Lecture brute et protégée de la gravité : l'urgence ne disparaît pas avec la panne.
+    let urgence = false;
+    try {
+      urgence = ['sepsis', 'choc_septique'].includes(dossier?.patient?.gravite ?? '');
+    } catch {
+      urgence = false;
+    }
+    return { ok: false, erreur: message, sortie: sortieErreurTechnique(message, urgence) };
   }
 }
 

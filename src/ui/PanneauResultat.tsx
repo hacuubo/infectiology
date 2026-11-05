@@ -303,7 +303,17 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
       <div className="fiche-section">
         <h3>B. {conclusionSansTraitement ? 'Conclusion sur l\'indication' : 'Traitement proposé'}</h3>
         {plan.sortie.traitement !== 'complet' && <ExplicationSortie sortie={plan.sortie} allerAuChamp={allerAuChamp} />}
-        {ind && (conclusionSansTraitement || ind.decision === 'urgence' || ind.actions.length > 0 || plan.options.length === 0) && <CarteIndication indication={ind} />}
+        {ind &&
+          (conclusionSansTraitement || ind.decision === 'urgence' || ind.actions.length > 0 || plan.options.length === 0) &&
+          // Conclusion déjà résumée par un motif de l'état de sortie : détail complet replié pour éviter la répétition.
+          (plan.sortie.traitement !== 'complet' && plan.sortie.motifs.some((m) => m.origine.includes(ind.regleId)) ? (
+            <details className="detail-conclusion">
+              <summary>Détail de la conclusion clinique ({ind.titre})</summary>
+              <CarteIndication indication={ind} />
+            </details>
+          ) : (
+            <CarteIndication indication={ind} />
+          ))}
         {(plan.indicationsSecondaires?.length ?? 0) > 0 && (
           <details open>
             <summary>Autres conclusions ({plan.indicationsSecondaires!.length})</summary>

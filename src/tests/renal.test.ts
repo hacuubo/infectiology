@@ -166,9 +166,12 @@ describe('Choix de l’estimation selon la référence posologique', () => {
     expect(c.valeur).toBeUndefined();
     expect(c.refus).toMatch(/indexé n'est pas utilisé/);
   });
-  test('Référence citant Cockcroft-Gault sans poids : substitution signalée par le DFG désindexé ? non, pas de taille non plus → refus', () => {
+  test('Référence donnant la formule de Cockcroft-Gault, poids absent : refus, aucune substitution automatique', () => {
     const r = estimerFonctionRenale({ ...base, ageAns: 70, creatinine: { valeur: 130, unite: 'umol/L' } });
-    expect(choisirEstimation(r, referenceRenale('cefepime')).refus).toMatch(/ni la clairance/);
+    const c = choisirEstimation(r, referenceRenale('cefepime'));
+    expect(c.valeur).toBeUndefined();
+    expect(c.refus).toMatch(/aucune autre estimation n'est substituée/);
+    expect(c.manquants).toContain('poids');
   });
   test('Clairance sans formule précisée : discordance de palier détectée entre Cockcroft-Gault et DFG désindexé', () => {
     // Personne âgée de faible poids : Cockcroft-Gault nettement plus bas que le DFG désindexé.

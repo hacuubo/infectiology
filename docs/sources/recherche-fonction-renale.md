@@ -110,7 +110,7 @@ Pièges relevés :
 | IRA (KDIGO 2012) | « Both the KDOQI guideline and KDIGO recommend that, in stable patients, an eGFR should be used. » | KDIGO AKI 2012, chap. 4 (Kidney Int Suppl 2012;2:69-88), consultée |
 | Masse musculaire | Indications de la cystatine C (Table 8) : troubles alimentaires, culturisme, « Above-knee amputation », lésion médullaire, obésité de classe III ; maladies : dénutrition, cancer, insuffisance cardiaque, cirrhose, maladies cachectisantes | KDIGO 2024 Table 8 (S178-S179) |
 | Situations à DFG mesuré | « catabolic states, such as serious infections or inflammatory states […] advanced cirrhosis or heart failure, use of high-dose steroids, or the very frail » | KDIGO 2024 Table 10 |
-| Grossesse | « Creatinine decreases physiologically during pregnancy due to glomerular hyperfiltration, and BSA varies. This creates challenges for using GFR or eGFR equations. » | KDIGO 2024 § 4.2 (S249) |
+| Grossesse | « Creatinine decreases physiologically during pregnancy due to glomerular hyperfiltration, and BSA varies. This creates challenges for using GFR or eGFR equations. » | KDIGO 2024 § 4.2 (S250) |
 | Dosage de la créatinine | enzymatique et traçable ; HAS : « réalisé par méthodes enzymatiques » | KDIGO Table 11 ; HAS avis 2023 ; EMA § 5.2 |
 | Dosage de la créatinine | CKD-EPI 2021 est « Designed for use with laboratory creatinine values that are standardized to IDMS. » | NKF (fiche 4.6) |
 | Dialyse | Pas d'énoncé direct sur l'invalidité de l'eGFR en dialyse dans les textes lus. La FDA traite la dialyse à part (clairance extracorporelle, voir §8). | **NON VÉRIFIÉ** comme règle explicite |
@@ -128,7 +128,7 @@ Pièges relevés :
 - **KDIGO PP 4.2.5** : « Consider and adapt drug dosing in people where GFR, non-GFR determinants of the filtration markers, or volume of distribution are not in a steady state. »
 - **KDIGO sur Cockcroft-Gault** (S248-S249) : « there are concerns about use of weight, which can be impacted by edema or obesity. » ; plus loin : « to date, few studies have been conducted to compare different equations for eGFR in the context of drug dosing/kinetics »
 - **FDA 2024** (§ IV.A, p. 6) : « when providing a recommended dosage in adult patients with renal impairment, use the eGFR expressed as mL/minute rather than the eGFR referenced to a BSA value of 1.73 m2. » La SC se calcule « using an appropriate formula », avec renvoi à Du Bois 1916 et Mosteller 1987.
-- **EMA 2015** (p. 3) : « dose recommendations for a renally eliminated drug should be based on absolute GFR (or other measure for renal function in ml/min), and not on GFR normalised to a body surface area of 1.73 m2. »
+- **EMA 2015** (p. 4, § 2) : « dose recommendations for a renally eliminated drug should be based on absolute GFR (or other measure for renal function in ml/min), and not on GFR normalised to a body surface area of 1.73 m2. »
 - **NKF** (calculateur) : « Adjust eGFR for body surface area (for medication-related decision making, using Dubois Method) ».
 - Divergence de périmètre : HAS = désindexer si SC éloignée de 1,73 ; KDIGO = « may be indicated » aux extrêmes de poids, surtout pour les médicaments à marge étroite ; EMA/FDA = la dose se fonde toujours sur des mL/min absolus.
 
@@ -265,3 +265,12 @@ Remarques :
 | mdcalc.com/calc/43 | consultée (contenu lu) |
 | Gansevoort RT et al., NDT 2022 (doi 10.1093/ndt/gfac254) | trouvée, non lue |
 | Position officielle SFNDT / SFBC | introuvable |
+
+---
+
+## 11. Corrections après l'audit documentaire (2026-11-05)
+
+- **HAS, guide p. 23-24** : le passage vise les médicaments à index thérapeutique étroit et les situations où la créatinine n'est pas fiable. Il ne nomme ni l'IRA ni l'instabilité. L'application l'étend à ces situations : c'est une interprétation, déclarée dans `docs/ARBITRAGES.md`. Les mentions des §0 et §9 qui l'attribuaient directement à la HAS sont à lire ainsi.
+- **Grossesse (KDIGO 2024 § 4.2)** : p. S250, et non S249.
+- **EMA** : le principe des doses en mL/min absolus figure p. 4 (§ 2), et non p. 3.
+- **Cockcroft-Gault, RCP de la vancomycine** : la formule n'y est pas nommée ; elle est intitulée « eGFR ».

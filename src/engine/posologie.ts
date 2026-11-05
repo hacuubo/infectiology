@@ -28,6 +28,7 @@ function estimationValeur(ctx: ContexteDecision, id: IdEstimation): number {
 /** Champ à compléter pour une donnée rénale manquante. */
 function cibleRenale(manquants: string[]): string {
   const t = manquants.join(' ');
+  if (/EKFC/.test(t)) return 'patient.renal.equationDfg';
   if (/taille/.test(t) && !/poids|âge|créatinin|sexe/.test(t)) return 'patient.tailleCm';
   if (/poids/.test(t) && !/âge|créatinin|sexe/.test(t)) return 'patient.poidsKg';
   if (/âge/.test(t)) return 'patient.age';
@@ -120,7 +121,8 @@ export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecis
   if (!id) return true;
   const p = ctx.dossier.patient;
   // Seuil « insuffisance rénale » des surveillances : estimation propre à la molécule si connue.
-  const choixIR = choisirEstimation(ctx.renal, referenceRenale(opts.moleculeId ?? ''));
+  // Seuil de 60 mL/min, valeur arrondie à l'entier comme à l'affichage.
+  const choixIR = choisirEstimation(ctx.renal, referenceRenale(opts.moleculeId ?? ''), (v) => (Math.round(v) < 60 ? 0 : 1));
   const clcr = choixIR.valeur;
   switch (id) {
     case 'duree_sup_3j':
@@ -133,7 +135,7 @@ export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecis
       if (p.renal.insuffisanceRenaleAigue === 'oui') return true;
       if (p.renal.dialyse !== 'aucune' && p.renal.dialyse !== 'inconnu') return true;
       if (clcr === undefined) return 'inconnu';
-      return clcr < 60;
+      return Math.round(clcr) < 60;
     case 'instabilite_renale':
       return p.renal.stabilite === 'instable' || p.renal.insuffisanceRenaleAigue === 'oui' ? true : p.renal.stabilite === 'inconnu' ? 'inconnu' : false;
     case 'sujet_age':
@@ -292,7 +294,11 @@ export function calculerPrescription(args: {
     } else {
       // Estimation choisie selon la grandeur exigée par la référence posologique de CETTE molécule.
       const refM = referenceRenale(m.id);
-      const palierDe = (v: number) => ar.paliers.findIndex((pl) => (pl.clcrMin === undefined || v >= pl.clcrMin) && (pl.clcrMax === undefined || v < pl.clcrMax));
+      // Les seuils des RCP sont des entiers : la valeur est arrondie à l'entier, comme à l'affichage (« ≈ 30 mL/min »).
+      const palierDe = (v: number) => {
+        const r = Math.round(v);
+        return ar.paliers.findIndex((pl) => (pl.clcrMin === undefined || r >= pl.clcrMin) && (pl.clcrMax === undefined || r < pl.clcrMax));
+      };
       const choix = choisirEstimation(ctx.renal, refM, palierDe);
       const palierAvecAdaptation = ar.paliers.some((pl) => !SANS_ADAPTATION.test(pl.texte));
       const impactRenal: DonneeManquante['impact'] = palierAvecAdaptation || m.famille === 'aminoside' || m.famille === 'glycopeptide' ? 'bloque_dose' : 'affine';
@@ -300,7 +306,7 @@ export function calculerPrescription(args: {
       if (choix.valeur === undefined) {
         if (palierAvecAdaptation) adaptationRequise = true;
         if (!ctx.renal.applicable) {
-          adaptations.push(`Adaptation rénale non calculée : ${choix.refus} Avis pharmacologique ou néphrologique${m.stp?.length ? ' ; dosage plasmatique (voir surveillance)' : ''} ; réévaluer la fonction rénale chaque jour.`);
+          adaptations.push(`Adaptation rénale non calculée : ${choix.refus} Avis pharmacologique ou néphrologique${m.stp?.length ? ' ; dosage plasmatique (voir surveillance)' : ''} ; réévaluer régulièrement la fonction rénale (KDIGO 2024, PP 4.2.5).`);
           if (palierAvecAdaptation)
             manquants.push({ champ: 'fonction rénale à l’état d’équilibre (ou dosage plasmatique, DFG mesuré)', pourquoi: `adaptation rénale de ${m.dci} non calculable : ${ctx.renal.etat === 'instable' ? 'fonction rénale instable ou IRA' : 'hors domaine des équations'}`, impact: 'bloque_dose', cible: 'patient.renal.stabilite' });
         } else {
@@ -311,7 +317,11 @@ export function calculerPrescription(args: {
             if (pa) adaptations.push(`Selon Cockcroft-Gault : ${pa.texte}`);
             if (pb) adaptations.push(`Selon le DFG désindexé : ${pb.texte}`);
           }
-          if (choix.manquants.length) manquants.push({ champ: choix.manquants.join(', '), pourquoi: `adaptation posologique de ${m.dci} (${refM.grandeur === 'dfg' ? 'DFG' : 'clairance de la créatinine'} en ${refM.unite})`, impact: impactRenal, cible: cibleRenale(choix.manquants) });
+          // Une ligne par donnée : « poids » et « poids (surface corporelle) » fusionnent avec les autres demandes du même champ.
+          for (const dm of choix.manquants)
+            manquants.push({ champ: dm.split(' (')[0], pourquoi: `adaptation posologique de ${m.dci} (${refM.grandeur === 'dfg' ? 'DFG' : 'clairance de la créatinine'} en ${refM.unite})`, impact: impactRenal, cible: cibleRenale([dm]) });
+          if (choix.discordance && palierAvecAdaptation)
+            manquants.push({ champ: 'choix entre Cockcroft-Gault et DFG désindexé', pourquoi: `les deux estimations conduisent à des paliers différents pour ${m.dci} : décision avec le pharmacien ou le néphrologue`, impact: 'bloque_dose', cible: 'patient.renal.poidsCockcroft' });
         }
       } else {
         const palier = ar.paliers[palierDe(choix.valeur)];
@@ -324,9 +334,7 @@ export function calculerPrescription(args: {
           adaptations.push(`${clTexte} : ${ar.texteGeneral}`);
         }
         adaptations.push(`Estimation utilisée — pourquoi : ${choix.pourquoi}`);
-        if (choix.substitution) avert.push(choix.substitution);
         for (const l of ctx.renal.limites) if (!avert.includes(l)) avert.push(l);
-        if (choix.manquants.length && choix.substitution) manquants.push({ champ: choix.manquants.join(', '), pourquoi: `estimation exigée par la référence de ${m.dci} (Cockcroft-Gault)`, impact: 'affine', cible: cibleRenale(choix.manquants) });
       }
       // Même libellé que la règle transversale : les deux demandes fusionnent en une seule ligne.
       if (p.renal.dialyse === 'inconnu') manquants.push({ champ: 'dialyse / épuration extrarénale (oui/non)', pourquoi: 'adaptation posologique', impact: 'affine' });

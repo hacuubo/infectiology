@@ -59,7 +59,9 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
     return { ...m, domaine: r.domaine, cible: m.cible ?? r.cible };
   });
   const bloquants = manques.filter((m) => m.impact !== 'affine');
-  const traitement: EtatSortie['traitement'] = plan.options.length === 0 ? 'aucun' : premieres.length === 0 || bloquants.length > 0 ? 'partiel' : 'complet';
+  const incoherents = incoherencesDossier(ctx).length > 0 || plan.microbiologie.some((m) => m.incoherences.length > 0);
+  // Une donnée incohérente rend la proposition au mieux partielle : ce qui en dépend n'est pas fiable.
+  const traitement: EtatSortie['traitement'] = plan.options.length === 0 ? 'aucun' : premieres.length === 0 || bloquants.length > 0 || incoherents ? 'partiel' : 'complet';
 
   const urgence = plan.urgence.niveau === 'immediate' || decision === 'urgence' || p.gravite === 'sepsis' || p.gravite === 'choc_septique';
   const actionsUrgentes = dedup(
@@ -106,14 +108,16 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       aCompleter: [],
       prochaineAction: ind.actions.length ? ind.actions.join(' ; ') : 'Décision avec le SMIT.',
       sources: ind.sources,
-      limite: ind.pointNonResolu,
+      limite: `${ind.pointNonResolu} Cela ne signifie pas qu'aucun traitement n'est indiqué.`,
       origine: [ind.regleId],
     });
   const masquees = ecartees.filter((e) => e.type === 'non_validee' || e.type === 'source_retiree');
+  // Mode usage clinique : le masquage des règles non validées est la vraie cause ; il passe en tête.
+  const masquageExplique = masquees.length > 0 && plan.options.length === 0;
   if (masquees.length > 0 && traitement !== 'complet')
     motifs.push({
       type: 'non_validee',
-      rang: 50,
+      rang: masquageExplique ? 15 : 50,
       statut: 'Proposition masquée : règle non validée ou source retirée',
       motif: masquees.map((e) => `${e.libelle} : ${e.raison}`).join(' ; '),
       verifie: [],
@@ -163,7 +167,7 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       sources: ind.sources,
       origine: [ind.regleId],
     });
-  else if ((manquesMicro.some((m) => m.impact !== 'affine') || (inconnues.length > 0 && !documentee)) && traitement !== 'complet') {
+  else if ((manquesMicro.some((m) => m.impact !== 'affine') || (inconnues.length > 0 && !documentee)) && traitement !== 'complet' && !masquageExplique) {
     const probabilistes = plan.options.filter((o) => o.type === 'probabiliste');
     const determinants = plan.microbiologie.flatMap((m) => m.determinants.map((d) => `${m.germe} : ${d.texte}`));
     motifs.push({
@@ -238,7 +242,7 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
 
   /* D. Situation non couverte : nommer la limite exacte. */
   const conclusionIndication = decision === 'ne_pas_traiter' || decision === 'attendre_resultat' || decision === 'informations_insuffisantes';
-  if (plan.options.length === 0 && !conclusionIndication && !rienSaisi && !motifs.some((m) => m.type === 'contraintes' || m.type === 'informations_manquantes')) {
+  if (plan.options.length === 0 && !conclusionIndication && !rienSaisi && !masquageExplique && !motifs.some((m) => m.type === 'contraintes' || m.type === 'informations_manquantes')) {
     motifs.push({
       type: 'non_couverte',
       rang: 60,
@@ -290,7 +294,8 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
   if (urgence && traitement !== 'complet')
     for (const m of motifs) {
       const premiere = actionsUrgentes[0]?.texte;
-      m.prochaineAction = `Ne pas attendre : ${premiere ?? 'appliquer les mesures urgentes affichées en haut de l’écran et demander un avis immédiat'}${m.prochaineAction ? ` Ensuite : ${m.prochaineAction}` : ''}`;
+      const action = (premiere ?? 'appliquer les mesures urgentes affichées en haut de l’écran et demander un avis immédiat').replace(/[.\s]+$/, '');
+      m.prochaineAction = `Ne pas attendre : ${action}.${m.prochaineAction ? ` Ensuite : ${m.prochaineAction}` : ''}`;
     }
 
   motifs.sort((a, b) => a.rang - b.rang);
@@ -316,11 +321,19 @@ function limiteCouverture(plan: Plan, ctx: ContexteDecision): string {
 }
 
 /** Sortie d'une panne du moteur : jamais traduite par « pas d'antibiothérapie indiquée ». */
-export function sortieErreurTechnique(message: string): EtatSortie {
+export function sortieErreurTechnique(message: string, urgence = false): EtatSortie {
   return {
     traitement: 'aucun',
-    urgence: false,
-    actionsUrgentes: [],
+    urgence,
+    // Sepsis ou choc déclarés : l'urgence ne disparaît pas avec la panne (SSC 2026 : antibiothérapie dans l'heure).
+    actionsUrgentes: urgence
+      ? [
+          {
+            texte: 'Ne pas attendre l’application : sepsis ou choc déclaré, antibiothérapie probabiliste dans l’heure selon le protocole local et avis réanimation / SMIT immédiat.',
+            sources: [{ source: 'SSC-2026', repere: 'page SCCM', extrait: 'administering antimicrobial therapy immediately, ideally within 1 hr of recognition', justifie: 'autre' }],
+          },
+        ]
+      : [],
     ecartees: [],
     motifs: [
       {
@@ -331,7 +344,9 @@ export function sortieErreurTechnique(message: string): EtatSortie {
         verifie: [],
         dejaPropose: [],
         aCompleter: [],
-        prochaineAction: 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.',
+        prochaineAction: urgence
+          ? 'Prise en charge urgente sans attendre l’application ; les données saisies sont conservées, réessayer ensuite et signaler l’erreur.'
+          : 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.',
         sources: [],
         origine: ['moteur'],
       },

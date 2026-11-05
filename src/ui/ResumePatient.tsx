@@ -29,7 +29,7 @@ export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, 
   const u = p.renal.creatinine?.unite;
   if (p.renal.creatinine) renalTxt.push(`créat. ${nombreFr(p.renal.creatinine.valeur, 2)} ${u === 'umol/L' ? 'µmol/L' : u === 'mg/dL' ? 'mg/dL' : '(unité ?)'}${p.renal.creatinine.date ? ` du ${p.renal.creatinine.date}` : ''}`);
   // Les trois estimations restent distinctes : nom de la formule et unité toujours affichés.
-  for (const e of r.estimations) if (e.calculable) renalTxt.push(`${e.libelle} (${e.id === 'clairance_cg' ? 'Cockcroft-Gault' : `${e.formule.split(' × ')[0].replace(' créatinine', '')} ${e.version.split(/[ ,(;]/)[0]}`}) ≈ ${nombreFr(e.valeur!)} ${e.unite}`);
+  for (const e of r.estimations) if (e.calculable) renalTxt.push(`${e.libelle} (${e.nomCourt}) ≈ ${nombreFr(e.valeur!)} ${e.unite}`);
   if (p.renal.dfg) renalTxt.push(`valeur fournie (${p.renal.dfg.methode}) ${nombreFr(p.renal.dfg.valeur, 1)} ${p.renal.dfg.unite ?? '(unité ?)'}`);
   if (p.renal.dialyse !== 'aucune' && p.renal.dialyse !== 'inconnu') renalTxt.push(libelle(p.renal.dialyse));
   if (p.renal.insuffisanceRenaleAigue === 'oui') renalTxt.push('IRA');

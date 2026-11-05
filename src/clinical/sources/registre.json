@@ -1184,7 +1184,7 @@
     "dateConsultation": "2026-11-05",
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur",
-    "notes": "Rec. 3.8.3-3.8.4 (dosages des aminosides) ; eGFR réservé au patient stable (chap. 4)."
+    "notes": "Rec. 3.8.3-3.8.4 (dosages des aminosides). La phrase « in stable patients, an eGFR should be used » figure au chapitre 4 (IRA aux produits de contraste, évaluation du risque), pas dans un passage sur la posologie."
   },
   {
     "id": "HAS-2023-guide-MRC",
@@ -1225,7 +1225,7 @@
   {
     "id": "EFLM-2022-CKD-EPI-Europe",
     "organisme": "EFLM (Delanaye P et al.)",
-    "titre": "CKD-EPI 2021 equation: a position statement of the EFLM (Clin Chem Lab Med 2023;61(1):44-47)",
+    "titre": "The new, race-free, Chronic Kidney Disease Epidemiology Consortium (CKD-EPI) equation to estimate glomerular filtration rate: is it applicable in Europe? A position statement by the European Federation of Clinical Chemistry and Laboratory Medicine (EFLM) (Clin Chem Lab Med 2023;61(1):44-47, en ligne le 24/10/2022)",
     "annee": 2022,
     "type": "consensus",
     "url": "https://orbi.uliege.be/bitstream/2268/296790/1/DelanayeCCLM2022edito.pdf",
@@ -1237,7 +1237,7 @@
   {
     "id": "STEHLE-2023-DFG",
     "organisme": "Stehlé T, Vidal-Petiot E, Flamant M, Delanaye P",
-    "titre": "Estimation du débit de filtration glomérulaire (Néphrologie & Thérapeutique 2023;19(1):1-10)",
+    "titre": "Actualités et perspectives dans l'estimation du débit de filtration glomérulaire (Néphrologie & Thérapeutique 2023;19(1):1-10, mise au point)",
     "annee": 2023,
     "type": "revue",
     "url": "https://orbi.uliege.be/bitstream/2268/300897/1/Stehl%c3%a9NephrolTher2023.pdf",
@@ -1252,11 +1252,11 @@
     "titre": "Prediction of creatinine clearance from serum creatinine (Nephron 1976;16:31-41)",
     "annee": 1976,
     "type": "essai",
-    "url": "https://karger.com/nef/article/16/1/31/",
+    "url": "https://doi.org/10.1159/000180580",
     "dateConsultation": "2026-11-05",
     "statutAcces": "contenu_non_lisible",
     "statutVigueur": "en_vigueur",
-    "notes": "Résumé lu : « Ccr = (140 – age) (wt kg)/72 × Scr (15% less in females) » ; texte intégral non lisible (poids utilisé non vérifié)."
+    "notes": "DOI vérifié dans Crossref (titre, Nephron, p. 31-41). Résumé lu : « Ccr = (140 – age) (wt kg)/72 × Scr (15% less in females) » ; texte intégral non lisible (poids utilisé non vérifié)."
   },
   {
     "id": "DUBOIS-1916",

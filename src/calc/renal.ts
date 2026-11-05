@@ -21,17 +21,19 @@ import { nombreFr } from './format';
 const ref = (source: string, repere: string, extrait?: string): SourceRef => ({ source, repere, extrait, justifie: 'adaptation_renale' });
 export const SOURCES_RENALES = {
   ckdEpi2021: [ref('NKF-CKD-EPI-2021', 'formule', 'eGFR = 142 × min(Scr/κ, 1)^α × max(Scr/κ, 1)^−1.200 × 0.9938^Age × 1.012 [if female]'), ref('INKER-2021-CKD-EPI', 'tableau des coefficients (équation créatinine 2021)')],
-  ckdEpi2009: [ref('LEVEY-2009-CKD-EPI', 'Results', 'GFR = 141 × min(Scr/κ, 1)α × max(Scr/κ, 1)-1.209 × 0.993Age × 1.018 [if female] × 1.159 [if black]'), ref('EFLM-2022-CKD-EPI-Europe', 'éditorial EFLM', 'CKD-EPI 2009 sans coefficient racial maintenue en Europe')],
-  ekfc: [ref('STEHLE-2023-DFG', 'tableau 1', 'si SCr/Q < 1 : 107,3 × (SCr/Q)-0,322 × 0,990(âge - 40)'), ref('KDIGO-2024-CKD', 'Table 14 (équations validées)')],
-  kdigoEquation: ref('KDIGO-2024-CKD', 'PP 1.2.4.1-1.2.4.2 ; Table 14', 'une équation par région, sans variable raciale'),
+  ckdEpi2009: [ref('LEVEY-2009-CKD-EPI', 'Results', 'GFR = 141 × min(Scr/κ, 1)α × max(Scr/κ, 1)-1.209 × 0.993Age × 1.018 [if female] × 1.159 [if black]'), ref('EFLM-2022-CKD-EPI-Europe', 'prise de position EFLM', 'to keep the 2009 version of the CKD-EPI equation, without applying a race correction factor')],
+  ekfc: [ref('STEHLE-2023-DFG', 'tableau 1', 'Âge > 40 ans : si SCr/Q < 1 : 107,3 × (SCr/Q)-0,322 × 0,990(âge - 40)'), ref('KDIGO-2024-CKD', 'Table 14 (équations validées)')],
+  kdigoEquation: ref('KDIGO-2024-CKD', 'PP 1.2.4.1-1.2.4.2 ; Table 14', 'Use the same equation within geographical regions […] Use of race in the computation of eGFR should be avoided.'),
   hasCkdEpi: ref('HAS-2023-MRC-7-messages', 'message 4', "L'adaptation des posologies doit s'effectuer à partir de l'estimation du DFG obtenue par la formule CKD-EPI"),
   hasDesindexation: ref('HAS-2023-MRC-7-messages', 'message 4, note 3', 'la désindexation […] est recommandée lorsque celle-ci est éloignée de 1,73 m²'),
   duBois: ref('HAS-2023-MRC-7-messages', 'message 4, note 3', 'SC (m²) = 0,007184 x taille (cm)0,725 x poids réel (kg)0,425'),
   cockcroft: [ref('COCKCROFT-GAULT-1976', 'équation originale'), ref('RCP-vancomycine', '§4.2', 'Hommes : [poids (kg) x [140 - âge (ans)]] / [72 x créatinine plasmatique (mg/dl)]')],
   kdigoDesindexe: ref('KDIGO-2024-CKD', 'PP 4.2.4', 'eGFR nonindexed for body surface area (BSA) may be indicated, especially for medications with a narrow therapeutic range'),
-  emaDesindexe: ref('EMA-2015-PK-insuffisance-renale', 'p. 3', 'dose recommendations … should be based on absolute GFR … and not on GFR normalised to a body surface area of 1.73 m2'),
-  kdigoInstable: ref('KDIGO-2024-CKD', 'PP 4.2.5', 'Consider and adapt drug dosing in people where GFR … [is] not in a steady state'),
-  hasInstable: ref('HAS-2023-guide-MRC', 'p. 23-24', "l'adaptation des posologies devrait s'effectuer en milieu spécialisé à partir du dosage des médicaments ou de la mesure du DFG"),
+  emaDesindexe: ref('EMA-2015-PK-insuffisance-renale', 'p. 4 (§ 2)', 'dose recommendations … should be based on absolute GFR … and not on GFR normalised to a body surface area of 1.73 m2'),
+  kdigoInstable: ref('KDIGO-2024-CKD', 'PP 4.2.5', 'Consider and adapt drug dosing in people where GFR, non-GFR determinants of the filtration markers, or volume of distribution are not in a steady state.'),
+  // Passage HAS visant les médicaments à marge étroite et la créatinine non fiable : l'application l'étend à l'IRA et à l'instabilité (interprétation, voir ARBITRAGES).
+  hasInstable: ref('HAS-2023-guide-MRC', 'p. 23-24', "situations cliniques pour lesquelles la mesure de créatinine n'est pas fiable, l'adaptation des posologies devrait s'effectuer en milieu spécialisé à partir du dosage des médicaments ou de la mesure du DFG […]"),
+  hasCockcroft: ref('HAS-2023-MRC-7-messages', 'message 4 et note 4', "L'estimation de la filtration glomérulaire par la formule de Cockcroft-Gault sous-estime le DFG lorsqu'on utilise une méthode de dosage standardisée de la créatinine."),
   kdigoTable10: ref('KDIGO-2024-CKD', 'Table 10', 'catabolic states, such as serious infections or inflammatory states'),
   fdaPoidsObese: ref('FDA-2024-PK-insuffisance-renale', '§ IV.A, p. 6', 'use of alternative body weight metrics such as ideal body weight (IBW) or adjusted body weight (ABW)'),
 } as const;
@@ -180,6 +182,8 @@ export type UniteRenale = 'mL/min/1,73 m²' | 'mL/min';
 export interface Estimation {
   id: IdEstimation;
   libelle: string;
+  /** Nom court de la méthode (ex. « CKD-EPI 2009 », « Cockcroft-Gault »). */
+  nomCourt: string;
   grandeur: 'dfg' | 'clairance_creatinine';
   unite: UniteRenale;
   formule: string;
@@ -197,6 +201,8 @@ export interface Estimation {
 }
 
 export interface ValeurLabo {
+  /** Faux si la méthode, l'unité ou leur combinaison ne permettent pas un usage automatique. */
+  utilisable: boolean;
   valeur: number;
   unite: UniteRenale | 'inconnue';
   methode: MethodeDFG;
@@ -266,8 +272,10 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
     }
     if (c.date && e.maintenant) {
       const d = new Date(`${c.date}T${c.heure ?? '00:00'}`);
-      if (!Number.isNaN(d.getTime()) && d.getTime() > e.maintenant.getTime() + 60_000)
-        res.incoherences.push({ texte: `Date de la créatininémie (${c.date}${c.heure ? ` ${c.heure}` : ''}) postérieure à maintenant : vérifier la date.`, cible: 'patient.renal.creatinine' });
+      if (!Number.isNaN(d.getTime()) && d.getTime() > e.maintenant.getTime() + 60_000) {
+        res.incoherences.push({ texte: `Créatininémie non utilisée : date du prélèvement (${c.date}${c.heure ? ` ${c.heure}` : ''}) postérieure à maintenant ; vérifier la date.`, cible: 'patient.renal.creatinine' });
+        creatValide = false;
+      }
     }
     if (!c.date) res.limites.push('Date de la créatininémie non renseignée : impossible de savoir si la valeur est récente.');
   }
@@ -275,7 +283,9 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
   const tailleOk = e.tailleCm !== undefined && e.tailleCm >= BORNES_TAILLE.min && e.tailleCm <= BORNES_TAILLE.max;
   if (e.poidsKg !== undefined && !poidsOk) res.incoherences.push({ texte: `Poids de ${nombreFr(e.poidsKg, 1)} kg hors des valeurs plausibles (${BORNES_POIDS.min} à ${BORNES_POIDS.max} kg) : vérifier la saisie.`, cible: 'patient.poidsKg' });
   if (e.tailleCm !== undefined && !tailleOk) res.incoherences.push({ texte: `Taille de ${nombreFr(e.tailleCm, 0)} cm hors des valeurs plausibles (${BORNES_TAILLE.min} à ${BORNES_TAILLE.max} cm) : vérifier la saisie (en centimètres).`, cible: 'patient.tailleCm' });
-  if (e.ageAns !== undefined && (e.ageAns < 0 || e.ageAns > 120)) res.incoherences.push({ texte: `Âge de ${e.ageAns} ans implausible : vérifier la saisie.`, cible: 'patient.age' });
+  const ageOk = e.ageAns !== undefined && Number.isFinite(e.ageAns) && e.ageAns >= 0 && e.ageAns <= 120;
+  if (e.ageAns !== undefined && !ageOk) res.incoherences.push({ texte: `Âge de ${e.ageAns} ans implausible : non utilisé par les équations ; vérifier la saisie.`, cible: 'patient.age' });
+  const age = ageOk ? e.ageAns : undefined;
 
   /* --- Domaine de validité. */
   if (DIALYSE_ACTIVE.includes(e.dialyse)) {
@@ -287,7 +297,7 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
     res.applicable = false;
     res.raisonNonApplicable =
       "fonction rénale instable ou insuffisance rénale aiguë : les équations supposent une créatininémie à l'état d'équilibre ; leur résultat n'est pas une mesure fiable et n'est pas utilisé pour personnaliser la dose.";
-  } else if (e.ageAns !== undefined && e.ageAns < 18) {
+  } else if (age !== undefined && age < 18) {
     res.etat = 'hors_domaine';
     res.applicable = false;
     res.raisonNonApplicable = "patient de moins de 18 ans : équations établies chez l'adulte, hors du périmètre de l'application.";
@@ -313,17 +323,18 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
   if (res.etat === 'hors_domaine') limitesCommunes.push(`Non valide : ${res.raisonNonApplicable}`);
   if (res.etat === 'equilibre_non_confirme') limitesCommunes.push("Valable seulement si la créatininémie est stable (état d'équilibre).");
   const imc = poidsOk && tailleOk ? e.poidsKg! / Math.pow(e.tailleCm! / 100, 2) : undefined;
-  if (imc !== undefined && imc < 18.5) limitesCommunes.push(`IMC ${nombreFr(imc, 1)} kg/m² : masse musculaire probablement faible, la créatininémie surestime le DFG (limite citée pour IMC < 18).`);
+  if (imc !== undefined && imc < 18) limitesCommunes.push(`IMC ${nombreFr(imc, 1)} kg/m² : masse musculaire probablement faible ; l'estimation fondée sur la créatinine peut surestimer le DFG (seuil d'IMC < 18 cité par une source secondaire, Vidal 2022).`);
   if (imc !== undefined && imc >= 40) limitesCommunes.push(`IMC ${nombreFr(imc, 1)} kg/m² : obésité de classe III, situation où la KDIGO 2024 (Table 8) suggère la cystatine C.`);
   if (e.infectionGrave) limitesCommunes.push('Infection grave (sepsis, choc) : état catabolique où la KDIGO 2024 (Table 10) indique une mesure du DFG ; estimation à interpréter avec prudence et à réévaluer.');
-  if (e.grossesse) limitesCommunes.push('Grossesse : la créatininémie baisse physiologiquement et la surface corporelle varie ; les équations sont difficiles à utiliser (KDIGO 2024, § 4.2).');
+  if (e.grossesse) limitesCommunes.push('Grossesse : la créatininémie baisse physiologiquement et la surface corporelle varie ; les équations sont difficiles à utiliser (KDIGO 2024, § 4.2, p. S250).');
 
-  /* --- 1. DFG estimé indexé (CKD-EPI 2021). */
+  /* --- 1. DFG estimé indexé (équation choisie ; CKD-EPI 2009 sans coefficient racial par défaut). */
   const eq = e.equation ?? EQUATION_DFG_PAR_DEFAUT;
   const def = EQUATIONS_DFG[eq];
   const indexe: Estimation = {
     id: 'dfg_indexe',
     libelle: 'DFG estimé indexé',
+    nomCourt: eq === 'ekfc' ? 'EKFC' : eq === 'ckd_epi_2021' ? 'CKD-EPI 2021' : 'CKD-EPI 2009',
     grandeur: 'dfg',
     unite: 'mL/min/1,73 m²',
     formule: def.formule,
@@ -333,43 +344,50 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
     donnees: [],
     calcul: [],
     limites: [...limitesCommunes],
-    sources: [...def.sources, SOURCES_RENALES.hasCkdEpi],
+    sources: eq === 'ekfc' ? [...def.sources] : [...def.sources, SOURCES_RENALES.hasCkdEpi],
   };
-  if (eq === 'ekfc' && e.ageAns !== undefined && e.ageAns <= 25) indexe.manquants.push('EKFC : âge > 25 ans requis (Q dépend de l’âge avant 25 ans, non implémenté) — choisir CKD-EPI');
-  if (res.etat === 'dialyse') indexe.manquants.push('non applicable (dialyse)');
-  if (!cr) indexe.manquants.push(c && !unite ? 'unité de la créatininémie' : c ? 'créatininémie plausible' : 'créatininémie');
-  if (e.ageAns === undefined) indexe.manquants.push('âge');
-  if (!sexe) indexe.manquants.push('variable de sexe de l’équation (femme/homme)');
-  if (indexe.manquants.length === 0 && cr && e.ageAns !== undefined && sexe && res.etat !== 'hors_domaine') {
-    indexe.valeur = def.calcul({ ageAns: e.ageAns, creatinine: cr.mgDl, unite: 'mg/dL', sexe });
+  // Données communes aux trois estimations ; la restriction d'âge d'EKFC ne concerne que les DFG.
+  const communs: string[] = [];
+  if (res.etat === 'dialyse') communs.push('non applicable (dialyse)');
+  if (res.etat === 'hors_domaine') communs.push('non applicable (moins de 18 ans)');
+  if (!cr) communs.push(c && !unite ? 'unité de la créatininémie' : c ? 'créatininémie utilisable (valeur, unité ou date à vérifier)' : 'créatininémie');
+  if (age === undefined) communs.push(e.ageAns === undefined ? 'âge' : 'âge plausible');
+  if (!sexe) communs.push('variable de sexe de l’équation (femme/homme)');
+  const propresEquation: string[] = eq === 'ekfc' && age !== undefined && age <= 25 ? ['EKFC : âge > 25 ans requis (Q dépend de l’âge avant 25 ans, non implémenté) — choisir CKD-EPI'] : [];
+  indexe.manquants.push(...communs, ...propresEquation);
+  if (eq === 'ekfc') indexe.limites.push('EKFC : la HAS demande la formule CKD-EPI ; EKFC est une équation validée par la KDIGO 2024 (Table 14) mais non retenue par la HAS.');
+  if (indexe.manquants.length === 0 && cr && age !== undefined && sexe) {
+    const ageAns = age;
+    indexe.valeur = def.calcul({ ageAns, creatinine: cr.mgDl, unite: 'mg/dL', sexe });
     indexe.calculable = Number.isFinite(indexe.valeur);
-    indexe.donnees = [`âge ${e.ageAns} ans`, `sexe (variable de l'équation) : ${sexe}`, donneeCreat];
+    indexe.donnees = [`âge ${ageAns} ans`, `sexe (variable de l'équation) : ${sexe}`, donneeCreat];
     const f = sexe === 'femme';
     const q = f ? 62 : 80;
     const etape =
       eq === 'ckd_epi_2009'
-        ? [`κ = ${f ? '0,7' : '0,9'} ; α = ${f ? '−0,329' : '−0,411'}`, `DFGe = 141 × min(Scr/κ ; 1)^α × max(Scr/κ ; 1)^−1,209 × 0,993^${e.ageAns}${f ? ' × 1,018' : ''} (coefficient racial non appliqué)`]
+        ? [`κ = ${f ? '0,7' : '0,9'} ; α = ${f ? '−0,329' : '−0,411'}`, `DFGe = 141 × min(Scr/κ ; 1)^α × max(Scr/κ ; 1)^−1,209 × 0,993^${ageAns}${f ? ' × 1,018' : ''} (coefficient racial non appliqué)`]
         : eq === 'ckd_epi_2021'
-          ? [`κ = ${f ? '0,7' : '0,9'} ; α = ${f ? '−0,241' : '−0,302'}`, `DFGe = 142 × min(Scr/κ ; 1)^α × max(Scr/κ ; 1)^−1,200 × 0,9938^${e.ageAns}${f ? ' × 1,012' : ''}`]
-          : [`Q = ${q} µmol/L ; Scr/Q = ${nombreFr(cr.umolL / q, 3)}`, `DFGe = 107,3 × (Scr/Q)^${cr.umolL / q < 1 ? '−0,322' : '−1,132'}${e.ageAns > 40 ? ` × 0,990^(${e.ageAns} − 40)` : ''}`];
+          ? [`κ = ${f ? '0,7' : '0,9'} ; α = ${f ? '−0,241' : '−0,302'}`, `DFGe = 142 × min(Scr/κ ; 1)^α × max(Scr/κ ; 1)^−1,200 × 0,9938^${ageAns}${f ? ' × 1,012' : ''}`]
+          : [`Q = ${q} µmol/L ; Scr/Q = ${nombreFr(cr.umolL / q, 3)}`, `DFGe = 107,3 × (Scr/Q)^${cr.umolL / q < 1 ? '−0,322' : '−1,132'}${ageAns > 40 ? ` × 0,990^(${ageAns} − 40)` : ''}`];
     indexe.calcul = [
       ...(unite === 'umol/L' ? [`Scr = ${nombreFr(cr.umolL, 0)} / 88,4 = ${nombreFr(cr.mgDl, 3)} mg/dL`] : [`Scr = ${nombreFr(cr.mgDl, 3)} mg/dL (= ${nombreFr(cr.umolL, 0)} µmol/L)`]),
       ...etape,
       `= ${nombreFr(indexe.valeur, 1)} mL/min/1,73 m²`,
     ];
-    if (e.ageAns >= 75) indexe.limites.push('Sujet âgé : précision moindre des équations (masse musculaire variable).');
+    if (ageAns >= 75) indexe.limites.push('Sujet âgé (seuil de 75 ans choisi par l’application) : précision moindre des équations, la masse musculaire étant variable.');
   }
 
   /* --- 2. DFG estimé désindexé (× SC Du Bois / 1,73). */
   const des: Estimation = {
     id: 'dfg_desindexe',
     libelle: 'DFG estimé désindexé',
+    nomCourt: `${eq === 'ekfc' ? 'EKFC' : eq === 'ckd_epi_2021' ? 'CKD-EPI 2021' : 'CKD-EPI 2009'} désindexé`,
     grandeur: 'dfg',
     unite: 'mL/min',
     formule: `${def.formule} × surface corporelle (Du Bois) / 1,73`,
     version: `${def.version} ; Du Bois et Du Bois (1916)`,
     calculable: false,
-    manquants: [...indexe.manquants],
+    manquants: [...communs, ...propresEquation],
     donnees: [],
     calcul: [],
     limites: [...limitesCommunes],
@@ -394,36 +412,39 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
   const cg: Estimation = {
     id: 'clairance_cg',
     libelle: 'Clairance estimée de la créatinine',
+    nomCourt: 'Cockcroft-Gault',
     grandeur: 'clairance_creatinine',
     unite: 'mL/min',
     formule: 'Cockcroft-Gault',
     version: `1976, poids ${e.poidsCockcroft === 'ideal' ? 'idéal (Devine)' : e.poidsCockcroft === 'ajuste' ? 'ajusté (idéal + 0,4 × excès)' : 'réel'}`,
     calculable: false,
-    manquants: [...indexe.manquants],
+    manquants: [...communs],
     donnees: [],
     calcul: [],
-    limites: [...limitesCommunes, "Formule non réévaluée avec les dosages standardisés de la créatinine ; la HAS (2023) ne la recommande plus pour estimer la fonction rénale."],
-    sources: [...SOURCES_RENALES.cockcroft],
+    limites: [...limitesCommunes, 'Selon la HAS (2023), Cockcroft-Gault sous-estime le DFG avec un dosage standardisé de la créatinine ; elle demande de ne plus l’utiliser. Elle reste fournie parce que des RCP en donnent la formule.'],
+    sources: [...SOURCES_RENALES.cockcroft, SOURCES_RENALES.hasCockcroft],
   };
   if (e.poidsKg === undefined) cg.manquants.push('poids');
   else if (!poidsOk) cg.manquants.push('poids plausible');
   const choixPoids = e.poidsCockcroft ?? 'reel';
   if (choixPoids !== 'reel' && !tailleOk) cg.manquants.push('taille (poids idéal ou ajusté)');
-  if (cg.manquants.length === 0 && cr && e.ageAns !== undefined && sexe && res.etat !== 'hors_domaine') {
+  if (cg.manquants.length === 0 && cr && age !== undefined && sexe) {
+    const ageAns = age;
     const pi = tailleOk ? poidsIdealDevine(e.tailleCm!, sexe) : undefined;
     const poidsCG = choixPoids === 'ideal' ? Math.min(pi!, e.poidsKg!) : choixPoids === 'ajuste' ? (e.poidsKg! > pi! ? poidsAjuste(e.poidsKg!, pi!, 0.4) : e.poidsKg!) : e.poidsKg!;
-    const nomPoids = choixPoids === 'ideal' ? 'poids idéal (Devine)' : choixPoids === 'ajuste' ? 'poids ajusté (idéal Devine + 0,4 × excès)' : 'poids réel';
-    cg.valeur = cockcroftGault({ ageAns: e.ageAns, poidsKg: poidsCG, creatinine: cr.mgDl, unite: 'mg/dL', sexe });
+    const nomPoids =
+      choixPoids === 'ideal' ? (pi! < e.poidsKg! ? 'poids idéal (Devine)' : 'poids réel (inférieur au poids idéal)') : choixPoids === 'ajuste' ? (e.poidsKg! > pi! ? 'poids ajusté (idéal Devine + 0,4 × excès)' : 'poids réel (pas d’excès pondéral)') : 'poids réel';
+    cg.valeur = cockcroftGault({ ageAns, poidsKg: poidsCG, creatinine: cr.mgDl, unite: 'mg/dL', sexe });
     cg.calculable = Number.isFinite(cg.valeur);
-    cg.donnees = [`âge ${e.ageAns} ans`, `sexe (variable de l'équation) : ${sexe}`, `${nomPoids} ${nombreFr(poidsCG, 1)} kg${choixPoids !== 'reel' ? ` (poids réel ${nombreFr(e.poidsKg!, 1)} kg)` : ''}`, donneeCreat];
+    cg.donnees = [`âge ${ageAns} ans`, `sexe (variable de l'équation) : ${sexe}`, `${nomPoids} ${nombreFr(poidsCG, 1)} kg${choixPoids !== 'reel' ? ` (poids réel ${nombreFr(e.poidsKg!, 1)} kg)` : ''}`, donneeCreat];
     cg.calcul = [
       ...(unite === 'umol/L' ? [`créatininémie = ${nombreFr(cr.umolL, 0)} / 88,4 = ${nombreFr(cr.mgDl, 3)} mg/dL`] : []),
       ...(choixPoids !== 'reel' ? [`poids idéal (Devine) = ${nombreFr(pi!, 1)} kg → ${nomPoids} = ${nombreFr(poidsCG, 1)} kg`] : []),
-      `ClCr = (140 − ${e.ageAns}) × ${nombreFr(poidsCG, 1)} / (72 × ${nombreFr(cr.mgDl, 3)})${sexe === 'femme' ? ' × 0,85' : ''}`,
+      `ClCr = (140 − ${ageAns}) × ${nombreFr(poidsCG, 1)} / (72 × ${nombreFr(cr.mgDl, 3)})${sexe === 'femme' ? ' × 0,85' : ''}`,
       `= ${nombreFr(cg.valeur, 1)} mL/min`,
     ];
     if (choixPoids !== 'reel') {
-      cg.limites.push('Poids idéal ou ajusté choisi par l’utilisateur : les RCP citent « poids (kg) » sans qualificatif ; la FDA (2024) juge ces poids plus exacts chez la personne obèse. Facteur 0,4 du poids ajusté : choix de l’application.');
+      cg.limites.push('Poids idéal ou ajusté choisi par l’utilisateur : les RCP citent « poids (kg) » sans qualificatif ; la FDA (2024) juge ces poids plus exacts chez la personne obèse. Formule de Devine et facteur 0,4 du poids ajusté : choix de l’application, non fixés par la FDA.');
       cg.sources.push(SOURCES_RENALES.fdaPoidsObese);
     }
     if (imc !== undefined && imc >= 30 && choixPoids === 'reel')
@@ -433,15 +454,24 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
 
   /* --- Valeur fournie par le laboratoire : conservée telle quelle, distincte du calcul de l'application. */
   if (e.dfg && Number.isFinite(e.dfg.valeur) && e.dfg.valeur > 0) {
-    const u: UniteRenale | 'inconnue' = e.dfg.unite ?? (e.dfg.methode === 'Cockcroft' ? 'mL/min' : 'inconnue');
+    const u: UniteRenale | 'inconnue' = e.dfg.unite ?? 'inconnue';
     const lim: string[] = [];
+    let utilisable = u !== 'inconnue' && e.dfg.methode !== 'inconnue';
     if (u === 'inconnue') lim.push('Unité non précisée : la valeur n’est pas utilisée pour adapter une dose.');
+    if (e.dfg.methode === 'Cockcroft' && u === 'mL/min/1,73 m²') {
+      utilisable = false;
+      res.incoherences.push({ texte: 'Valeur fournie : une clairance de Cockcroft-Gault s’exprime en mL/min, pas en mL/min/1,73 m² ; vérifier la méthode ou l’unité.', cible: 'patient.renal.dfg' });
+    }
+    if ((e.dfg.methode === 'CKD-EPI' || e.dfg.methode === 'EKFC' || e.dfg.methode === 'MDRD') && u === 'mL/min') {
+      utilisable = false;
+      lim.push('DFG déclaré en mL/min : ces équations sont rendues indexées (mL/min/1,73 m²) ; valeur désindexée par le laboratoire ? Non utilisée automatiquement.');
+    }
     if (!e.dfg.date) lim.push('Date non renseignée.');
     if (e.dfg.methode === 'inconnue') lim.push('Méthode inconnue : la valeur n’est pas utilisée pour adapter une dose.');
     const calcule = e.dfg.methode === 'CKD-EPI' ? indexe : e.dfg.methode === 'Cockcroft' ? cg : undefined;
     if (calcule?.calculable && calcule.valeur && Math.abs(calcule.valeur - e.dfg.valeur) / calcule.valeur > 0.15)
-      lim.push(`Écart de plus de 15 % avec le calcul de l'application (${nombreFr(calcule.valeur, 0)} ${calcule.unite}) : vérifier la date de la créatininémie, l'unité ou la version de l'équation.`);
-    res.labo = { valeur: e.dfg.valeur, unite: u, methode: e.dfg.methode, date: e.dfg.date, libelle: `Valeur fournie (${e.dfg.methode === 'inconnue' ? 'méthode inconnue' : e.dfg.methode})`, limites: lim };
+      lim.push(`Écart de plus de 15 % (seuil choisi par l'application) avec le calcul de l'application (${nombreFr(calcule.valeur, 0)} ${calcule.unite}) : vérifier la date de la créatininémie, l'unité ou la version de l'équation.`);
+    res.labo = { utilisable, valeur: e.dfg.valeur, unite: u, methode: e.dfg.methode, date: e.dfg.date, libelle: `Valeur fournie (${e.dfg.methode === 'inconnue' ? 'méthode inconnue' : e.dfg.methode})`, limites: lim };
   }
 
   if (!poidsOk && e.poidsKg === undefined && cr) res.manquants.push('poids (nécessaire à Cockcroft-Gault et à la désindexation)');
@@ -462,8 +492,6 @@ export interface ChoixEstimation {
   libelle?: string;
   pourquoi: string;
   sources: SourceRef[];
-  /** Méthode de substitution (la référence demande une autre formule, non calculable). */
-  substitution?: string;
   /** Deux estimations recevables conduisant à des paliers différents. */
   discordance?: string;
   /** Pourquoi aucune estimation n'est utilisée automatiquement. */
@@ -481,6 +509,18 @@ function unir(...listes: string[][]): string[] {
   return res;
 }
 
+/** « (a, b) » ou rien si la liste est vide. */
+function entre(l: string[]): string {
+  return l.length ? ` (${l.join(', ')})` : '';
+}
+
+/**
+ * Encadrement de la surface corporelle quand la taille ou le poids manquent : facteur 0,5 à 2 sur le DFG indexé,
+ * soit une surface de 0,87 à 3,46 m² (choix de l'application couvrant les gabarits adultes). Si les deux bornes
+ * tombent dans le même palier, ce palier ne dépend pas de la surface corporelle.
+ */
+export const ENCADREMENT_SC = { min: 0.5, max: 2 } as const;
+
 function txt(e: Estimation): string {
   return `${e.libelle} (${e.formule}) ≈ ${nombreFr(e.valeur!, 0)} ${e.unite}`;
 }
@@ -496,40 +536,52 @@ export function choisirEstimation(renal: EstimationRenale, refM: ReferenceRenale
   const cg = estimation(renal, 'clairance_cg');
   const srcRef = refM.sources;
   const labo = renal.labo;
-  if (!renal.applicable) return { pourquoi: '', sources: srcRef, refus: renal.raisonNonApplicable, manquants: [] };
+  if (!renal.applicable)
+    return { pourquoi: '', sources: [...srcRef, ...(renal.etat === 'instable' ? [SOURCES_RENALES.hasInstable, SOURCES_RENALES.kdigoInstable] : [])], refus: renal.raisonNonApplicable, manquants: [] };
+  const laboOk = labo?.utilisable ? labo : undefined;
+  // Palier identique quelle que soit la surface corporelle : utilisable sans désindexation.
+  const encadre = (pourquoi: string, manquants: string[]): ChoixEstimation | undefined => {
+    if (!palierDe || !ind.calculable) return undefined;
+    const lo = ind.valeur! * ENCADREMENT_SC.min;
+    const hi = ind.valeur! * ENCADREMENT_SC.max;
+    if (palierDe(lo) !== palierDe(hi)) return undefined;
+    return {
+      valeur: ind.valeur,
+      unite: 'mL/min',
+      libelle: `${txt(ind)} — en mL/min, entre ${nombreFr(lo, 0)} et ${nombreFr(hi, 0)} selon le gabarit (surface corporelle de 0,87 à 3,46 m²) : même palier dans tous les cas`,
+      pourquoi: `${pourquoi} La taille ou le poids manquent, mais le palier ne dépend pas de la surface corporelle.`,
+      sources: [...srcRef, ...ind.sources, SOURCES_RENALES.hasDesindexation],
+      manquants,
+    };
+  };
 
   if (refM.unite === 'mL/min/1,73 m²') {
-    const pourquoi = 'la référence posologique exprime ses paliers en mL/min/1,73 m² (valeur indexée) : le DFG estimé indexé est utilisé, sans désindexation.';
+    const pourquoi =
+      'la référence posologique exprime ses paliers en clairance de la créatinine indexée (mL/min/1,73 m²) : l’application utilise le DFG estimé indexé (CKD-EPI, recommandation HAS), de même unité mais de grandeur différente, sans désindexation.';
     if (ind.calculable) return { valeur: ind.valeur, unite: ind.unite, libelle: txt(ind), pourquoi, sources: [...srcRef, ...ind.sources], manquants: [] };
-    if (labo && labo.unite === 'mL/min/1,73 m²' && labo.methode !== 'inconnue')
-      return { valeur: labo.valeur, unite: 'mL/min/1,73 m²', libelle: `${labo.libelle} ≈ ${nombreFr(labo.valeur, 0)} mL/min/1,73 m²`, pourquoi: `${pourquoi} Valeur fournie par le laboratoire, faute de calcul possible.`, sources: srcRef, manquants: [] };
-    return { pourquoi, sources: srcRef, refus: `DFG estimé indexé non calculable (${ind.manquants.join(', ')}).`, manquants: ind.manquants };
+    if (laboOk && laboOk.unite === 'mL/min/1,73 m²')
+      return { valeur: laboOk.valeur, unite: 'mL/min/1,73 m²', libelle: `${laboOk.libelle} ≈ ${nombreFr(laboOk.valeur, 0)} mL/min/1,73 m²`, pourquoi: `${pourquoi} Valeur fournie par le laboratoire, faute de calcul possible.`, sources: srcRef, manquants: [] };
+    return { pourquoi, sources: srcRef, refus: `DFG estimé indexé non calculable${entre(ind.manquants)}.`, manquants: ind.manquants };
   }
 
   if (refM.grandeur === 'dfg') {
-    const pourquoi = 'la référence posologique exprime ses paliers en DFG (mL/min) : le DFG estimé désindexé est utilisé (désindexation recommandée par la HAS pour adapter une posologie).';
+    const pourquoi =
+      'la référence posologique exprime ses paliers en DFG (mL/min) : le DFG estimé désindexé est utilisé (HAS : désindexer si la surface corporelle est éloignée de 1,73 m² ; EMA et FDA : dose toujours fondée sur des mL/min absolus).';
     if (des.calculable) return { valeur: des.valeur, unite: 'mL/min', libelle: txt(des), pourquoi, sources: [...srcRef, ...des.sources], manquants: [] };
-    if (labo && labo.unite === 'mL/min' && labo.methode !== 'inconnue' && labo.methode !== 'Cockcroft')
-      return { valeur: labo.valeur, unite: 'mL/min', libelle: `${labo.libelle} ≈ ${nombreFr(labo.valeur, 0)} mL/min`, pourquoi: `${pourquoi} Valeur fournie, faute de calcul possible.`, sources: srcRef, manquants: [] };
-    return { pourquoi, sources: [...srcRef, SOURCES_RENALES.hasDesindexation], refus: `DFG désindexé non calculable (${des.manquants.join(', ')}) ; le DFG indexé n'est pas utilisé à la place.`, manquants: des.manquants };
+    if (laboOk && laboOk.unite === 'mL/min' && laboOk.methode === 'mesure')
+      return { valeur: laboOk.valeur, unite: 'mL/min', libelle: `${laboOk.libelle} ≈ ${nombreFr(laboOk.valeur, 0)} mL/min`, pourquoi: `${pourquoi} Valeur mesurée fournie, faute de calcul possible.`, sources: srcRef, manquants: [] };
+    return (
+      encadre(pourquoi, des.manquants) ?? { pourquoi, sources: [...srcRef, SOURCES_RENALES.hasDesindexation], refus: `DFG désindexé non calculable${entre(des.manquants)} ; le DFG indexé n'est pas utilisé à la place.`, manquants: des.manquants }
+    );
   }
 
   // Clairance de la créatinine en mL/min.
   if (refM.formuleCitee === 'cockcroft_gault') {
-    const pourquoi = 'la référence posologique cite la formule de Cockcroft-Gault pour ses paliers de clairance.';
+    const pourquoi = 'la référence posologique donne pour ses paliers de clairance une formule de structure Cockcroft-Gault (que le RCP de la vancomycine ne nomme pas et intitule « eGFR »).';
     if (cg.calculable) return { valeur: cg.valeur, unite: 'mL/min', libelle: txt(cg), pourquoi, sources: [...srcRef, ...cg.sources], manquants: [] };
-    if (labo && labo.methode === 'Cockcroft' && labo.unite === 'mL/min') return { valeur: labo.valeur, unite: 'mL/min', libelle: `${labo.libelle} ≈ ${nombreFr(labo.valeur, 0)} mL/min`, pourquoi, sources: srcRef, manquants: [] };
-    if (des.calculable)
-      return {
-        valeur: des.valeur,
-        unite: 'mL/min',
-        libelle: txt(des),
-        pourquoi,
-        substitution: `Cockcroft-Gault non calculable (${cg.manquants.join(', ')}) : DFG estimé désindexé utilisé à la place, comme le recommande la HAS pour adapter les posologies. Les deux grandeurs ne sont pas équivalentes : vérifier dès que le poids est connu.`,
-        sources: [...srcRef, SOURCES_RENALES.hasCkdEpi, ...des.sources],
-        manquants: cg.manquants,
-      };
-    return { pourquoi, sources: srcRef, refus: `ni la clairance de Cockcroft-Gault (${cg.manquants.join(', ')}) ni le DFG désindexé (${des.manquants.join(', ')}) ne sont calculables.`, manquants: unir(cg.manquants, des.manquants) };
+    if (laboOk && laboOk.methode === 'Cockcroft' && laboOk.unite === 'mL/min') return { valeur: laboOk.valeur, unite: 'mL/min', libelle: `${laboOk.libelle} ≈ ${nombreFr(laboOk.valeur, 0)} mL/min`, pourquoi, sources: srcRef, manquants: [] };
+    // Pas de substitution automatique par une autre estimation : la clairance demandée par la référence manque.
+    return { pourquoi, sources: srcRef, refus: `la clairance de Cockcroft-Gault, demandée par la référence, n'est pas calculable${entre(cg.manquants)} ; aucune autre estimation n'est substituée automatiquement.`, manquants: cg.manquants };
   }
 
   // Clairance sans formule précisée : HAS (CKD-EPI désindexé) et usage historique (Cockcroft-Gault) divergent.
@@ -549,6 +601,13 @@ export function choisirEstimation(renal: EstimationRenale, refM: ReferenceRenale
   }
   if (des.calculable) return { valeur: des.valeur, unite: 'mL/min', libelle: txt(des), pourquoi: `${pourquoi} Seul le DFG désindexé est calculable.`, sources: srcDiv, manquants: cg.manquants };
   if (cg.calculable) return { valeur: cg.valeur, unite: 'mL/min', libelle: txt(cg), pourquoi: `${pourquoi} Seule la clairance de Cockcroft-Gault est calculable (taille manquante pour le DFG désindexé).`, sources: [...srcRef, ...cg.sources], manquants: des.manquants };
-  if (labo && labo.unite === 'mL/min' && labo.methode !== 'inconnue') return { valeur: labo.valeur, unite: 'mL/min', libelle: `${labo.libelle} ≈ ${nombreFr(labo.valeur, 0)} mL/min`, pourquoi: `${pourquoi} Valeur fournie, faute de calcul possible.`, sources: srcRef, manquants: [] };
-  return { pourquoi, sources: srcRef, refus: `aucune estimation en mL/min n'est calculable (${unir(cg.manquants, des.manquants).join(', ')}) ; une valeur indexée n'est pas utilisée à la place.`, manquants: unir(cg.manquants, des.manquants) };
+  if (laboOk && laboOk.unite === 'mL/min') return { valeur: laboOk.valeur, unite: 'mL/min', libelle: `${laboOk.libelle} ≈ ${nombreFr(laboOk.valeur, 0)} mL/min`, pourquoi: `${pourquoi} Valeur fournie, faute de calcul possible.`, sources: srcRef, manquants: [] };
+  return (
+    encadre(pourquoi, unir(cg.manquants, des.manquants)) ?? {
+      pourquoi,
+      sources: srcRef,
+      refus: `aucune estimation en mL/min n'est calculable${entre(unir(cg.manquants, des.manquants))} ; une valeur indexée n'est pas utilisée à la place.`,
+      manquants: unir(cg.manquants, des.manquants),
+    }
+  );
 }
