@@ -1,0 +1,30 @@
+{
+  "version": "2026.11.0-brouillon",
+  "dateValidationHumaine": null,
+  "statutGlobal": "verifiee_ia",
+  "derniereVeilleReussie": "2026-11-05",
+  "derniereVeilleTentee": "2026-11-05",
+  "perimetreSurveille": [
+    "SPILF — recommandations (infectiologie.com)",
+    "HAS — fiches antibiothérapie et infections urinaires",
+    "ANSM — RCP (base de données publique des médicaments) et mises au point aminosides",
+    "EUCAST — Clinical Breakpoint Tables, définitions S/I/R, expert rules",
+    "CA-SFM/EUCAST — référentiel annuel",
+    "ESCMID — guidelines publiées",
+    "ESC — endocardite (2023) et mises à jour",
+    "IDSA — bactériémie à S. aureus, infections de cathéter (en l'absence de texte européen)",
+    "CRAT — grossesse/allaitement",
+    "GitHub Actions — documentation schedule (fiabilité de la veille)"
+  ],
+  "changementsEnAttente": [
+    {
+      "id": "AUDIT-R2-2026-11-05",
+      "resume": "Audit documentaire du relecteur 2 : corrections (céfépime IR, ceftriaxone et autres souches I, résiduelle d'aminoside en IR, gentamicine 5 mg/kg EI probabiliste, vancomycine, RCP céfoxitine/céfixime/ertapénème lus) et blocages en brouillon (streptocoques hors EI, daptomycine seule SARM EI, homme immunodéprimé IU). À valider par un médecin : docs/relectures/relecteur-2-audit-documentaire.md",
+      "date": "2026-11-05"
+    }
+  ],
+  "obsolescence": {
+    "alerte": false,
+    "texte": "Aucune veille réussie encore enregistrée : la base reflète les sources consultées le 2026-11-04."
+  }
+}

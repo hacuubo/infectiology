@@ -1,0 +1,131 @@
+{
+  "derniereReussie": "2026-11-05",
+  "sources": {
+    "spilf-recommandations": {
+      "empreinte": "eadd03e712613118fd9e351521800fb8a376d369c5a2bc087e56396c9dd42484",
+      "taille": 142518,
+      "reperes": {
+        "urinaire": "ngées - Infections respiratoires basses - Infections génito urinaires - Infections ORL - Infections digestives - Infections osté",
+        "bactériémie": null,
+        "endocardite": "023 guidelines - Antibiothérapie et antibioprophylaxie de l'endocardite infectieuse – Une prise de position SPILF-AEPEI sur les rec",
+        "ostéo": "aires - Infections ORL - Infections digestives - Infections ostéo articulaire - sepsis - Infections cutanées - VIH - hépatite",
+        "aminoside": "olides SPILF 2022 Fluoroquinolones - en francais SPILF 2025 Aminosides AFSSAPS/SPILF 2011 Mise au point - argumentaire - modalité",
+        "vancomycine": null
+      },
+      "date": "2026-11-05"
+    },
+    "spilf-ium-2026": {
+      "empreinte": "a53a4cd0fb8ae80e765ce24edc955bd31c08d6a224c2bb942768b0dbe2ae5bb0",
+      "taille": 311994,
+      "reperes": {},
+      "derniereModif": "Sun, 04 Oct 2026 08:39:42 GMT",
+      "date": "2026-11-05"
+    },
+    "spilf-iu-2015": {
+      "empreinte": "0be980110daf6f69bcebf0ab1f3caffe47c09cf17bb74160c6eafcb8f48e5b06",
+      "taille": 497813,
+      "reperes": {},
+      "derniereModif": "Fri, 11 Dec 2015 11:05:09 GMT",
+      "date": "2026-11-05"
+    },
+    "spilf-iuas-2015": {
+      "empreinte": "04a5ffe3194fae711bc95007d2709158f230c63f070271c51013921eb80908c7",
+      "taille": 480170,
+      "reperes": {},
+      "derniereModif": "Mon, 28 Sep 2026 07:58:02 GMT",
+      "date": "2026-11-05"
+    },
+    "has-antibiotherapie": {
+      "empreinte": "2185bbf230a31594609003033101532f13bf92fa4276a010fc193077b9d2ac65",
+      "taille": 113123,
+      "reperes": {
+        "Mise à jour": null
+      },
+      "date": "2026-11-05"
+    },
+    "has-pna-femme": {
+      "empreinte": "a2419cb8d72d0c27d1e28a8710a4e5a222857820e787ad6f0e31cd6ead175cd1",
+      "taille": 92337,
+      "reperes": {
+        "Mise à jour": null
+      },
+      "date": "2026-11-05"
+    },
+    "ansm-aminosides-2011": {
+      "empreinte": "ea05bae35af8f3a72aa9c2316f6c0955837692be6df3e297f3781f02a1c3c2a4",
+      "taille": 1223687,
+      "reperes": {},
+      "derniereModif": "Wed, 13 Mar 2024 11:50:42 GMT",
+      "date": "2026-11-05"
+    },
+    "ansm-fluoroquinolones-2023": {
+      "empreinte": "2ee51cbf4d117371edf0a443705d4727960bc1ed7181f082ecee094f27043f72",
+      "taille": 107225,
+      "reperes": {},
+      "date": "2026-11-05"
+    },
+    "eucast-breakpoints-v16.1": {
+      "empreinte": "5789907e4f91628ca9b8db2fe471e2d5cb715be8c1bc906000f04fde225435c3",
+      "taille": 4351645,
+      "reperes": {},
+      "derniereModif": "Wed, 24 Jun 2026 12:05:55 GMT",
+      "date": "2026-11-05"
+    },
+    "eucast-breakpoints-v17.0": {
+      "statut": "inchangee",
+      "date": "2026-11-05"
+    },
+    "casfm-2026-v1.0": {
+      "empreinte": "b20bfb37056a8f2c534bff54404284fd2a80803f9e68efdf901141e0be900fb7",
+      "taille": 231240,
+      "reperes": {
+        "2027": "da Microbes 2026 AMP 2026 Pseudomonas 2026 Virus et Greffes 2027 GEFH 2027 Virus à ADN 2027 ÉMERGENCES 2027 Journée BUD Webi",
+        "V1.0": "Addendum 2026 _Comité de l’Antibiogramme de la SFM (CA-SFM) V1.0 Septembre 2026 🆕 Gratuit La version 2026 du communiqué du ",
+        "V1.1": null,
+        "V2.0": null
+      },
+      "date": "2026-11-05"
+    },
+    "escmid-guidelines": {
+      "empreinte": "95def23e644fbcd25610b72f7c34b3162ed909f28d11463f14d8bc2addc31f35",
+      "taille": 116238,
+      "reperes": {},
+      "derniereModif": "Wed, 04 Nov 2026 20:46:02 GMT",
+      "date": "2026-11-05"
+    },
+    "esc-endocardite": {
+      "empreinte": "439c48afdfa554fbfbae619465446e2d93a2c8147edefd79d12f4c05d8373ab1",
+      "taille": 399944,
+      "reperes": {
+        "2023": "2023 Endocarditis Escardio ESC eLearning ESC 365 Escardio Escard",
+        "Endocarditis": "2023 Endocarditis Escardio ESC eLearning ESC 365 Escardio Escardio ESC eLearn"
+      },
+      "date": "2026-11-05"
+    },
+    "eau-urological-infections": {
+      "empreinte": "882cc65f4ac0768fa37640a63e902c3f2e9b59149a5769d47202da51faf82a65",
+      "taille": 1328932,
+      "reperes": {
+        "2026": "al Infections Guidelines were first published in 2001. This 2026 document presents a limited update of the 2025 publication.",
+        "2027": null,
+        "Limited update": "were first published in 2001. This 2026 document presents a limited update of the 2025 publication. 1.4.1. Summary of changes For the "
+      },
+      "date": "2026-11-05"
+    },
+    "crat": {
+      "empreinte": "d67df776eec47627e861fdc33e42737297bb2f82d975de3e35dcb99cb683e19e",
+      "taille": 207780,
+      "reperes": {},
+      "date": "2026-11-05"
+    },
+    "github-actions-schedule": {
+      "empreinte": "6b753b4cb7a35c188cfa4e4ca30579a3de415fdc224387ed48507be5ce0a74eb",
+      "taille": 1076040,
+      "reperes": {
+        "schedule": "ls to issues Close inactive issues Add comments with labels Schedule issue creation Store and share data Use containerized servi",
+        "UTC": "n at specific times. By default, scheduled workflows run in UTC. You can optionally specify a timezone using an IANA timezo"
+      },
+      "date": "2026-11-05"
+    }
+  }
+}
