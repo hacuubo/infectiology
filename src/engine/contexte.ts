@@ -53,6 +53,9 @@ export function familleDeclaree(molecule: string): Famille | 'betalactamine_inde
   if (n.includes('rifampicine')) return 'rifamycine';
   // Métronidazole : contre-indiqué en cas d'hypersensibilité « aux nitroimidazolés » (RCP IV §4.3), « aux imidazolés » (RCP oral §4.3).
   if (n.includes('nidazole') || n.includes('imidazole')) return 'nitroimidazole';
+  // RCP Dalacine § 4.3 : hypersensibilité à la clindamycine ou à la lincomycine ; RCP Pyostacine § 4.3 : synergistines.
+  if (n.includes('clindamycine') || n.includes('lincomycine') || n.includes('lincosamide')) return 'lincosamide';
+  if (n.includes('pristinamycine') || n.includes('synergistine') || n.includes('streptogramine') || n.includes('virginiamycine')) return 'streptogramine';
   return 'autre';
 }
 

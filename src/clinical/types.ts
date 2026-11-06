@@ -337,6 +337,8 @@ export type Famille =
   | 'sulfamide'
   | 'rifamycine'
   | 'nitroimidazole'
+  | 'lincosamide'
+  | 'streptogramine'
   | 'autre';
 
 export interface DoseSpec {

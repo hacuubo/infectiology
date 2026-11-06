@@ -72,6 +72,9 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   vancomycine_orale: clcr('RCP-vancomycine-orale', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)'),
   // RCP métronidazole IV : aucune réduction de dose en insuffisance rénale ; aucune grandeur citée (clairance par défaut, sans effet sur la dose).
   metronidazole: clcr('RCP-metronidazole-IV', 'Aucune réduction de dose n\'est nécessaire'),
+  // Pristinamycine et clindamycine : aucune adaptation rénale dans le RCP, aucune grandeur citée ; clairance par défaut.
+  pristinamycine: clcr('RCP-pristinamycine', 'aucun ajustement posologique n\'est jugé nécessaire chez les patients insuffisants rénaux'),
+  clindamycine: { grandeur: 'clairance_creatinine', unite: 'mL/min', sources: [S('RCP-clindamycine-orale', '§4.2 (aucune adaptation rénale mentionnée)', undefined, 'adaptation_renale')] },
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */
