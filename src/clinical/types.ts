@@ -336,6 +336,8 @@ export type Famille =
   | 'fluoroquinolone'
   | 'sulfamide'
   | 'rifamycine'
+  | 'lincosamide'
+  | 'streptogramine'
   | 'autre';
 
 export interface DoseSpec {

@@ -177,14 +177,14 @@ export const R_PERSISTANCE: Regle = {
 export const R_SYNDROME_NON_COUVERT: Regle = {
   id: 'R-SYNDROME-NON-COUVERT',
   libelle: 'Syndrome hors périmètre actuel',
-  description: 'Foyers pulmonaire, digestif, cutané ou autre sans bactériémie couverte.',
+  description: 'Foyers pulmonaire, digestif ou autre sans bactériémie couverte (le foyer cutané relève de R-PEAU-TISSUS-MOUS).',
   statut: 'verifiee_ia',
   priorite: 10,
   sources: [],
-  sApplique: (ctx) => adulte(ctx) && ['pulmonaire', 'digestif', 'cutane', 'autre', 'osteoarticulaire_sans_materiel'].includes(ctx.foyer) && germePrincipal(ctx).g === 'aucun',
+  sApplique: (ctx) => adulte(ctx) && ['pulmonaire', 'digestif', 'autre', 'osteoarticulaire_sans_materiel'].includes(ctx.foyer) && germePrincipal(ctx).g === 'aucun',
   appliquer: (ctx) =>
     new Fiche(ctx, 'verifiee_ia')
-      .situation('syndrome-non-couvert', 'Foyer non couvert par la version actuelle', 'non_couverte', 'Les infections pulmonaires, digestives, cutanées et ostéoarticulaires sans matériel ne sont pas encore modélisées. Seules les règles transversales (gravité, réévaluation) s\'appliquent.')
+      .situation('syndrome-non-couvert', 'Foyer non couvert par la version actuelle', 'non_couverte', 'Les infections pulmonaires, digestives et ostéoarticulaires sans matériel ne sont pas encore modélisées. Seules les règles transversales (gravité, réévaluation) s\'appliquent.')
       .avis('Avis infectiologique pour le choix thérapeutique.', false, [])
       .fin(),
 };

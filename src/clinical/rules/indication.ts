@@ -4,6 +4,7 @@
  * pas interchangeables et sont présentées comme des conclusions cliniques complètes.
  */
 import { formeCystite } from './cystite';
+import { formePeau, prelevementSuperficielSeul } from './peau-tissus-mous';
 import type { Regle } from '../../engine/decider';
 import type { IndicationPlan } from '../types';
 import type { EvaluationECBU } from '../indication/ecbu';
@@ -120,11 +121,7 @@ export const R_PRELEVEMENT_SUPERFICIEL: Regle = {
   statut: 'verifiee_ia',
   priorite: 155,
   sources: [S('HAS-2019-infections-cutanees', '§ 3, p. 18-20', undefined, 'choix')],
-  sApplique: (ctx) =>
-    adulte(ctx) &&
-    ctx.hemocultures.every((h) => h.organisme === undefined) &&
-    ctx.dossier.prelevements.some((x) => x.type === 'superficiel' && x.organisme !== undefined) &&
-    !ctx.dossier.prelevements.some((x) => (x.type === 'profond' || x.type === 'urine') && x.organisme !== undefined),
+  sApplique: (ctx) => adulte(ctx) && prelevementSuperficielSeul(ctx),
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const c = ctx.dossier.clinique;
@@ -138,9 +135,15 @@ export const R_PRELEVEMENT_SUPERFICIEL: Regle = {
       f.c.indication = { ...base, decision: 'ne_pas_traiter', qualification: 'colonisation', titre: 'Pas d\'antibiothérapie indiquée dans la situation renseignée', raison: 'Une plaie est toujours colonisée : sans signe clinique d\'infection, la culture positive ne justifie pas d\'antibiotique.', conditions: ['prélèvement superficiel positif', 'pas de signe clinique d\'infection locale', 'pas de bactériémie'], actions: ['Ne pas prescrire d\'antibiotique', 'Soins locaux ; ne pas multiplier les prélèvements superficiels'], reconsiderer: ['Dermohypodermite, abcès, pus, aggravation de la plaie, signes généraux'] };
       f.situation('plaie-colonisee', 'Plaie colonisée sans infection clinique', 'couverte', f.c.indication.raison);
     } else if (c.signesInfectionLocale === 'oui') {
-      f.c.indication = { ...base, decision: 'traiter', qualification: 'infection_probable', titre: 'Infection locale clinique', raison: 'Le diagnostic d\'infection de plaie est clinique. Le choix thérapeutique de ces infections n\'est pas modélisé dans l\'application.', conditions: ['signes cliniques d\'infection locale'], actions: ['Prélèvement de pus ou tissulaire (pas d\'écouvillonnage superficiel) avant antibiothérapie', 'Avis spécialisé'], reconsiderer: [] };
-      f.situation('infection-cutanee', 'Infection cutanée ou de plaie', 'non_couverte', 'Choix thérapeutique non modélisé : avis spécialisé.');
-      f.avis('Infection cutanée ou de plaie : avis spécialisé pour le choix thérapeutique.', false, src);
+      if (formePeau(ctx) !== undefined) {
+        // Foyer « Peau et tissus mous » : l'indication, la situation et le traitement suivent la forme clinique (R-PEAU-TISSUS-MOUS),
+        // y compris les formes sans antibiotique (furoncle isolé, impétigo peu étendu, pied diabétique grade 1).
+        f.alerte('info', 'Infection locale clinique : la culture du prélèvement superficiel ne décide pas seule ; la prise en charge suit la forme clinique renseignée (foyer « Peau et tissus mous »).', src);
+        return f.fin();
+      }
+      f.c.indication = { ...base, decision: 'traiter', qualification: 'infection_probable', titre: 'Infection locale clinique', raison: 'Le diagnostic d\'infection de plaie est clinique. Le choix thérapeutique dépend de la forme clinique : choisir le foyer « Peau et tissus mous » et préciser la forme.', conditions: ['signes cliniques d\'infection locale'], actions: ['Prélèvement de pus ou tissulaire (pas d\'écouvillonnage superficiel) avant antibiothérapie', 'Préciser le foyer « Peau et tissus mous » et la forme clinique', 'Sinon : avis spécialisé'], reconsiderer: [] };
+      f.situation('infection-cutanee', 'Infection cutanée ou de plaie', 'non_couverte', 'Foyer et forme clinique non précisés : choisir le foyer « Peau et tissus mous » et la forme, ou avis spécialisé.');
+      f.avis('Infection cutanée ou de plaie : préciser le foyer et la forme clinique, sinon avis spécialisé pour le choix thérapeutique.', false, src);
     } else {
       f.c.indication = { ...base, decision: 'informations_insuffisantes', qualification: 'indeterminee', titre: 'Prélèvement superficiel positif : préciser les signes cliniques', raison: 'Une culture positive d\'un prélèvement superficiel ne suffit pas : l\'infection de plaie se définit cliniquement.', conditions: [], actions: [], reconsiderer: [], questions: ['Signes cliniques d\'infection locale (pus, abcès, dermohypodermite, aggravation) ?'] };
       f.situation('plaie-a-qualifier', 'Prélèvement superficiel positif à qualifier', 'couverte', f.c.indication.raison);

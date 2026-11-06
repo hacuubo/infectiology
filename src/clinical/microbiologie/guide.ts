@@ -124,6 +124,8 @@ const LIB_MOLECULE: Record<string, string> = {
   teicoplanine: 'Téicoplanine',
   linezolide: 'Linézolide',
   clindamycine: 'Clindamycine',
+  pristinamycine: 'Pristinamycine',
+  erythromycine: 'Érythromycine',
 };
 export function libelleMolecule(dci: string): string {
   return LIB_MOLECULE[dci] ?? dci;
@@ -346,8 +348,10 @@ function dedoublonner(qs: QuestionMicro[]): QuestionMicro[] {
 }
 
 const BGN_TOUTES = ['amoxicilline', 'amoxicilline_clavulanate', 'piperacilline_tazobactam', 'temocilline', 'cefoxitine', 'cefotaxime', 'ceftriaxone', 'cefepime', 'cefixime', 'aztreonam', 'ertapeneme', 'imipeneme', 'meropeneme', 'amikacine', 'gentamicine', 'ciprofloxacine', 'levofloxacine', 'cotrimoxazole', 'fosfomycine', 'mecillinam', 'nitrofurantoine', 'trimethoprime'];
-const STAPH_TOUTES = ['oxacilline', 'cefoxitine', 'cefazoline', 'vancomycine', 'daptomycine', 'rifampicine', 'gentamicine', 'levofloxacine', 'cotrimoxazole'];
-const STREPTO_TOUTES = ['penicilline_g', 'amoxicilline', 'ceftriaxone', 'cefotaxime', 'vancomycine', 'levofloxacine'];
+// Clindamycine, pristinamycine, érythromycine : molécules des infections de la peau et des tissus mous (HAS 2019/2021) ;
+// une résistance à l'érythromycine peut indiquer une résistance inductible à la clindamycine (argumentaire HAS 2019 p. 38).
+const STAPH_TOUTES = ['oxacilline', 'cefoxitine', 'cefazoline', 'vancomycine', 'daptomycine', 'rifampicine', 'gentamicine', 'levofloxacine', 'cotrimoxazole', 'clindamycine', 'pristinamycine', 'erythromycine'];
+const STREPTO_TOUTES = ['penicilline_g', 'amoxicilline', 'ceftriaxone', 'cefotaxime', 'vancomycine', 'levofloxacine', 'clindamycine', 'pristinamycine', 'erythromycine'];
 const ENTERO_TOUTES = ['amoxicilline', 'piperacilline_tazobactam', 'imipeneme', 'vancomycine', 'daptomycine', 'ceftriaxone'];
 
 function autresMolecules(dcis: string[]): QuestionMicro[] {

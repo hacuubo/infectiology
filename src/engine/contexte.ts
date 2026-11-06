@@ -51,6 +51,9 @@ export function familleDeclaree(molecule: string): Famille | 'betalactamine_inde
   if (n.includes('daptomycine')) return 'lipopeptide';
   if (n.includes('linezolide')) return 'oxazolidinone';
   if (n.includes('rifampicine')) return 'rifamycine';
+  // RCP Dalacine § 4.3 : hypersensibilité à la clindamycine ou à la lincomycine ; RCP Pyostacine § 4.3 : synergistines.
+  if (n.includes('clindamycine') || n.includes('lincomycine') || n.includes('lincosamide')) return 'lincosamide';
+  if (n.includes('pristinamycine') || n.includes('synergistine') || n.includes('streptogramine') || n.includes('virginiamycine')) return 'streptogramine';
   return 'autre';
 }
 
