@@ -7,9 +7,9 @@ import { GardeErreur, GardeLocale, PanneauErreurTechnique } from './Explication'
 import { contexteUI } from './contexte-ui';
 import { FormulaireDossier } from './FormulaireDossier';
 import { ResumePatient } from './ResumePatient';
-import { alertesUrgentes, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
+import { alertesUrgentes, elementsManquants, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
 import { VERSION_CLINIQUE, estObsolete } from '../clinical/version';
-import { Badge, RefsInline } from './composants';
+import { Badge, ChampsManquants, RefsInline } from './composants';
 
 /** `dossierInitial` : dossier de départ (tests) ; par défaut, un dossier vide. */
 export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
@@ -58,6 +58,22 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
   }, [plan]);
   // Modifications de la saisie qui changent la proposition thérapeutique (calcul pur, compatible StrictMode).
   const changements = useMemo(() => (plan && planAvant ? comparerPlans(planAvant, plan) : []), [plan, planAvant]);
+  // Champs à compléter signalés par la fiche : mis en surbrillance dans la saisie.
+  const ciblesManquantes = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const x of plan ? elementsManquants(plan) : []) if (x.cible) m.set(x.cible, (m.get(x.cible) ?? false) || x.impact !== 'affine');
+    return m;
+  }, [plan]);
+  // Données sans champ précis (antibiogramme, signes cliniques, antécédents…) : c'est la section qui est signalée.
+  useEffect(() => {
+    document.querySelectorAll('.section-manquante').forEach((el) => el.classList.remove('section-manquante'));
+    for (const cible of ciblesManquantes.keys()) {
+      if (document.querySelector(`[data-champ="${cible}"]`)) continue;
+      const el = trouverChamp(cible);
+      const section = el?.closest('section.carte');
+      if (section && !section.closest('.fiche')) section.classList.add('section-manquante');
+    }
+  });
   const obsolete = estObsolete(VERSION_CLINIQUE);
   // En cas de panne, l'urgence déclarée (sepsis, choc) reste affichée.
   const urgentes = plan ? alertesUrgentes(plan) : !resultat.ok ? resultat.sortie.actionsUrgentes.map((a) => ({ niveau: 'urgence' as const, texte: a.texte, sources: a.sources })) : [];
@@ -153,7 +169,9 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
             </div>
           )}
           <GardeLocale nom="formulaire" cle={dossier}>
-            <FormulaireDossier dossier={dossier} modifier={modifier} />
+            <ChampsManquants.Provider value={ciblesManquantes}>
+              <FormulaireDossier dossier={dossier} modifier={modifier} />
+            </ChampsManquants.Provider>
           </GardeLocale>
           {/* En fin de saisie : statut de l'outil et état de la base clinique. */}
           <footer className="pied pied-saisie">

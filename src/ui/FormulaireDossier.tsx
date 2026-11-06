@@ -244,7 +244,7 @@ function FormulairePrelevement({ index, prl, d, modifier }: { index: number; prl
           {pertinentP('hemoc.dateNegativationISO', prl, d) && <ChampTexte libelle="Date de la première hémoculture négative" type="datetime-local" aide="Point de départ du calcul de durée pour S. aureus et l'endocardite." valeur={prl.hemoc.dateNegativationISO} onChange={(v) => maj((p) => { if (p.hemoc) p.hemoc.dateNegativationISO = v; })} />}
         </div>
       )}
-      <Select libelle="Foyer suspecté ou confirmé" valeur={prl.foyer} options={(Object.keys(LIBELLE_FOYER) as FoyerId[]).map((f) => ({ v: f, l: LIBELLE_FOYER[f] }))} onChange={(v) => maj((p) => (p.foyer = v))} />
+      <Select libelle="Foyer suspecté ou confirmé" cible={prl.foyer === 'inconnu' ? 'prelevements.foyer' : undefined} valeur={prl.foyer} options={(Object.keys(LIBELLE_FOYER) as FoyerId[]).map((f) => ({ v: f, l: LIBELLE_FOYER[f] }))} onChange={(v) => maj((p) => (p.foyer = v))} />
       {prl.foyer !== 'inconnu' && <ChoixRadio libelle="Statut du foyer" valeur={prl.foyerStatut} options={[{ v: 'suspecte', l: 'Suspecté' }, { v: 'confirme', l: 'Confirmé' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => maj((p) => (p.foyerStatut = v))} />}
       {pertinentP('signesInfectionMateriel', prl, d) && <ChoixTri libelle="Signes d'infection sur le matériel (inflammation au point d'insertion, descellement, douleur de prothèse, végétation sur sonde…)" valeur={prl.signesInfectionMateriel} onChange={(v) => maj((p) => (p.signesInfectionMateriel = v))} />}
     </div>

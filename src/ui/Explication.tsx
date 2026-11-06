@@ -113,13 +113,16 @@ function CarteMotif({ m, allerAuChamp }: { m: MotifSortie; allerAuChamp?: AllerA
 }
 
 /** Panneau « Pourquoi aucun traitement complet n'est affiché » : un motif par situation, priorisés. */
-export function ExplicationSortie({ sortie, allerAuChamp }: { sortie: EtatSortie; allerAuChamp?: AllerAuChamp }) {
-  if (sortie.motifs.length === 0) return null;
-  const titre = sortie.traitement === 'aucun' ? 'Pourquoi aucun traitement n’est affiché' : 'Pourquoi la proposition est incomplète';
+export function ExplicationSortie({ sortie, allerAuChamp, masquer = [] }: { sortie: EtatSortie; allerAuChamp?: AllerAuChamp; masquer?: TypeMotifSortie[] }) {
+  // `masquer` : motifs déjà présentés ailleurs (ex. éléments manquants listés en tête de fiche).
+  const motifs = sortie.motifs.filter((m) => !masquer.includes(m.type));
+  const urgence = sortie.urgence && sortie.traitement !== 'complet';
+  if (motifs.length === 0 && !urgence) return null;
+  const titre = motifs.length === 0 ? 'Urgence' : sortie.traitement === 'aucun' ? 'Pourquoi aucun traitement n’est affiché' : 'Pourquoi la proposition est incomplète';
   return (
     <section className="explication-sortie" aria-label={titre}>
       <h4>{titre}</h4>
-      {sortie.urgence && sortie.traitement !== 'complet' && (
+      {urgence && (
         <div className="alerte urgence">
           <strong>Urgence : ne pas attendre une proposition complète.</strong>
           {sortie.actionsUrgentes.length > 0 ? (
@@ -136,7 +139,7 @@ export function ExplicationSortie({ sortie, allerAuChamp }: { sortie: EtatSortie
           <p>Les alertes urgentes restent affichées en haut de l’écran.</p>
         </div>
       )}
-      {sortie.motifs.map((m, i) => (
+      {motifs.map((m, i) => (
         <CarteMotif key={`${m.type}-${i}`} m={m} allerAuChamp={allerAuChamp} />
       ))}
     </section>

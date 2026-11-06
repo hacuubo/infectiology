@@ -243,11 +243,9 @@ describe('Interface : explication et accès direct aux champs', () => {
     const u = userEvent.setup();
     render(<App dossierInitial={casFictif('sarm-hd')} />);
     const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
-    expect(within(fiche).getByRole('region', { name: /Pourquoi/ })).toBeInTheDocument();
-    const boutons = within(fiche).getAllByRole('button', { name: 'Compléter' });
-    expect(boutons.length).toBeGreaterThan(0);
-    const cible = boutons.find((b) => /poids/i.test(b.closest('li')?.textContent ?? ''))!;
-    await u.click(cible);
+    // Les éléments manquants sont listés en tête de fiche, chacun menant à son champ.
+    const manquants = within(fiche).getByRole('region', { name: /Éléments manquants/ });
+    await u.click(within(manquants).getByRole('button', { name: /^Compléter : poids/ }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Poids')));
   });
 

@@ -84,7 +84,7 @@ describe('Saisie simplifiée', () => {
     expect(def).toHaveTextContent(/sans être présente ni en incubation/);
     expect(def).toHaveTextContent(/48 h/);
     expect(def).toHaveTextContent(/Communautaire : les autres situations/);
-    expect(def).toHaveTextContent(/Sources \(1\)/);
+    expect(def).toHaveTextContent(/Sources : SPILF/);
     expect(container.querySelector('[data-champ="patient.gravite"] .aide')).toBeNull();
     expect(within(screen.getByRole('radiogroup', { name: /^Valve cardiaque/ })).getByRole('radio', { name: 'Inconnu' })).toBeInTheDocument();
   });

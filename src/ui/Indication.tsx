@@ -5,9 +5,7 @@
 import type { Clinique, GesteUrologique, IndicationPlan, Plan, TriState } from '../clinical/types';
 import { pertinenceClinique, type Dossier } from '../engine/etat';
 import { GESTES } from '../clinical/indication/ecbu';
-import { contexteUI } from './contexte-ui';
-import { LIBELLE_FOYER } from './libelles';
-import { Badge, BadgeStatut, ChoixRadio, ChoixTri, ListeSources, RefsInline, Select } from './composants';
+import { Badge, BadgeStatut, ChoixRadio, ChoixTri, ListeSources, RefsInline, Select, statutASignaler } from './composants';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
 
@@ -118,7 +116,7 @@ export function CarteIndication({ indication }: { indication: IndicationPlan }) 
   return (
     <div className={`option carte-indication decision-${indication.decision}`}>
       <div className="titre">
-        <strong>{indication.titre}</strong> <Badge type={type}>{LIBELLE_DECISION[indication.decision]}</Badge> <Badge>{LIBELLE_QUALIF[indication.qualification]}</Badge> <BadgeStatut statut={indication.statut} court />
+        <strong>{indication.titre}</strong> <Badge type={type}>{LIBELLE_DECISION[indication.decision]}</Badge> <Badge>{LIBELLE_QUALIF[indication.qualification]}</Badge> {statutASignaler(indication.statut) && <BadgeStatut statut={indication.statut} court />}
       </div>
       <p>{indication.raison}</p>
       <Liste titre="Ce qui justifie cette conclusion" items={indication.conditions} />
@@ -131,96 +129,6 @@ export function CarteIndication({ indication }: { indication: IndicationPlan }) 
         <summary>Voir la recommandation ({indication.sources.length})</summary>
         <ListeSources refs={indication.sources} />
       </details>
-    </div>
-  );
-}
-
-/** Étapes du parcours : indication → foyer et germe → résultats déterminants → prise en charge. */
-export function EtapesParcours({ plan, dossier }: { plan: Plan; dossier: Dossier }) {
-  const ind = indicationOuiNon(plan.indication);
-  const germes = plan.microbiologie.map((m) => m.germe);
-  const ctx = contexteUI(dossier);
-  const foyer = ctx.foyer !== 'inconnu' ? ctx.foyer : undefined;
-  const inconnues = plan.microbiologie.reduce((n, m) => n + m.inconnues.length, 0);
-  const premiere = plan.options.find((o) => o.id === plan.optionRetenueId) ?? plan.options.find((o) => o.rang === 'premiere_ligne');
-  const etapes = [
-    { n: 1, t: 'Indication', v: ind === 'oui' ? 'oui' : ind === 'non' ? 'non' : 'indéterminée', ok: ind !== 'indéterminée' },
-    { n: 2, t: 'Foyer et germe', v: `${foyer ? LIBELLE_FOYER[foyer] : 'foyer à préciser'}${germes.length ? ` ; ${germes.join(', ')}` : ''}`, ok: !!foyer && germes.length > 0 },
-    { n: 3, t: 'Résultats déterminants', v: germes.length === 0 ? 'aucun germe' : plan.indication?.decision === 'ne_pas_traiter' ? 'non nécessaires' : inconnues === 0 ? 'complets' : `${inconnues} à préciser`, ok: germes.length > 0 && (inconnues === 0 || plan.indication?.decision === 'ne_pas_traiter') },
-    {
-      n: 4,
-      t: 'Prise en charge',
-      v:
-        plan.indication?.decision === 'ne_pas_traiter'
-          ? 'pas d\'antibiotique'
-          : premiere
-            ? premiere.libelle
-            : (plan.indication?.decision === 'traiter' || plan.indication?.decision === 'urgence') && plan.options.length === 0
-              ? 'molécule non modélisée ou avis SMIT — voir B'
-              : 'non établie',
-      ok: plan.indication?.decision === 'ne_pas_traiter' || !!premiere,
-    },
-  ];
-  return (
-    <ol className="etapes" aria-label="Étapes du parcours">
-      {etapes.map((e) => (
-        <li key={e.n} className={e.ok ? 'fait' : 'a-faire'}>
-          <span className="num">{e.n}</span> <strong>{e.t}</strong> : {e.v}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Synthèse : indication, germe, résultats déterminants, inconnues, traitement ou raison de ne pas traiter. */
-export function SyntheseDecision({ plan }: { plan: Plan }) {
-  const ind = plan.indication;
-  const premiere = plan.options.find((o) => o.id === plan.optionRetenueId) ?? plan.options.find((o) => o.rang === 'premiere_ligne');
-  return (
-    <div className="fiche-section synthese">
-      <h3>Synthèse</h3>
-      <dl className="synthese-dl">
-        <dt>Indication de traitement</dt>
-        <dd>
-          <strong>{indicationOuiNon(ind)}</strong>
-          {ind && (
-            <>
-              {' '}
-              — {LIBELLE_DECISION[ind.decision]} ({LIBELLE_QUALIF[ind.qualification]})
-            </>
-          )}
-        </dd>
-        <dt>Germe{plan.microbiologie.length > 1 ? 's' : ''}</dt>
-        <dd>{plan.microbiologie.length ? plan.microbiologie.map((m) => m.germe).join(' ; ') : 'non identifié'}</dd>
-        {plan.microbiologie.some((m) => m.determinants.length > 0) && (
-          <>
-            <dt>Résultats déterminants</dt>
-            <dd>
-              <ul>
-                {plan.microbiologie.flatMap((m) => m.determinants.map((x) => <li key={`${m.isolatId}-${x.texte}`}>{plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}{x.texte}</li>))}
-              </ul>
-            </dd>
-          </>
-        )}
-        {plan.microbiologie.some((m) => m.inconnues.length > 0) && (
-          <>
-            <dt>Encore inconnu</dt>
-            <dd>
-              <ul>
-                {plan.microbiologie.flatMap((m) => m.inconnues.map((x) => <li key={`${m.isolatId}-${x.texte}`} title={x.pourquoi}>{plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}{x.texte}</li>))}
-              </ul>
-            </dd>
-          </>
-        )}
-        <dt>{ind?.decision === 'ne_pas_traiter' ? 'Raison de ne pas traiter' : 'Traitement retenu'}</dt>
-        <dd>{ind?.decision === 'ne_pas_traiter' ? ind.raison : premiere ? premiere.libelle : ind && ind.decision !== 'traiter' && ind.decision !== 'urgence' ? LIBELLE_DECISION[ind.decision] : plan.options.length === 0 ? 'molécule non modélisée ou à choisir avec le SMIT — voir B' : 'aucune option de 1re ligne — voir les options conditionnelles en B'}</dd>
-        <dt>Surveillance et contrôles</dt>
-        <dd>
-          {ind && ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'].includes(ind.decision) ? (ind.surveillance[0] ?? ind.actions[0] ?? 'aucun') + (plan.controles.length ? ` ; ${plan.controles.length} contrôle(s) — voir C` : '') : plan.surveillance.length + plan.controles.length > 0 ? `${plan.surveillance.length} élément(s) de surveillance, ${plan.controles.length} contrôle(s) — voir C` : 'aucun'}
-        </dd>
-        <dt>Sources</dt>
-        <dd>{plan.sources.length} référence(s) — voir E</dd>
-      </dl>
     </div>
   );
 }

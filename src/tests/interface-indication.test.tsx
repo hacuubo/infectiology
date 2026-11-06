@@ -22,7 +22,7 @@ describe('Interface : indication et antibiogramme guidé', () => {
     render(<App dossierInitial={casFictif('ecbu-colonisation')} />);
     await u.click(within(screen.getByRole('radiogroup', { name: 'Signes urinaires' })).getByRole('radio', { name: 'Présents, récents' }));
     await u.click(within(screen.getByRole('radiogroup', { name: /Fièvre/ })).getByRole('radio', { name: 'Oui' }));
-    expect(screen.getByRole('heading', { name: /B\. Traitement proposé/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Options thérapeutiques/ })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Retenir cette option' }).length).toBeGreaterThan(0);
   });
 

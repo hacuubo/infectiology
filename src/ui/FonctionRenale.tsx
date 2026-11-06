@@ -115,7 +115,7 @@ export function CarteFonctionRenale({ dossier, plan, allerAuChamp }: { dossier: 
       ))}
       <p className="aide">
         {utilise
-          ? 'Chaque adaptation posologique de la section B précise l’estimation utilisée et pourquoi (grandeur et unité exigées par la référence de la molécule).'
+          ? 'Chaque adaptation posologique des options thérapeutiques précise l’estimation utilisée et pourquoi (grandeur et unité exigées par la référence de la molécule).'
           : 'Aucune adaptation posologique n’est calculée sans proposition thérapeutique.'}
         {p.renal.dialyse === 'inconnu' && ' Dialyse non renseignée.'}
       </p>

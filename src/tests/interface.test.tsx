@@ -15,7 +15,7 @@ describe('Interface', () => {
     render(<App dossierInitial={casFictif('bgn-90')} />);
     expect(screen.getByText(/Bactériémie à BGN non identifié/)).toBeInTheDocument();
     expect(screen.getByText(/partiellement couverte/)).toBeInTheDocument();
-    expect(screen.getByText(/Informations manquantes pour individualiser/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Éléments manquants/ })).toBeInTheDocument();
     expect(screen.getByText(/Alternatives et options conditionnelles/)).toBeInTheDocument();
   });
 
