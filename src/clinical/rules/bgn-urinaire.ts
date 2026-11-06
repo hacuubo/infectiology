@@ -2,6 +2,7 @@
  * Bacilles à Gram négatif : infections urinaires fébriles (avec ou sans bactériémie)
  * et bactériémies à BGN hors foyer urinaire.
  */
+import { formeCystite } from './cystite';
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { OptionTherapeutique, Prelevement, SourceRef } from '../types';
@@ -244,6 +245,8 @@ export const R_IU_FEBRILE: Regle = {
     const decisionECBU = ctx.evaluationECBU?.decision;
     if (decisionECBU === 'ne_pas_traiter' || decisionECBU === 'attendre_resultat' || decisionECBU === 'informations_insuffisantes') return false;
     if (forme === 'cystite' || forme === 'colonisation_gravidique' || forme === 'colonisation_avant_geste' || forme === 'a_preciser') return false;
+    // Cystite (y compris de l'homme, sans fièvre) : R-CYSTITE.
+    if (formeCystite(ctx)) return false;
     const g = germeUrinaire(ctx).g;
     return g === 'aucun' || g === 'bgn';
   },

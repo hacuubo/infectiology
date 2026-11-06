@@ -5,6 +5,8 @@
  * jamais interprétée comme « non ».
  */
 import type { FoyerId } from '../types';
+import type { Dossier } from '../../engine/etat';
+import { QUESTIONS_URINAIRE } from './urinaire';
 
 export interface OptionQuestion {
   v: string;
@@ -20,18 +22,22 @@ export interface QuestionSyndrome {
   /** Options affichées ; « inconnu » est ajouté automatiquement en dernier. */
   options: OptionQuestion[];
   /** Affichée seulement si la condition est vraie (réponses aux autres questions). */
-  pertinente?: (reponse: (id: string) => string) => boolean;
+  pertinente?: (reponse: (id: string) => string, dossier: Dossier) => boolean;
 }
 
 /** Registre des questions par foyer, complété domaine par domaine (voir ./index.ts). */
-export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [];
+export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [...QUESTIONS_URINAIRE];
 
 export function optionsAvecInconnu(q: QuestionSyndrome): OptionQuestion[] {
   return q.options.some((o) => o.v === 'inconnu') ? q.options : [...q.options, { v: 'inconnu', l: 'Inconnu' }];
 }
 
-/** Questions à afficher pour un foyer, compte tenu des réponses déjà données. */
-export function questionsPour(foyer: FoyerId, details: Record<string, string> | undefined): QuestionSyndrome[] {
-  const reponse = (id: string) => details?.[id] ?? 'inconnu';
-  return QUESTIONS_SYNDROME.filter((q) => q.foyers.includes(foyer) && (!q.pertinente || q.pertinente(reponse)));
+/** Questions à afficher pour un foyer, compte tenu du dossier et des réponses déjà données. */
+export function reponseDetail(dossier: Dossier, id: string): string {
+  return dossier.details?.[id] ?? 'inconnu';
+}
+
+export function questionsPour(foyer: FoyerId, dossier: Dossier): QuestionSyndrome[] {
+  const reponse = (id: string) => dossier.details?.[id] ?? 'inconnu';
+  return QUESTIONS_SYNDROME.filter((q) => q.foyers.includes(foyer) && (!q.pertinente || q.pertinente(reponse, dossier)));
 }

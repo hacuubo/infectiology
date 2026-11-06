@@ -1,0 +1,119 @@
+[
+  {
+    "id": "RCP-fosfomycine-trometamol",
+    "organisme": "ANSM — Base de données publique des médicaments",
+    "titre": "RCP MONURIL 3 g, granulés pour solution buvable en sachet (CIS 67951706), sections 4.1 à 4.6 et 5.2 — RCP mis à jour le 25/07/2025",
+    "annee": 2025,
+    "type": "rcp",
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/affichageDoc.php?specid=67951706&typedoc=R",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Spécialité de référence du groupe générique ; génériques non vérifiés. AMM : cystite aiguë non compliquée de la femme et de l'adolescente (> 12 ans), dose unique de 3 g. Non recommandé si clairance de la créatinine < 10 ml/min. Schémas 3 g J1-J3-J5, prophylaxie hebdomadaire, usage chez l'homme et J-2/J0 avant geste : hors AMM."
+  },
+  {
+    "id": "RCP-pivmecillinam",
+    "organisme": "ANSM — Base de données publique des médicaments",
+    "titre": "RCP SELEXID 200 mg, comprimé pelliculé (CIS 60670489), sections 4.1 à 4.6 — RCP mis à jour le 27/05/2026",
+    "annee": 2026,
+    "type": "rcp",
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/affichageDoc.php?specid=60670489&typedoc=R",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "AMM : femme adulte. 400 mg x 2/j 5 j (cystite non compliquée) ; 7 j (cystite à risque, cystite gravidique, bactériurie asymptomatique gravidique : cellule fusionnée du tableau 4.2). IR : ÷ 2 si FG 15-30 ml/min, ÷ 3 si < 15 ml/min. CI : allergie aux pénicillines, anaphylaxie à une autre bêta-lactamine, troubles du transit œsophagien. Déconseillé avec méthotrexate et valproate."
+  },
+  {
+    "id": "RCP-nitrofurantoine",
+    "organisme": "ANSM — Base de données publique des médicaments",
+    "titre": "RCP FURADANTINE 50 mg, gélule (CIS 62013296), sections 4.1 à 4.6 — RCP mis à jour le 28/10/2025",
+    "annee": 2025,
+    "type": "rcp",
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/affichageDoc.php?specid=62013296&typedoc=R",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Intègre les restrictions ANSM 2012 : cystite documentée de la femme, probabiliste seulement en cas d'urgence ; 300 mg/j en 3 prises, 5-7 j, jamais plus de 7 j ; CI : TFGe/Clcr < 45 ml/min, prophylaxie, traitement prolongé, déficit G6PD, fin de grossesse (travail, accouchement). « N'est pas adapté aux infections urinaires chez l'homme »."
+  },
+  {
+    "id": "RCP-trimethoprime",
+    "organisme": "ANSM — Base de données publique des médicaments",
+    "titre": "RCP DELPRIM 300 mg, comprimé sécable (CIS 66142235), sections 4.1 à 4.6 — RCP mis à jour le 19/05/2026",
+    "annee": 2026,
+    "type": "rcp",
+    "url": "https://base-donnees-publique.medicaments.gouv.fr/affichageDoc.php?specid=66142235&typedoc=R",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "AMM : femme adulte et adolescente. Cystite non compliquée 300 mg/j en 1 prise, 3 j ; prophylaxie au cas par cas 150 mg/j. CI : Clcr < 15 ml/min, anémie macrocytaire, IH sévère, méthotrexate, 1er trimestre de grossesse (plus strict que HAS « éviter avant 10 SA »). Augmente la créatininémie sans baisse du DFG ; surveillance kaliémie et hémogramme (> 65 ans, traitements itératifs)."
+  },
+  {
+    "id": "CRAT-fosfomycine-grossesse",
+    "organisme": "CRAT",
+    "titre": "Fosfomycine — Grossesse (mise à jour 11/12/2025)",
+    "annee": 2025,
+    "type": "referentiel",
+    "url": "https://www.lecrat.fr/6678/",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "CRAT-nitrofurantoine-grossesse",
+    "organisme": "CRAT",
+    "titre": "Nitrofurantoïne — Grossesse (mise à jour 13/11/2025)",
+    "annee": 2025,
+    "type": "referentiel",
+    "url": "https://www.lecrat.fr/6683/",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "CRAT-pivmecillinam-grossesse",
+    "organisme": "CRAT",
+    "titre": "Pivmécillinam — Grossesse (mise à jour 31/07/2024)",
+    "annee": 2024,
+    "type": "referentiel",
+    "url": "https://www.lecrat.fr/6688/",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "CRAT-cystite-grossesse",
+    "organisme": "CRAT",
+    "titre": "Cystite aiguë — Grossesse (mise à jour 31/07/2024)",
+    "annee": 2024,
+    "type": "referentiel",
+    "url": "https://www.lecrat.fr/6640/",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Reprend le tableau HAS/SPILF (fosfomycine DU, pivmécillinam 7 j ; relais amoxicilline, triméthoprime après 10 SA, nitrofurantoïne, cotrimoxazole, amoxicilline-acide clavulanique) et le contrôle ECBU 8-10 j puis mensuel."
+  },
+  {
+    "id": "ANSM-2012-nitrofurantoine",
+    "organisme": "ANSM (Afssaps)",
+    "titre": "Nitrofurantoïne : restriction d'utilisation en raison d'un risque de survenue d'effets indésirables graves hépatiques et pulmonaires — lettre aux professionnels de santé du 12/03/2012 (rappel du bon usage le 01/04/2014 ; point d'information du 26/05/2016)",
+    "annee": 2012,
+    "type": "reglementaire",
+    "url": "https://archive.ansm.sante.fr/content/download/40221/524217/version/1/file/lp-120312-Nitrofuratoine.pdf",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "contenu_non_lisible",
+    "statutVigueur": "en_vigueur",
+    "notes": "Archives ANSM « temporairement indisponible[s] » le 2026-11-06. Titre et dates lus sur https://ansm.sante.fr/tableau-acces-derogatoire/furadantin (mise à jour 02/10/2024). Le contenu des restrictions est cité via le RCP FURADANTINE en vigueur (RCP-nitrofurantoine)."
+  },
+  {
+    "id": "SPILF-page-recommandations",
+    "organisme": "SPILF",
+    "titre": "Page « Recommandations » du site infectiologie.com (liste des textes et de ceux en cours de révision)",
+    "annee": 2026,
+    "type": "documentation",
+    "url": "https://www.infectiologie.com/fr/recommandations.html",
+    "dateConsultation": "2026-11-06",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Au 2026-11-06 : « Infections urinaires communautaires (SPILF 2017, publiée dans MMI en 2018) » listée ; aucune recommandation sur les infections urinaires marquée « en cours de révision »."
+  }
+]

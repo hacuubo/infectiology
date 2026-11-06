@@ -75,9 +75,10 @@ export function pertinenceClinique(d: Dossier): Record<keyof Clinique, boolean> 
   const c = d.clinique ?? cliniqueParDefaut();
   const sonde = DISPOSITIFS_URINAIRES.includes(d.patient.materielUrinaire);
   const grave = d.patient.gravite === 'sepsis' || d.patient.gravite === 'choc_septique';
+  const foyerUrinaire = foyerDeclare(d) === 'urinaire';
   return {
-    fievre: urine,
-    signesUrinaires: urine,
+    fievre: urine || foyerUrinaire,
+    signesUrinaires: urine || foyerUrinaire,
     signesNonSpecifiques: urine,
     autreFoyer: urine && (c.fievre === 'oui' || c.signesNonSpecifiques === 'oui' || (grave && sonde)),
     gesteUrologique: urine,
@@ -377,7 +378,7 @@ export function nettoyerDossier(d: Dossier): Invalidation[] {
   if (!d.clinique) d.clinique = cliniqueParDefaut();
   // Réponses aux questions d'un foyer qui n'est plus le foyer retenu, ou devenues sans objet : effacées.
   if (d.details) {
-    const visibles = new Set(questionsPour(foyerDeclare(d), d.details).map((q) => q.id));
+    const visibles = new Set(questionsPour(foyerDeclare(d), d).map((q) => q.id));
     for (const id of Object.keys(d.details)) {
       if (visibles.has(id)) continue;
       const q = QUESTIONS_SYNDROME.find((x) => x.id === id);

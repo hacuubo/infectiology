@@ -119,6 +119,8 @@ const LIB_MOLECULE: Record<string, string> = {
   rifampicine: 'Rifampicine',
   fosfomycine: 'Fosfomycine',
   nitrofurantoine: 'Nitrofurantoïne',
+  mecillinam: 'Mécillinam (pivmécillinam)',
+  trimethoprime: 'Triméthoprime',
   teicoplanine: 'Téicoplanine',
   linezolide: 'Linézolide',
   clindamycine: 'Clindamycine',
@@ -343,7 +345,7 @@ function dedoublonner(qs: QuestionMicro[]): QuestionMicro[] {
   return qs.filter((q) => (vus.has(q.id) ? false : (vus.add(q.id), true)));
 }
 
-const BGN_TOUTES = ['amoxicilline', 'amoxicilline_clavulanate', 'piperacilline_tazobactam', 'temocilline', 'cefoxitine', 'cefotaxime', 'ceftriaxone', 'cefepime', 'cefixime', 'aztreonam', 'ertapeneme', 'imipeneme', 'meropeneme', 'amikacine', 'gentamicine', 'ciprofloxacine', 'levofloxacine', 'cotrimoxazole'];
+const BGN_TOUTES = ['amoxicilline', 'amoxicilline_clavulanate', 'piperacilline_tazobactam', 'temocilline', 'cefoxitine', 'cefotaxime', 'ceftriaxone', 'cefepime', 'cefixime', 'aztreonam', 'ertapeneme', 'imipeneme', 'meropeneme', 'amikacine', 'gentamicine', 'ciprofloxacine', 'levofloxacine', 'cotrimoxazole', 'fosfomycine', 'mecillinam', 'nitrofurantoine', 'trimethoprime'];
 const STAPH_TOUTES = ['oxacilline', 'cefoxitine', 'cefazoline', 'vancomycine', 'daptomycine', 'rifampicine', 'gentamicine', 'levofloxacine', 'cotrimoxazole'];
 const STREPTO_TOUTES = ['penicilline_g', 'amoxicilline', 'ceftriaxone', 'cefotaxime', 'vancomycine', 'levofloxacine'];
 const ENTERO_TOUTES = ['amoxicilline', 'piperacilline_tazobactam', 'imipeneme', 'vancomycine', 'daptomycine', 'ceftriaxone'];

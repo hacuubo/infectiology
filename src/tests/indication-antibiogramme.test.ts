@@ -76,9 +76,10 @@ describe('ECBU positif : traiter ou ne pas traiter', () => {
       x.clinique.fievre = 'non';
     });
     const p = plan(d);
-    expect(p.situation.id).toBe('cystite');
+    // Cystite (R-CYSTITE, 2026-11-06) : pas de schéma de pyélonéphrite ; 72 ans sans critères de Fried renseignés : forme à préciser.
+    expect(p.situation.id).toMatch(/^cystite/);
     expect(p.regles.some((r) => r.id === 'R-IU-FEBRILE')).toBe(false);
-    expect(p.options).toHaveLength(0);
+    expect(p.options.flatMap((o) => o.prescriptions.map((x) => x.moleculeId)).every((m) => ['fosfomycine_trometamol', 'pivmecillinam', 'nitrofurantoine', 'amoxicilline', 'trimethoprime'].includes(m))).toBe(true);
   });
 
   test('personne âgée confuse, sans fièvre ni signe urinaire : pas d\'antibiotique, autre cause à rechercher', () => {
@@ -112,7 +113,7 @@ describe('ECBU positif : traiter ou ne pas traiter', () => {
     const p = plan(d);
     expect(p.indication?.decision).toBe('traiter');
     expect(p.situation.id).toBe('colonisation-gravidique');
-    expect(p.options.map((o) => o.id)).toEqual(['gravidique-amox']);
+    expect(p.options.map((o) => o.id)).toEqual(['colonisation-gravidique-amoxicilline']);
     expect(p.indication?.surveillance.join(' ')).toMatch(/8 à 10 jours/);
   });
 
@@ -130,8 +131,12 @@ describe('ECBU positif : traiter ou ne pas traiter', () => {
     expect(plan(avec(CAS_ECBU_AVANT_GESTE, (x) => (x.clinique.gesteUrologique = 'cystoscopie'))).indication?.decision).toBe('ne_pas_traiter');
     expect(plan(avec(CAS_ECBU_AVANT_GESTE, (x) => (x.clinique.gesteUrologique = 'inconnu'))).indication?.decision).toBe('informations_insuffisantes');
     expect(plan(avec(CAS_ECBU_AVANT_GESTE, (x) => (x.clinique.gesteUrologique = 'sans_recommandation'))).indication?.decision).toBe('informations_insuffisantes');
-    // Le traitement avant geste ne propose pas une posologie de pyélonéphrite.
-    expect(plan(CAS_ECBU_AVANT_GESTE).options).toHaveLength(0);
+    // Le traitement avant geste ne propose pas une posologie de pyélonéphrite : molécules AFU selon l'antibiogramme,
+    // en brouillon (posologies non données par l'AFU). Ici, aucune molécule de 1re intention n'est testée : 2e intention.
+    const geste = plan(CAS_ECBU_AVANT_GESTE);
+    expect(geste.options.map((o) => o.prescriptions[0].moleculeId).sort()).toEqual(['amoxicilline', 'cotrimoxazole']);
+    expect(geste.options.every((o) => o.statut === 'brouillon')).toBe(true);
+    expect(geste.options[0].prescriptions[0].duree.texte).toMatch(/48 h avant le geste/);
   });
 
   test('ECBU à trois espèces ou plus : contamination possible ; asymptomatique → ne pas traiter, symptomatique → refaire l\'ECBU', () => {

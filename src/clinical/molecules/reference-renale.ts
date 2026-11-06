@@ -58,6 +58,12 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   cefixime: clcr('RCP-cefixime', 'Lorsque les valeurs de la clairance de la créatinine sont ≤ 20 ml/min'),
   levofloxacine: clcr('RCP-levofloxacine', 'tableau par ClCr 50-20, 19-10, < 10'),
   cotrimoxazole: clcr('RCP-cotrimoxazole', 'Clairance de la créatinine > 30 ml/min : posologie normale'),
+  fosfomycine_trometamol: clcr('RCP-fosfomycine-trometamol', 'clairance de la créatinine < 10 ml/min'),
+  // RCP pivmécillinam : paliers exprimés en « filtration glomérulaire » (mL/min).
+  pivmecillinam: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
+  // RCP nitrofurantoïne : grandeur mixte (ClCr au §4.2, « TFGe » au §4.3) ; la HAS parle de DFG : DFG estimé retenu.
+  nitrofurantoine: { grandeur: 'dfg', unite: 'mL/min/1,73 m²', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'débit de filtration glomérulaire < 45 ml/min', 'adaptation_renale')] },
+  trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
 };
 

@@ -413,7 +413,7 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
 /** Questions propres au foyer retenu (forme clinique, lieu de prise en charge…) : src/clinical/syndromes. */
 function QuestionsFoyer({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
   const foyer = foyerDeclare(dossier);
-  const qs = questionsPour(foyer, dossier.details);
+  const qs = questionsPour(foyer, dossier);
   if (qs.length === 0) return null;
   return (
     <div className="questions-foyer" aria-label={`Précisions : ${LIBELLE_FOYER[foyer]}`} role="group">

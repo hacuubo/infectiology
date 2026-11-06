@@ -3,10 +3,11 @@
  * « informations insuffisantes », « attendre un résultat ». Ces conclusions ne sont
  * pas interchangeables et sont présentées comme des conclusions cliniques complètes.
  */
+import { formeCystite } from './cystite';
 import type { Regle } from '../../engine/decider';
-import type { IndicationPlan, SourceRef } from '../types';
+import type { IndicationPlan } from '../types';
 import type { EvaluationECBU } from '../indication/ecbu';
-import { Fiche, S, adulte, germePrincipal, lireAntibiogramme, utilisable } from './outils';
+import { Fiche, S, adulte, germePrincipal } from './outils';
 
 export function indicationDepuis(ev: Omit<EvaluationECBU, 'foyerUrinaire' | 'forme' | 'urine'>, regleId: string): IndicationPlan {
   return {
@@ -26,8 +27,6 @@ export function indicationDepuis(ev: Omit<EvaluationECBU, 'foyerUrinaire' | 'for
     ...(ev.pointNonResolu ? { pointNonResolu: ev.pointNonResolu } : {}),
   };
 }
-
-const HAS_GROSSESSE: SourceRef[] = [S('HAS-2021-femme-enceinte-IU', 'traitement, 1re intention', undefined, 'choix')];
 
 export const R_INDICATION_ECBU: Regle = {
   id: 'R-INDICATION-ECBU',
@@ -61,20 +60,9 @@ export const R_INDICATION_ECBU: Regle = {
         break;
       case 'traiter':
         for (const q of ev.questions) f.manque(q, 'à confirmer pour l’indication et la forme clinique', ev.forme === 'a_preciser' ? 'bloque_decision' : 'affine');
-        if (ev.forme === 'cystite' && ctx.dossier.patient.grossesse === 'oui') {
-          f.situation('cystite-gravidique', 'Cystite gravidique', 'partielle', 'Cystite pendant la grossesse : traitement probabiliste sans attendre l’antibiogramme, molécules propres à la grossesse (non modélisées) : fiche HAS « Femme enceinte : colonisation urinaire et cystite ».');
-          f.avis('Choix et posologie : fiche HAS « Femme enceinte : colonisation urinaire et cystite ».', false, [S('HAS-2021-femme-enceinte-IU', 'cystite gravidique', 'Traitement probabiliste, à débuter sans attendre le résultat de l’antibiogramme', 'choix')]);
-        } else if (ev.forme === 'cystite') {
-          f.situation('cystite', 'Cystite (signes urinaires sans fièvre)', 'partielle', 'Les molécules de la cystite (fosfomycine-trométamol, pivmécillinam…) ne sont pas modélisées dans l\'application : se référer à la fiche HAS « Cystite » ; ECBU selon la forme (simple, à risque de complication).');
-          f.avis('Choix et posologie : fiche HAS « Cystite aiguë simple, à risque de complication ou récidivante, de la femme ».', false, [S('HAS-2021-cystite-femme', 'fiche mémo', undefined, 'choix')]);
-        } else if (ev.forme === 'colonisation_gravidique') {
-          f.situation('colonisation-gravidique', 'Colonisation urinaire gravidique', 'partielle', ev.raison);
-          const atb = lireAntibiogramme(ev.urine);
-          if (utilisable(atb.sir('amoxicilline')) && atb.sir('amoxicilline') === 'S')
-            f.option({ id: 'gravidique-amox', libelle: 'Amoxicilline per os (souche sensible)', type: 'documente', rang: 'premiere_ligne', items: [{ m: 'amoxicilline', r: 'amoxicilline-po-1g8h' }], duree: { texte: '7 jours', pointDeDepart: 'dès réception de l\'antibiogramme', dureePrevueJours: 7, sources: HAS_GROSSESSE }, sources: HAS_GROSSESSE });
-          else f.avis('Amoxicilline non utilisable ou non renseignée : choisir selon l\'antibiogramme dans l\'ordre de la fiche HAS (pivmécillinam, fosfomycine-trométamol, triméthoprime, nitrofurantoïne…), molécules non modélisées ici.', false, HAS_GROSSESSE);
-        } else if (ev.forme === 'colonisation_avant_geste') {
-          f.situation('colonisation-avant-geste', 'Colonisation urinaire avant geste urologique', 'partielle', 'Traitement court adapté à l\'antibiogramme ; molécules de 1re intention non modélisées (fosfomycine-trométamol, nitrofurantoïne, pivmécillinam, triméthoprime) : posologies dans le texte AFU 2026.');
+        // Cystite et colonisations traitées (gravidique, avant geste) : situation et molécules dans R-CYSTITE.
+        if (formeCystite(ctx)) {
+          /* rien ici */
         } else if (ev.foyerUrinaire && !['bgn', 'aucun'].includes(germePrincipal(ctx).g)) {
           f.situation('iu-germe-non-modelise', 'Infection urinaire à germe non modélisé', 'partielle', 'Les schémas d’infection urinaire de l’application ne couvrent que les bacilles à Gram négatif.');
           f.avis('Infection urinaire à germe autre qu’un bacille à Gram négatif : choix thérapeutique avec le SMIT.', false, ev.sources);
