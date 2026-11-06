@@ -1,7 +1,7 @@
 import { optionsAvecInconnu, questionsPour } from '../clinical/syndromes/questions';
 import { useState } from 'react';
 import type { Dossier } from '../engine/etat';
-import { foyerDeclare, nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
+import { foyersQuestions, nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
 import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, FoyerId, Prelevement, TraitementAssocie } from '../clinical/types';
 import { AntibiogrammeGuide, ChampReferentiel, ContexteECBUSaisie, IsolatsSupplementaires, SelectOrganisme } from './Microbiologie';
 import { SectionIndication } from './Indication';
@@ -412,7 +412,16 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
 
 /** Questions propres au foyer retenu (forme clinique, lieu de prise en charge…) : src/clinical/syndromes. */
 function QuestionsFoyer({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
-  const foyer = foyerDeclare(dossier);
+  return (
+    <>
+      {foyersQuestions(dossier).map((f) => (
+        <QuestionsUnFoyer key={f} foyer={f} dossier={dossier} modifier={modifier} />
+      ))}
+    </>
+  );
+}
+
+function QuestionsUnFoyer({ foyer, dossier, modifier }: { foyer: FoyerId; dossier: Dossier; modifier: Modifier }) {
   const qs = questionsPour(foyer, dossier);
   if (qs.length === 0) return null;
   return (

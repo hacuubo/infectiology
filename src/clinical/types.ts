@@ -552,6 +552,8 @@ export interface PrescriptionProposee {
   sources: SourceRef[];
   statut: StatutValidation;
   avertissements: string[];
+  /** Contre-indication établie par le moteur (palier rénal, interaction déclarée) : l'option est écartée. */
+  contreIndication?: string;
 }
 
 export interface OptionTherapeutique {

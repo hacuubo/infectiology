@@ -18,10 +18,11 @@ export const fosfomycineTrometamol: Molecule = {
       indication: 'Cystite simple (1re intention), cystite gravidique (1re intention), colonisation gravidique.',
       dose: { type: 'fixe', valeur: 3, unite: 'g', texte: '3 g en prise unique' },
       voie: 'PO',
-      modalites: 'à jeun (environ 2 à 3 h avant ou après un repas), de préférence au coucher, après avoir vidé la vessie',
+      modalites: 'à jeun (environ 2 à 3 h avant ou après un repas), de préférence au coucher, après avoir vidé la vessie ; éviter le métoclopramide (RCP)',
       statut: 'verifiee_ia',
       sources: [
         S('RCP-fosfomycine-trometamol', '§4.2', 'Cystite aiguë non compliquée chez les femmes adultes et adolescentes (> 12 ans) : administration unique de 3 g de fosfomycine.', 'posologie'),
+        S('RCP-fosfomycine-trometamol', '§4.5', 'l\'administration concomitante de métoclopramide diminue les concentrations sériques et urinaires en fosfomycine et qu\'elle doit être évitée', 'surveillance'),
         S('HAS-2021-cystite-femme', 'cystite simple', '1 re intention : fosfomycine-trométamol, 3 g en prise unique', 'posologie'),
       ],
     },
@@ -38,20 +39,30 @@ export const fosfomycineTrometamol: Molecule = {
         S('SPILF-2018-IU-Caron', 'p. 346', 'le schéma à 3 doses reste actuellement hors AMM', 'posologie'),
       ],
     },
+    {
+      id: 'fosfo-3g-j-2-j0',
+      libelle: '3 g per os à J-2 et le jour du geste (hors AMM)',
+      indication: 'Colonisation avant geste urologique (AFU 2026 : « J-2 / J0 ») ; dose par prise non donnée par l\'AFU (3 g : posologie de la cystite).',
+      dose: { type: 'fixe', valeur: 3, unite: 'g', texte: '3 g à J-2 et 3 g le jour du geste (dose par prise reprise de la cystite)' },
+      voie: 'PO',
+      modalites: 'à jeun ; schéma en deux prises hors AMM',
+      statut: 'brouillon',
+      sources: [S('AFU-2026-ECBU-geste', 'Q3 R4 (Grade AE)', 'Fosfomycine-trométamol (J-2 / J0)', 'posologie'), S('RCP-fosfomycine-trometamol', '§4.2', 'administration unique de 3 g de fosfomycine', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'non_precisee',
     statut: 'verifiee_ia',
     paliers: [
-      { clcrMin: 10, texte: 'ClCr ≥ 10 mL/min : pas d\'adaptation (concentrations urinaires efficaces 48 h).', sources: [S('RCP-fosfomycine-trometamol', '§5.2', 'efficaces pendant 48 heures après une dose habituelle si la clairance de la créatinine est supérieure à 10 ml/min', 'adaptation_renale')] },
+      { clcrMin: 10, texte: 'ClCr ≥ 10 mL/min : pas d\'adaptation (déduit : le RCP ne prévoit de restriction qu\'en dessous de 10 mL/min).', sources: [S('RCP-fosfomycine-trometamol', '§5.2', 'efficaces pendant 48 heures après une dose habituelle si la clairance de la créatinine est supérieure à 10 ml/min', 'adaptation_renale')] },
       { clcrMax: 10, texte: 'ClCr < 10 mL/min : non recommandée.', sources: [S('RCP-fosfomycine-trometamol', '§4.2', 'n\'est pas recommandée chez les patients présentant une insuffisance rénale (clairance de la créatinine < 10 ml/min', 'adaptation_renale')] },
     ],
   },
   surveillance: [],
   grossesse: {
     statut: 'utilisable',
-    texte: 'Traitement monodose possible quel que soit le terme (CRAT) ; 1re intention de la cystite gravidique (HAS).',
-    sources: [S('CRAT-fosfomycine-grossesse', 'cystite gravidique', 'Un traitement monodose par fosfomycine est possible quel que soit le terme de la grossesse.', 'autre')],
+    texte: 'Traitement monodose possible quel que soit le terme (CRAT) ; 1re intention de la cystite gravidique (HAS). RCP : à utiliser pendant la grossesse uniquement si nécessaire.',
+    sources: [S('CRAT-fosfomycine-grossesse', 'cystite gravidique', 'Un traitement monodose par fosfomycine est possible quel que soit le terme de la grossesse.', 'autre'), S('RCP-fosfomycine-trometamol', '§4.6', 'doit être utilisé pendant la grossesse uniquement si cela est vraiment nécessaire', 'autre')],
   },
 };
 
@@ -67,7 +78,7 @@ export const pivmecillinam: Molecule = {
       indication: 'Cystite simple (2e intention), cystite à risque différée, cystite et colonisation gravidiques.',
       dose: { type: 'fixe', valeur: 400, unite: 'mg', frequenceParJour: 2 },
       voie: 'PO',
-      modalites: 'au milieu d\'un repas, avec un grand verre d\'eau ; ne pas s\'allonger dans les 30 minutes suivantes',
+      modalites: 'au milieu d\'un repas, avec un grand verre d\'eau ; ne pas s\'allonger dans les 30 minutes suivantes ; contre-indiqué si affection retardant le transit œsophagien, porphyrie à éviter (RCP)',
       statut: 'verifiee_ia',
       sources: [
         S('RCP-pivmecillinam', '§4.2 (tableau)', 'Cystites aiguës non compliquées : 400 mg x 2/jour pendant 5 jours', 'posologie'),
@@ -80,7 +91,7 @@ export const pivmecillinam: Molecule = {
     texteGeneral: 'Modalités d\'adaptation optimales non établies (RCP).',
     statut: 'verifiee_ia',
     paliers: [
-      { clcrMin: 30, texte: 'Filtration glomérulaire ≥ 30 mL/min : pas d\'adaptation.', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
+      { clcrMin: 30, texte: 'Filtration glomérulaire ≥ 30 mL/min : pas d\'adaptation (déduit : le RCP ne prévoit d\'adaptation qu\'en dessous de 30 mL/min).', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
       { clcrMin: 15, clcrMax: 30, texte: 'Filtration glomérulaire 15-30 mL/min : diviser la posologie par deux.', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
       { clcrMax: 15, texte: 'Filtration glomérulaire < 15 mL/min : diviser la posologie par trois.', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est inférieure à 15 ml/min, diviser la posologie par trois.', 'adaptation_renale')] },
     ],
@@ -92,8 +103,8 @@ export const pivmecillinam: Molecule = {
     sources: [S('RCP-pivmecillinam', '§4.6', 'peut être utilisé pendant la grossesse si nécessaire', 'autre'), S('CRAT-pivmecillinam-grossesse', 'cystite gravidique', 'aucun effet malformatif, foetal ou néonatal attribuable au traitement n\'est retenu à ce jour', 'autre')],
   },
   interactionsPertinentes: [
-    { avec: 'methotrexate', texte: 'Association déconseillée : toxicité hématologique du méthotrexate.', sources: [S('RCP-pivmecillinam', '§4.5', 'méthotrexate (« toxicité hématologique »)', 'surveillance')] },
-    { avec: 'antiepileptique', texte: 'Acide valproïque / valproate : association déconseillée (déficit en carnitine).', sources: [S('RCP-pivmecillinam', '§4.5', 'acide valproïque/valproate (« déficit en carnitine »)', 'surveillance')] },
+    { avec: 'methotrexate', texte: 'Association déconseillée : toxicité hématologique du méthotrexate.', sources: [S('RCP-pivmecillinam', '§4.5', 'toxicité hématologique', 'surveillance')] },
+    { avec: 'antiepileptique', texte: 'Acide valproïque / valproate : association déconseillée (déficit en carnitine).', sources: [S('RCP-pivmecillinam', '§4.5', 'déficit en carnitine', 'surveillance')] },
   ],
 };
 
@@ -120,10 +131,11 @@ export const nitrofurantoine: Molecule = {
   ],
   adaptationRenale: {
     methode: 'non_precisee',
-    statut: 'verifiee_ia',
+    texteGeneral: 'Seuil divergent : 45 mL/min (RCP, HAS), 40 mL/min (SPILF), 30 (EAU) ; grandeur mixte dans le RCP (clairance au §4.2, DFG estimé au §4.3).',
+    statut: 'brouillon',
     paliers: [
-      { clcrMin: 45, texte: 'ClCr ou DFG ≥ 45 mL/min : pas d\'adaptation.', sources: [S('RCP-nitrofurantoine', '§4.2', 'clairance de la créatinine < 45 ml/mn… la nitrofurantoïne est contre-indiquée', 'adaptation_renale')] },
-      { clcrMax: 45, texte: 'ClCr ou DFG < 45 mL/min : contre-indiquée (RCP ; HAS : DFG < 45 ; SPILF : ClCr < 40).', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'contre-indication en cas d\'insuffisance rénale avec un débit de filtration glomérulaire < 45 ml/min ou de traitements itératifs', 'adaptation_renale')] },
+      { clcrMin: 45, texte: 'ClCr ≥ 45 mL/min : pas d\'adaptation.', sources: [S('RCP-nitrofurantoine', '§4.2', 'clairance de la créatinine < 45 ml/mn… la nitrofurantoïne est contre-indiquée', 'adaptation_renale')] },
+      { clcrMax: 45, texte: 'ClCr < 45 mL/min : contre-indiquée (RCP ; HAS : DFG < 45 ; SPILF : ClCr < 40).', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'contre-indication en cas d\'insuffisance rénale avec un débit de filtration glomérulaire < 45 ml/min ou de traitements itératifs', 'adaptation_renale')] },
     ],
   },
   surveillance: [
@@ -134,9 +146,9 @@ export const nitrofurantoine: Molecule = {
       quoi: 'Signes respiratoires (toux, dyspnée) et hépatiques (nausées, ictère) : arrêt immédiat s\'ils apparaissent',
       quand: { ancre: 'quotidien', texte: 'Pendant tout le traitement', repetition: 'à chaque évaluation' },
       pourquoi: 'Atteintes pulmonaires (fibroses, pneumopathies interstitielles) et hépatiques pouvant conduire dans de rares cas à une issue fatale.',
-      conduite: 'Arrêt immédiat ; réintroduction exceptionnelle. Interrogatoire préalable : antécédent d\'effet indésirable sous nitrofurantoïne, traitements itératifs.',
+      conduite: 'Arrêt immédiat ; réintroduction exceptionnelle. Interrogatoire préalable : antécédent d\'effet indésirable sous nitrofurantoïne, traitements itératifs. Surveillance particulière après 65 ans (RCP).',
       statut: 'verifiee_ia',
-      sources: [S('RCP-nitrofurantoine', '§4.4', 'atteintes pulmonaires (fibroses, pneumopathies interstitielles) […] hépatiques […] pouvant conduire dans de rares cas à une issue fatale', 'surveillance')],
+      sources: [S('RCP-nitrofurantoine', '§4.4', 'pulmonaires (fibroses, pneumopathies interstitielles)', 'surveillance'), S('RCP-nitrofurantoine', '§4.4', 'hépatiques (hépatites cytolytiques, hépatites cholestatiques, hépatites chroniques, cirrhoses)', 'surveillance'), S('RCP-nitrofurantoine', '§4.4', 'pouvant conduire dans de rares cas à une issue fatale', 'surveillance')],
     },
   ],
   grossesse: {
@@ -158,7 +170,7 @@ export const trimethoprime: Molecule = {
       indication: 'Cystite gravidique en cas d\'échec (2e intention), colonisation gravidique (4e intention), cystite à risque documentée (SPILF 2018, 5e intention).',
       dose: { type: 'fixe', valeur: 300, unite: 'mg', frequenceParJour: 1 },
       voie: 'PO',
-      modalites: 'en une prise quotidienne',
+      modalites: 'en une prise quotidienne ; contre-indiqué si anémie macrocytaire ou insuffisance hépatique sévère (RCP)',
       statut: 'verifiee_ia',
       sources: [
         S('RCP-trimethoprime', '§4.2', 'Cystites aiguës non compliquées : 300 mg par jour, en une prise quotidienne, pendant 3 jours', 'posologie'),
@@ -171,7 +183,7 @@ export const trimethoprime: Molecule = {
     texteGeneral: 'Schéma optimal en insuffisance rénale non établi (RCP) ; prudence et surveillance biologique.',
     statut: 'verifiee_ia',
     paliers: [
-      { clcrMin: 15, texte: 'ClCr ≥ 15 mL/min : pas d\'adaptation chiffrée (schéma optimal non établi ; surveillance de la kaliémie).', sources: [S('RCP-trimethoprime', '§4.2', 'Le schéma d\'administration optimal chez le sujet normo-rénal et chez le sujet insuffisant rénal n\'est pas établi.', 'adaptation_renale')] },
+      { clcrMin: 15, texte: 'ClCr ≥ 15 mL/min : pas d\'adaptation chiffrée (déduit : schéma optimal non établi par le RCP ; prudence et surveillance biologique).', sources: [S('RCP-trimethoprime', '§4.2', 'Le schéma d\'administration optimal chez le sujet normo-rénal et chez le sujet insuffisant rénal n\'est pas établi.', 'adaptation_renale')] },
       { clcrMax: 15, texte: 'ClCr < 15 mL/min : contre-indiqué.', sources: [S('RCP-trimethoprime', '§4.3', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)', 'adaptation_renale')] },
     ],
   },
@@ -180,11 +192,23 @@ export const trimethoprime: Molecule = {
       id: 'trimethoprime-kaliemie',
       type: 'biologique',
       categorie: 'conditionnelle',
-      quoi: 'Kaliémie (insuffisant rénal, sujet âgé, hyperkaliémiants) ; contrôle hématologique (traitement itératif, > 65 ans, carence en folates)',
+      quoi: 'Kaliémie (insuffisant rénal, sujet âgé, hyperkaliémiants) — le triméthoprime peut élever la créatininémie sans baisse réelle du DFG',
       quand: { ancre: 'avant_traitement', texte: 'Fréquence non chiffrée par le RCP', repetition: 'non précisée' },
-      pourquoi: 'Hyperkaliémie ; leucopénie, agranulocytose, anémie mégaloblastique. Le triméthoprime peut élever la créatininémie sans baisse réelle du DFG.',
+      pourquoi: 'Hyperkaliémie.',
       conditionId: 'insuffisance_renale',
-      conditionTexte: 'si insuffisance rénale, sujet âgé, hyperkaliémiants ou traitement itératif',
+      conditionTexte: 'si insuffisance rénale, sujet âgé ou hyperkaliémiants',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-trimethoprime', '§4.4', 'surveillance de la kaliémie', 'surveillance'), S('RCP-trimethoprime', '§4.4', 'peut entraîner une augmentation de la créatininémie par inhibition de la sécrétion de créatinine sans réelle diminution du débit de filtration glomérulaire', 'surveillance')],
+    },
+    {
+      id: 'trimethoprime-nfs',
+      type: 'biologique',
+      categorie: 'conditionnelle',
+      quoi: 'Contrôle hématologique (NFS)',
+      quand: { ancre: 'avant_traitement', texte: 'Fréquence non chiffrée par le RCP', repetition: 'non précisée' },
+      pourquoi: 'Leucopénie, agranulocytose, anémie mégaloblastique.',
+      conditionId: 'sujet_age',
+      conditionTexte: 'si plus de 65 ans, traitement itératif ou carence en folates',
       statut: 'verifiee_ia',
       sources: [S('RCP-trimethoprime', '§4.4', 'Un contrôle hématologique est nécessaire en cas de : Traitement itératif ; Chez le sujet âgé de plus de 65 ans ; Et chez les sujets carencés en folates', 'surveillance')],
     },
@@ -196,5 +220,7 @@ export const trimethoprime: Molecule = {
   },
   interactionsPertinentes: [
     { avec: 'methotrexate', texte: 'Contre-indiqué avec le méthotrexate.', sources: [S('RCP-trimethoprime', '§4.3', 'Association avec le méthotrexate', 'surveillance')] },
+    { avec: 'diuretique', texte: 'Diurétiques épargneurs de potassium : risque d\'hyperkaliémie, surveiller la kaliémie.', sources: [S('RCP-trimethoprime', '§4.5', 'hyperkaliémiants', 'surveillance')] },
+    { avec: 'ains', texte: 'AINS : risque d\'hyperkaliémie, surveiller la kaliémie.', sources: [S('RCP-trimethoprime', '§4.5', 'hyperkaliémiants', 'surveillance')] },
   ],
 };

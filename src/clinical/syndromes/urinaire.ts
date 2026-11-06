@@ -18,6 +18,14 @@ function cystitePossible(d: Dossier): boolean {
 
 export const QUESTIONS_URINAIRE: QuestionSyndrome[] = [
   {
+    id: 'urinaire.pyelo',
+    foyers: ['urinaire'],
+    libelle: 'Douleur lombaire, frissons ou malaise ?',
+    aide: 'Signes systémiques : il ne s\'agit pas d\'une cystite (EAU 2026, définition de la cystite).',
+    options: ouiNon,
+    pertinente: (_r, d) => cystitePossible(d),
+  },
+  {
     id: 'urinaire.anomalie',
     foyers: ['urinaire'],
     libelle: 'Anomalie organique ou fonctionnelle de l\'arbre urinaire ?',
@@ -36,9 +44,25 @@ export const QUESTIONS_URINAIRE: QuestionSyndrome[] = [
   {
     id: 'urinaire.recidivante',
     foyers: ['urinaire'],
-    libelle: 'Au moins 4 épisodes de cystite sur les 12 derniers mois ?',
+    libelle: 'Infections urinaires récidivantes (au moins 4 épisodes sur 12 mois) ?',
     options: ouiNon,
-    pertinente: (_r, d) => cystitePossible(d) && d.patient.sexe === 'femme' && d.patient.grossesse !== 'oui',
+    pertinente: (_r, d) => cystitePossible(d) && d.patient.grossesse !== 'oui',
+  },
+  {
+    id: 'urinaire.ir_severe',
+    foyers: ['urinaire'],
+    libelle: 'Insuffisance rénale sévère connue (DFG < 30) ?',
+    aide: 'Utile seulement si la créatininémie n\'est pas saisie.',
+    options: ouiNon,
+    pertinente: (_r, d) => cystitePossible(d) && d.patient.sexe === 'femme' && d.patient.grossesse !== 'oui' && !d.patient.renal.creatinine && !d.patient.renal.dfg,
+  },
+  {
+    id: 'urinaire.nitro_ci',
+    foyers: ['urinaire'],
+    libelle: 'Contre-indication à la nitrofurantoïne ?',
+    aide: 'Déficit en G6PD, antécédent d\'effet indésirable sous nitrofurantoïne, traitements répétés, allergie aux nitrofuranes ou au blé (RCP, HAS).',
+    options: ouiNon,
+    pertinente: (_r, d) => cystitePossible(d),
   },
   {
     id: 'urinaire.differable',

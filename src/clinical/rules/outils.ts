@@ -113,15 +113,23 @@ export class Fiche {
     items: ItemPrescription[];
     duree: DureeDecidee;
     statut?: StatutValidation;
-  }) {
+  }): boolean {
     const ids = o.items.map((i) => i.m);
+    const manques: DonneeManquante[] = [];
     const prescriptions = o.items.map((i) => {
       const { molecule, regimen: r } = regimen(i.m, i.r);
       const res = calculerPrescription({ molecule, regimen: r, ctx: this.ctx, duree: o.duree, coPrescriptions: ids.filter((x) => x !== i.m) });
       // Les données manquantes d'une option conditionnelle n'en bloquent pas d'autres : on les conserve mais en « affine ».
-      for (const dm of res.donneesManquantes) this.c.donneesManquantes.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' || dm.impact === 'bloque_dose' ? dm.impact : 'affine' });
+      for (const dm of res.donneesManquantes) manques.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' || dm.impact === 'bloque_dose' ? dm.impact : 'affine' });
       return res.prescription;
     });
+    // Contre-indication établie (palier rénal, interaction déclarée) : l'option n'est pas proposée ; la raison est tracée.
+    const ci = prescriptions.find((p) => p.contreIndication);
+    if (ci) {
+      this.ecarter(o.libelle, 'contre_indication', ci.contreIndication!, ci.sources);
+      return false;
+    }
+    this.c.donneesManquantes.push(...manques);
     const statut = statutMin(o.statut ?? this.statutRegle, ...prescriptions.map((p) => p.statut));
     this.c.options.push({
       id: o.id,
@@ -134,7 +142,16 @@ export class Fiche {
       sources: o.sources,
       statut,
     });
-    return this;
+    return true;
+  }
+  /**
+   * Options d'une liste ordonnée (ordre de préférence de la source) : la première option non contre-indiquée est
+   * en 1re ligne, les suivantes en alternatives ; une option contre-indiquée laisse sa place à la suivante.
+   */
+  optionsEnOrdre(liste: (Omit<Parameters<Fiche['option']>[0], 'rang'> & { rang?: OptionTherapeutique['rang'] })[], premierRang: OptionTherapeutique['rang'] = 'premiere_ligne') {
+    let n = 0;
+    for (const o of liste) if (this.option({ ...o, rang: o.rang ?? (n === 0 ? premierRang : premierRang === 'conditionnelle' ? 'conditionnelle' : 'alternative') })) n++;
+    return n;
   }
   fin(): Contribution {
     return this.c;

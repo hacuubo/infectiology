@@ -105,19 +105,142 @@ describe('Cystite de la femme', () => {
     expect(p.urgence.alertes.some((a) => /récidivante/.test(a.texte))).toBe(true);
   });
 
-  test('DFG < 45 : la nitrofurantoïne est signalée contre-indiquée par son adaptation rénale', () => {
+  test('clairance < 45 : la nitrofurantoïne est écartée (contre-indication) et la fosfomycine J1-J3-J5 passe en 1re ligne', () => {
     const p = plan(cystite((d) => {
       d.patient.age = 70;
+      d.patient.poidsKg = 60;
+      d.patient.tailleCm = 160;
       d.details!['urinaire.fried'] = 'non';
       d.details!['urinaire.anomalie'] = 'oui';
+      d.details!['urinaire.differable'] = 'non';
       d.patient.renal.creatinine = { valeur: 140, unite: 'umol/L' };
     }));
-    const nitro = p.options.find((o) => o.prescriptions[0].moleculeId === 'nitrofurantoine')!;
-    expect(nitro.prescriptions[0].adaptations.join(' ')).toMatch(/contre-indiquée/);
+    expect(molecules(p)).not.toContain('nitrofurantoine');
+    expect(p.sortie.ecartees.some((e) => e.type === 'contre_indication' && /Nitrofuranto/.test(e.raison))).toBe(true);
+    expect(p.options.find((o) => o.rang === 'premiere_ligne')?.prescriptions[0].regimenId).toBe('fosfo-3g-j1j3j5');
+  });
+
+  test('insuffisance rénale sévère (DFG < 30) comme facteur de risque : jamais de nitrofurantoïne', () => {
+    const p = plan(cystite((d) => {
+      d.patient.age = 50;
+      d.patient.renal.creatinine = { valeur: 250, unite: 'umol/L' };
+      d.details!['urinaire.differable'] = 'non';
+    }));
+    expect(p.situation.id).toBe('cystite-a-risque');
+    expect(molecules(p)).not.toContain('nitrofurantoine');
+    expect(molecules(p, 'premiere_ligne')).toEqual(['fosfomycine_trometamol']);
+  });
+
+  test('cystite simple et antibiogramme : fosfomycine résistante → pivmécillinam seul ; les deux résistants → stratégie documentée', () => {
+    const d1 = cystite();
+    avecECBU(d1, [{ dci: 'fosfomycine', categorie: 'R' }, { dci: 'mecillinam', categorie: 'S' }]);
+    expect(molecules(plan(d1))).toEqual(['pivmecillinam']);
+    const d2 = cystite();
+    avecECBU(d2, [{ dci: 'fosfomycine', categorie: 'R' }, { dci: 'mecillinam', categorie: 'R' }, { dci: 'amoxicilline', categorie: 'S' }]);
+    const p2 = plan(d2);
+    expect(p2.situation.id).toBe('cystite-simple-documentee');
+    expect(molecules(p2, 'premiere_ligne')).toEqual(['amoxicilline']);
+  });
+
+  test('antibiogramme partiel : une molécule non rendue n’est pas lue comme résistante', () => {
+    const d = cystite((x) => (x.details!['urinaire.anomalie'] = 'oui'));
+    avecECBU(d, [{ dci: 'amoxicilline', categorie: 'R' }]);
+    const p = plan(d);
+    expect(p.sortie.motifs.some((m) => m.statut.startsWith('Aucune recommandation dédiée'))).toBe(false);
+    expect(p.donneesManquantes.some((m) => /sensibilité à pivmécillinam \(non rendue/.test(m.champ))).toBe(true);
+  });
+
+  test('grossesse non renseignée chez une femme jeune : elle bloque la décision (cystite gravidique possible)', () => {
+    const p = plan(cystite((d) => (d.patient.grossesse = 'inconnu')));
+    expect(p.situation.id).toBe('cystite-risque-a-preciser');
+    expect(p.donneesManquantes.find((m) => m.champ === 'grossesse')?.impact).toBe('bloque_decision');
+  });
+
+  test('contre-indication déclarée à la nitrofurantoïne : écartée partout, raison tracée', () => {
+    const p = plan(cystite((d) => {
+      d.details!['urinaire.anomalie'] = 'oui';
+      d.details!['urinaire.differable'] = 'non';
+      d.details!['urinaire.nitro_ci'] = 'oui';
+    }));
+    expect(molecules(p)).not.toContain('nitrofurantoine');
+    expect(p.sortie.ecartees.some((e) => e.libelle === 'Nitrofurantoïne')).toBe(true);
+  });
+
+  test('sepsis ou choc : jamais une cystite', () => {
+    const p = plan(cystite((d) => (d.patient.gravite = 'sepsis')));
+    expect(p.regles.some((r) => r.id === 'R-CYSTITE')).toBe(false);
+  });
+
+  test('douleur lombaire ou frissons : pas une cystite', () => {
+    const p = plan(cystite((d) => (d.details!['urinaire.pyelo'] = 'oui')));
+    expect(p.regles.some((r) => r.id === 'R-CYSTITE')).toBe(false);
+  });
+
+  test('porteuse de sonde : cystite associée aux soins, ECBU et avis, pas de fosfomycine en prise unique', () => {
+    const p = plan(cystite((d) => (d.patient.materielUrinaire = 'sonde_vesicale')));
+    expect(p.situation.id).toBe('cystite-associee-aux-soins');
+    expect(p.options).toHaveLength(0);
+    expect(p.sortie.motifs.some((m) => m.statut.startsWith('Aucune recommandation dédiée'))).toBe(true);
+  });
+
+  test('récidivante et à risque de complication : concertation, pas de schéma codifié', () => {
+    const p = plan(cystite((d) => {
+      d.details!['urinaire.anomalie'] = 'oui';
+      d.details!['urinaire.recidivante'] = 'oui';
+    }));
+    expect(p.situation.id).toBe('cystite-recidivante-a-risque');
+    expect(p.options).toHaveLength(0);
+  });
+
+  test('allergies : anaphylaxie au pivmécillinam → pénicillines évitées ; allergie au cotrimoxazole → triméthoprime évité', () => {
+    const d1 = cystite((d) => {
+      d.patient.statutAllergie = 'presentes';
+      d.patient.allergies = [{ molecule: 'pivmécillinam', reaction: 'immediate', gravite: 'severe' }];
+    });
+    const p1 = plan(d1);
+    const pivm = p1.options.filter((o) => o.prescriptions.some((x) => x.moleculeId === 'pivmecillinam'));
+    expect(pivm.length).toBeGreaterThan(0);
+    expect(pivm.every((o) => o.rang === 'conditionnelle')).toBe(true);
+    const d2 = cystite((d) => {
+      d.patient.grossesse = 'oui';
+      d.patient.statutAllergie = 'presentes';
+      d.patient.allergies = [{ molecule: 'cotrimoxazole', reaction: 'retardee_severe', gravite: 'severe' }];
+    });
+    avecECBU(d2, [{ dci: 'fosfomycine', categorie: 'R' }, { dci: 'mecillinam', categorie: 'R' }, { dci: 'amoxicilline', categorie: 'R' }, { dci: 'trimethoprime', categorie: 'S' }]);
+    const p2 = plan(d2);
+    expect(p2.sortie.ecartees.some((e) => e.type === 'allergie' && /Triméthoprime/.test(e.libelle))).toBe(true);
+  });
+
+  test('ECBU sans foyer déclaré : les questions urinaires restent visibles et leurs réponses conservées', () => {
+    const d = cystite((x) => {
+      x.entree = 'microbiologie';
+      x.syndrome = 'non_choisi';
+      x.details!['urinaire.anomalie'] = 'oui';
+    });
+    avecECBU(d, [{ dci: 'amoxicilline', categorie: 'S' }]);
+    const p = plan(d);
+    expect(d.details!['urinaire.anomalie']).toBe('oui');
+    expect(p.situation.id).toBe('cystite-a-risque');
+  });
+
+  test('hémoculture négative ou en cours : pas une bactériémie', () => {
+    const d = cystite();
+    d.prelevements = [nouveauPrelevement('hemoculture')];
+    expect(plan(d).situation.id).toBe('cystite-simple');
   });
 });
 
 describe('Cystite gravidique et colonisation', () => {
+  test('cystite gravidique, échec ou résistance : triméthoprime seulement conditionnel (pas au 1er trimestre), en brouillon', () => {
+    const d = cystite((x) => (x.patient.grossesse = 'oui'));
+    avecECBU(d, [{ dci: 'fosfomycine', categorie: 'R' }, { dci: 'mecillinam', categorie: 'R' }, { dci: 'amoxicilline', categorie: 'R' }, { dci: 'trimethoprime', categorie: 'S' }]);
+    const p = plan(d);
+    const tmp = p.options.find((o) => o.prescriptions[0].moleculeId === 'trimethoprime')!;
+    expect(tmp.rang).toBe('conditionnelle');
+    expect(tmp.condition).toMatch(/1er trimestre/);
+    expect(tmp.statut).toBe('brouillon');
+  });
+
   test('cystite gravidique : probabiliste immédiat, fosfomycine prise unique puis pivmécillinam 7 j ; ECBU de contrôle puis mensuel', () => {
     const p = plan(cystite((d) => (d.patient.grossesse = 'oui')));
     expect(p.situation.id).toBe('cystite-gravidique');
@@ -156,6 +279,38 @@ describe('Cystite de l’homme (SPILF 2026)', () => {
     expect(p.options.every((o) => o.rang === 'conditionnelle')).toBe(true);
     expect(p.options.every((o) => /Hors AMM/.test(o.commentaire ?? ''))).toBe(true);
     expect(p.controles.some((c) => c.id === 'ctl-cystite-homme-echo')).toBe(true);
+  });
+
+  test('homme immunodéprimé ou récidivant : hors du champ de la SPILF 2026, avis, pas de molécule', () => {
+    const p = plan(cystite((d) => {
+      d.patient.sexe = 'homme';
+      d.patient.grossesse = 'inconnu';
+      d.patient.immunodepression = 'oui';
+    }));
+    expect(p.situation.id).toBe('cystite-homme-hors-champ');
+    expect(p.options).toHaveLength(0);
+  });
+
+  test('homme sous méthotrexate : le triméthoprime documenté est écarté (contre-indication)', () => {
+    const d = cystite((x) => {
+      x.patient.sexe = 'homme';
+      x.patient.grossesse = 'inconnu';
+      x.patient.traitementsAssocies = ['methotrexate'];
+    });
+    avecECBU(d, [{ dci: 'trimethoprime', categorie: 'S' }, { dci: 'amoxicilline', categorie: 'S' }]);
+    const p = plan(d);
+    expect(molecules(p)).toEqual(['amoxicilline']);
+    expect(p.sortie.ecartees.some((e) => e.type === 'contre_indication' && /méthotrexate/.test(e.raison))).toBe(true);
+  });
+
+  test('nitrofurantoïne chez l’homme : hors AMM, en brouillon', () => {
+    const p = plan(cystite((d) => {
+      d.patient.sexe = 'homme';
+      d.patient.grossesse = 'inconnu';
+    }));
+    const nitro = p.options.find((o) => o.prescriptions[0].moleculeId === 'nitrofurantoine')!;
+    expect(nitro.statut).toBe('brouillon');
+    expect(nitro.commentaire).toMatch(/n'est pas adapté/);
   });
 
   test('avec fièvre : infection urinaire masculine fébrile (R-IU-FEBRILE), pas de cystite', () => {

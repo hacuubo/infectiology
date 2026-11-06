@@ -247,6 +247,8 @@ export const R_IU_FEBRILE: Regle = {
     if (forme === 'cystite' || forme === 'colonisation_gravidique' || forme === 'colonisation_avant_geste' || forme === 'a_preciser') return false;
     // Cystite (y compris de l'homme, sans fièvre) : R-CYSTITE.
     if (formeCystite(ctx)) return false;
+    // Sans ECBU, foyer urinaire déclaré sans fièvre : pas un schéma d'infection fébrile (cystite ou à préciser).
+    if (!ctx.evaluationECBU && ctx.dossier.clinique.fievre === 'non' && germeUrinaire(ctx).g === 'aucun') return false;
     const g = germeUrinaire(ctx).g;
     return g === 'aucun' || g === 'bgn';
   },

@@ -365,6 +365,12 @@ function precision(avant: OrganismeId, apres: OrganismeId): boolean {
   return PRECISIONS[avant]?.includes(apres) ?? false;
 }
 
+/** Foyers dont les questions sont posées : foyer déclaré, et foyer urinaire dès qu'un ECBU est saisi. */
+export function foyersQuestions(d: Dossier): FoyerId[] {
+  const f = foyerDeclare(d);
+  return d.prelevements.some((x) => x.type === 'urine') && f !== 'urinaire' ? [f, 'urinaire'] : [f];
+}
+
 /** Foyer déclaré (syndrome choisi, sinon foyer du prélèvement principal), sans déduction à partir de l'ECBU. */
 export function foyerDeclare(d: Dossier): FoyerId {
   const principal = d.prelevements.find((x) => x.type === 'hemoculture') ?? d.prelevements[0];
@@ -378,7 +384,7 @@ export function nettoyerDossier(d: Dossier): Invalidation[] {
   if (!d.clinique) d.clinique = cliniqueParDefaut();
   // Réponses aux questions d'un foyer qui n'est plus le foyer retenu, ou devenues sans objet : effacées.
   if (d.details) {
-    const visibles = new Set(questionsPour(foyerDeclare(d), d).map((q) => q.id));
+    const visibles = new Set(foyersQuestions(d).flatMap((fo) => questionsPour(fo, d)).map((q) => q.id));
     for (const id of Object.keys(d.details)) {
       if (visibles.has(id)) continue;
       const q = QUESTIONS_SYNDROME.find((x) => x.id === id);

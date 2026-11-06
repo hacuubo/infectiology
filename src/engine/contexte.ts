@@ -23,7 +23,7 @@ export interface AnalyseAllergie {
   sources: SourceRef[];
 }
 
-const PENICILLINES = ['penicilline', 'penicillines', 'amoxicilline', 'amoxicilline_clavulanate', 'ampicilline', 'cloxacilline', 'oxacilline', 'piperacilline_tazobactam', 'piperacilline', 'ticarcilline', 'temocilline'];
+const PENICILLINES = ['penicilline', 'penicillines', 'mecillinam', 'pivmecillinam', 'amoxicilline', 'amoxicilline_clavulanate', 'ampicilline', 'cloxacilline', 'oxacilline', 'piperacilline_tazobactam', 'piperacilline', 'ticarcilline', 'temocilline'];
 const CEPHALOSPORINES = ['cephalosporine', 'cephalosporines', 'cefazoline', 'cefalexine', 'cefadroxil', 'cefuroxime', 'cefotaxime', 'ceftriaxone', 'ceftazidime', 'cefepime', 'cefixime', 'cefpodoxime', 'ceftaroline', 'ceftobiprole'];
 const CARBAPENEMES = ['carbapeneme', 'carbapenemes', 'meropeneme', 'imipeneme', 'imipeneme_cilastatine', 'ertapeneme'];
 
@@ -154,6 +154,8 @@ export function analyserAllergies(d: Dossier): AnalyseAllergie {
     res.explications.push(`Allergie déclarée à « ${a.molecule} » (type non précisé, non sévère) : molécule évitée par prudence ; préciser le type de réaction.`);
     res.moleculesAEviter.add(n);
   }
+  // Allergie au cotrimoxazole ou au triméthoprime : le triméthoprime seul est aussi évité (famille « autre » dans la base).
+  if (res.famillesAEviter.has('sulfamide')) res.moleculesAEviter.add('trimethoprime');
   return res;
 }
 

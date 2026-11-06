@@ -132,11 +132,15 @@ describe('ECBU positif : traiter ou ne pas traiter', () => {
     expect(plan(avec(CAS_ECBU_AVANT_GESTE, (x) => (x.clinique.gesteUrologique = 'inconnu'))).indication?.decision).toBe('informations_insuffisantes');
     expect(plan(avec(CAS_ECBU_AVANT_GESTE, (x) => (x.clinique.gesteUrologique = 'sans_recommandation'))).indication?.decision).toBe('informations_insuffisantes');
     // Le traitement avant geste ne propose pas une posologie de pyélonéphrite : molécules AFU selon l'antibiogramme,
-    // en brouillon (posologies non données par l'AFU). Ici, aucune molécule de 1re intention n'est testée : 2e intention.
+    // en brouillon (posologies non données par l'AFU). Ici, aucune molécule de 1re intention n'est rendue : elles sont
+    // demandées au laboratoire, sans passer à la 2e intention (non rendu ≠ résistant).
     const geste = plan(CAS_ECBU_AVANT_GESTE);
-    expect(geste.options.map((o) => o.prescriptions[0].moleculeId).sort()).toEqual(['amoxicilline', 'cotrimoxazole']);
-    expect(geste.options.every((o) => o.statut === 'brouillon')).toBe(true);
-    expect(geste.options[0].prescriptions[0].duree.texte).toMatch(/48 h avant le geste/);
+    expect(geste.options).toHaveLength(0);
+    expect(geste.donneesManquantes.some((m) => /sensibilité à pivmécillinam \(non rendue/.test(m.champ))).toBe(true);
+    const geste2 = plan(avec(CAS_ECBU_AVANT_GESTE, (x) => x.prelevements[0].antibiogramme!.push({ dci: 'fosfomycine', categorie: 'S' }, { dci: 'nitrofurantoine', categorie: 'R' }, { dci: 'mecillinam', categorie: 'R' }, { dci: 'trimethoprime', categorie: 'R' })));
+    expect(geste2.options.map((o) => o.prescriptions[0].regimenId)).toEqual(['fosfo-3g-j-2-j0']);
+    expect(geste2.options[0].statut).toBe('brouillon');
+    expect(geste2.options[0].prescriptions[0].duree.texte).toMatch(/J-2 et le jour du geste/);
   });
 
   test('ECBU à trois espèces ou plus : contamination possible ; asymptomatique → ne pas traiter, symptomatique → refaire l\'ECBU', () => {

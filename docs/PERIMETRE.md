@@ -6,6 +6,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 
 | Situation | Règle | Sources principales |
 |---|---|---|
+| Cystite de la femme (simple, à risque de complication, récidivante, gravidique), cystite de l'homme, colonisation gravidique | `R-CYSTITE` | HAS 2021 (mises à jour 2025), SPILF 2018, SPILF 2026, RCP, CRAT |
 | Infection urinaire fébrile de la femme (PNA simple, à risque, grave), avec ou sans bactériémie | `R-IU-FEBRILE` | SPILF 2015/2018, HAS 2021, EAU 2026 |
 | Infection urinaire masculine communautaire | `R-IU-FEBRILE` | SPILF 2026 (diaporama officiel, article non lisible) |
 | Infection urinaire associée aux soins / sur sonde | `R-IU-FEBRILE` | SPILF/AFU/SF2H 2015 |
@@ -37,7 +38,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - **Indication, situations en brouillon** :
   - fièvre sans signe urinaire ni autre foyer avec bactériurie : IDSA 2019 (remarque) et SPILF 2026 divergent ; avis SMIT, spectre non modélisé ;
   - changement de sonde JJ ou de néphrostomie : zone grise dans le texte AFU 2026.
-- **Cystite, colonisation gravidique, colonisation avant geste** : l'indication est sourcée, mais les molécules de 1re intention (fosfomycine-trométamol, pivmécillinam, nitrofurantoïne, triméthoprime) ne sont pas dans la base. Seule l'amoxicilline est proposée pendant la grossesse si la souche est sensible.
+- **Colonisation avant geste urologique** : molécules AFU 2026 selon l'antibiogramme, mais posologies non données par l'AFU (reprises de la cystite) : **brouillon**. Cystite associée aux soins, cystite récidivante à risque, infection urinaire masculine hors du champ SPILF 2026 : absence de recommandation expliquée, avis.
 - **Prélèvements polymicrobiens** : chaque antibiogramme reste rattaché à son isolat, mais les propositions ne portent que sur le germe principal (alerte affichée).
 - **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 

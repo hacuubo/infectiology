@@ -32,11 +32,12 @@ export function optionsAvecInconnu(q: QuestionSyndrome): OptionQuestion[] {
   return q.options.some((o) => o.v === 'inconnu') ? q.options : [...q.options, { v: 'inconnu', l: 'Inconnu' }];
 }
 
-/** Questions à afficher pour un foyer, compte tenu du dossier et des réponses déjà données. */
+/** Réponse à une question de foyer (« inconnu » si non renseignée). */
 export function reponseDetail(dossier: Dossier, id: string): string {
   return dossier.details?.[id] ?? 'inconnu';
 }
 
+/** Questions à afficher pour un foyer, compte tenu du dossier et des réponses déjà données. */
 export function questionsPour(foyer: FoyerId, dossier: Dossier): QuestionSyndrome[] {
   const reponse = (id: string) => dossier.details?.[id] ?? 'inconnu';
   return QUESTIONS_SYNDROME.filter((q) => q.foyers.includes(foyer) && (!q.pertinente || q.pertinente(reponse, dossier)));

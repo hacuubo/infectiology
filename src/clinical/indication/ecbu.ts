@@ -533,7 +533,7 @@ function exceptions(ctx: ContexteDecision, u: Prelevement): EvaluationECBU | und
       conditions: ['bactériurie sans symptôme', `geste prévu : ${g.libelle.toLowerCase()}`, 'ECBU de moins de 10 jours avant le geste (15 jours au plus, à titre exceptionnel)'],
       actions: [
         nlpc ? 'Traitement adapté à l’antibiogramme avant le geste ; durée préopératoire non définie par l’AFU' : 'Traitement adapté à l’antibiogramme, débuté 48 h avant le geste et poursuivi jusqu’à J0 (au plus 48 h après) : 3 à 5 jours au total',
-        'Molécules par ordre de préférence (AFU 2026) : fosfomycine-trométamol, nitrofurantoïne, pivmécillinam, triméthoprime ; puis amoxicilline, cotrimoxazole ; puis amoxicilline-acide clavulanique ; puis fluoroquinolones, céfixime. Posologies : se référer au texte (non modélisées)',
+        'Molécules par ordre de préférence (AFU 2026) : fosfomycine-trométamol, nitrofurantoïne, pivmécillinam, triméthoprime ; puis amoxicilline, cotrimoxazole ; puis amoxicilline-acide clavulanique ; puis fluoroquinolones, céfixime. Posologies non données par l’AFU : l’application reprend celles de la cystite (brouillon)',
       ],
       reconsiderer: ['Report du geste (ECBU de plus de 10 jours à refaire)', 'Apparition de signes d’infection'],
       sources: [...g.sources, SRC.afuEcbu10j, nlpc ? SRC.afuNlpcDuree : SRC.afuDelai, SRC.afuMolecules],

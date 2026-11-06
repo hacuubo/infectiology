@@ -36,6 +36,8 @@ function cibleRenale(manquants: string[]): string {
   return 'patient.renal.creatinine';
 }
 
+/** Palier rénal qui interdit la molécule (le texte du palier vient du RCP). */
+const CONTRE_INDICATION = /contre-indiqu|ne pas utiliser|non recommandée/i;
 const SANS_ADAPTATION = /pas d'adaptation|pas d'ajustement|dose normale|schéma habituel|posologie normale|dose unique journalière habituelle|pas de réduction/i;
 
 export interface DureeDecidee {
@@ -226,6 +228,7 @@ export function calculerPrescription(args: {
   const { molecule: m, regimen: r, ctx, duree } = args;
   const manquants: DonneeManquante[] = [];
   const avert: string[] = [];
+  let contreIndication: string | undefined;
   const adaptations: string[] = [];
   const sources: SourceRef[] = [...r.sources];
 
@@ -329,6 +332,7 @@ export function calculerPrescription(args: {
         if (palier) {
           adaptations.push(`${clTexte} : ${palier.texte}`);
           sources.push(...palier.sources);
+          if (CONTRE_INDICATION.test(palier.texte)) contreIndication = `${m.dci} : ${clTexte} — ${palier.texte}`;
           if (!SANS_ADAPTATION.test(palier.texte)) adaptationRequise = true;
         } else if (ar.texteGeneral) {
           adaptations.push(`${clTexte} : ${ar.texteGeneral}`);
@@ -368,6 +372,7 @@ export function calculerPrescription(args: {
     if (p.traitementsAssocies.includes(inter.avec)) {
       avert.push(`Interaction (${inter.avec}) : ${inter.texte}`);
       sources.push(...inter.sources);
+      if (/^contre-indiqu/i.test(inter.texte)) contreIndication = `${m.dci} : ${inter.texte}`;
     }
   }
 
@@ -393,6 +398,7 @@ export function calculerPrescription(args: {
       sources,
       statut,
       avertissements: avert,
+      ...(contreIndication ? { contreIndication } : {}),
     },
     donneesManquantes: manquants,
   };

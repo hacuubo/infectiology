@@ -9,6 +9,11 @@ export type DomaineManquant = 'entree' | 'patient' | 'renal' | 'microbiologie' |
 /** Ordre significatif : la première expression reconnue l'emporte. */
 const TABLE: { motif: RegExp; cible: string; domaine: DomaineManquant }[] = [
   { motif: /point d.entrée|syndrome ou résultat/i, cible: 'entree', domaine: 'entree' },
+  { motif: /^anomalie organique ou fonctionnelle de l.arbre urinaire/i, cible: 'details.urinaire.anomalie', domaine: 'clinique' },
+  { motif: /^critères de fragilité de Fried/i, cible: 'details.urinaire.fried', domaine: 'clinique' },
+  { motif: /^insuffisance rénale sévère connue/i, cible: 'details.urinaire.ir_severe', domaine: 'renal' },
+  { motif: /^possibilité de différer/i, cible: 'details.urinaire.differable', domaine: 'clinique' },
+  { motif: /^immunodépression/i, cible: 'patient.immunodepression', domaine: 'patient' },
   { motif: /horaires de dialyse/i, cible: 'patient.renal.horairesDialyse', domaine: 'renal' },
   { motif: /stabilité de la fonction rénale/i, cible: 'patient.renal.stabilite', domaine: 'renal' },
   { motif: /dialyse|épuration extrarénale/i, cible: 'patient.renal.dialyse', domaine: 'renal' },

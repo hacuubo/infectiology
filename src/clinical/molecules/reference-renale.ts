@@ -61,8 +61,9 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   fosfomycine_trometamol: clcr('RCP-fosfomycine-trometamol', 'clairance de la créatinine < 10 ml/min'),
   // RCP pivmécillinam : paliers exprimés en « filtration glomérulaire » (mL/min).
   pivmecillinam: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
-  // RCP nitrofurantoïne : grandeur mixte (ClCr au §4.2, « TFGe » au §4.3) ; la HAS parle de DFG : DFG estimé retenu.
-  nitrofurantoine: { grandeur: 'dfg', unite: 'mL/min/1,73 m²', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'débit de filtration glomérulaire < 45 ml/min', 'adaptation_renale')] },
+  // RCP nitrofurantoïne : grandeur mixte (ClCr au §4.2, « TFGe » au §4.3) : la clairance est retenue, ce qui fait comparer
+  // Cockcroft-Gault et DFG désindexé ; une discordance de palier est signalée et bloque la dose.
+  nitrofurantoine: clcr('RCP-nitrofurantoine', 'clairance de la créatinine < 45 ml/mn… la nitrofurantoïne est contre-indiquée'),
   trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
 };
