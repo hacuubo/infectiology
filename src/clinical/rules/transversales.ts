@@ -128,7 +128,7 @@ export const R_DONNEES: Regle = {
     if (p.sexe === 'inconnu') f.manque('sexe', 'infection urinaire masculine vs féminine ; formules rénales', 'affine');
     if (p.contexte === 'inconnu') f.manque('contexte communautaire ou associé aux soins', 'spectre probabiliste', 'bloque_decision');
     if (p.renal.dialyse === 'inconnu') f.manque('dialyse / épuration extrarénale (oui/non)', 'adaptation posologique', 'affine');
-    if (!p.renal.creatinine && !p.renal.dfg && p.renal.dialyse !== 'hemodialyse_intermittente' && p.renal.dialyse !== 'eer_continue') f.manque('créatininémie (avec unité et date)', 'adaptation rénale ; surveillance des molécules néphrotoxiques', 'bloque_dose');
+    if (!p.renal.creatinine && !p.renal.dfg && p.renal.dialyse !== 'hemodialyse_intermittente' && p.renal.dialyse !== 'eer_continue') f.manque('créatininémie (avec unité)', 'adaptation rénale ; surveillance des molécules néphrotoxiques', 'bloque_dose');
     if (p.renal.creatinine && p.renal.stabilite === 'inconnu' && p.renal.dialyse !== 'hemodialyse_intermittente') f.manque('stabilité de la fonction rénale', 'les formules ne s\'appliquent qu\'à l\'état d\'équilibre', 'affine');
     if (bacteriemie(ctx)) {
       const h = ctx.hemocultures[0];

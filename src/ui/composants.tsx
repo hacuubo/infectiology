@@ -1,20 +1,50 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, Fragment, useContext, useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { SourceRef, StatutValidation, TriState } from '../clinical/types';
 import { SOURCES_PAR_ID } from '../clinical/sources';
+
+/**
+ * Champs de saisie signalés comme manquants par la fiche (chemins « cible » des données manquantes) :
+ * ils sont mis en surbrillance dans la saisie.
+ */
+/** Cible → true si la donnée bloque (décision, dose, durée, surveillance), false si elle affinerait seulement. */
+export const ChampsManquants = createContext<ReadonlyMap<string, boolean>>(new Map());
+
+/**
+ * Un champ est signalé si sa cible est manquante, ou l'un de ses sous-champs directs (ex. date de la créatininémie).
+ * Renvoie « bloquant », « facultatif » ou undefined.
+ */
+export function estManquant(manquants: ReadonlyMap<string, boolean>, cible: string | undefined): 'bloquant' | 'facultatif' | undefined {
+  if (!cible) return undefined;
+  let trouve: boolean | undefined;
+  for (const [c, bloquant] of manquants) {
+    const parent = c.includes('.') ? c.slice(0, c.lastIndexOf('.')) : undefined;
+    if (c === cible || parent === cible) trouve = trouve || bloquant;
+  }
+  return trouve === undefined ? undefined : trouve ? 'bloquant' : 'facultatif';
+}
 
 export function Champ({ libelle, aide, children, id, libelleId, cible }: { libelle: string; aide?: string; children: ReactNode; id?: string; libelleId?: string; cible?: string }) {
   // L'aide est reliée au contrôle par aria-describedby (identifiant dérivé de celui du contrôle).
   const aideId = id ? `${id}-aide` : libelleId ? `${libelleId}-aide` : undefined;
+  const manquant = estManquant(useContext(ChampsManquants), cible);
+  const libelleEl = id ? (
+    <label htmlFor={id} id={libelleId}>
+      {libelle}
+    </label>
+  ) : (
+    <span className="libelle" id={libelleId}>
+      {libelle}
+    </span>
+  );
   return (
-    <div className="champ" data-champ={cible}>
-      {id ? (
-        <label htmlFor={id} id={libelleId}>
-          {libelle}
-        </label>
-      ) : (
-        <span className="libelle" id={libelleId}>
-          {libelle}
+    <div className={manquant ? `champ manquant ${manquant}` : 'champ'} data-champ={cible}>
+      {manquant ? (
+        <span className="ligne-libelle">
+          {libelleEl}
+          <span className="etiquette-manquant">{manquant === 'bloquant' ? 'à compléter' : 'à compléter (facultatif)'}</span>
         </span>
+      ) : (
+        libelleEl
       )}
       {aide && (
         <span className="aide" id={aideId}>
@@ -226,6 +256,14 @@ export const LIBELLE_STATUT_COURT: Record<StatutValidation, string> = {
   retiree: 'retirée',
 };
 
+/**
+ * Statut de validation à signaler sur place : tout sauf « vérifiée par IA » (et validé/publié), dont la mention
+ * est unique, en fin de fiche. Un brouillon ou une règle retirée reste donc marqué à côté de l'option.
+ */
+export function statutASignaler(s: StatutValidation): boolean {
+  return s !== 'verifiee_ia' && s !== 'validee_humain' && s !== 'publiee';
+}
+
 export function BadgeStatut({ statut, court }: { statut: StatutValidation; court?: boolean }) {
   const type = statut === 'publiee' || statut === 'validee_humain' ? 'ok' : statut === 'retiree' ? 'urgence' : 'attention';
   return (
@@ -297,12 +335,66 @@ export function ListeSources({ refs, compact }: { refs: SourceRef[]; compact?: b
   );
 }
 
+/** Mention d'une source dont le statut doit rester visible même en affichage compact. */
+function etatSource(id: string): string | undefined {
+  const s = SOURCES_PAR_ID[id];
+  if (!s) return 'absente du registre';
+  if (s.statutVigueur === 'remplacee') return `remplacée${s.remplaceePar ? ` par ${s.remplaceePar}` : ''}`;
+  if (s.statutVigueur === 'retiree') return 'retirée';
+  if (s.statutVigueur !== 'en_vigueur') return 'vigueur incertaine';
+  if (s.statutAcces === 'introuvable') return 'non vérifiée';
+  if (s.statutAcces !== 'consultee') return 'contenu non vérifié';
+  return undefined;
+}
+
+/**
+ * Libellé court d'une source : organisme (avant « — ») et année ; si deux sources de la ligne auraient le même
+ * libellé (ex. deux RCP de l'ANSM), on ajoute le début du titre pour les distinguer.
+ */
+function libelleCourt(id: string, ligne: Map<string, SourceRef[]>): string {
+  const s = SOURCES_PAR_ID[id];
+  if (!s) return id;
+  const base = (x: { organisme: string; annee: number }) => `${x.organisme.split(' — ')[0]} ${x.annee}`;
+  const ambigu = [...ligne.keys()].some((autre) => autre !== id && SOURCES_PAR_ID[autre] && base(SOURCES_PAR_ID[autre]) === base(s));
+  if (!ambigu) return base(s);
+  const titre = s.titre.split(/ [—(]|, /)[0];
+  return `${base(s)} — ${titre.length > 40 ? `${titre.slice(0, 39)}…` : titre}`;
+}
+
+/**
+ * Sources d'un élément, en liens courts (organisme et année) : un clic ouvre la recommandation au passage
+ * cité quand il est connu. Le titre complet et les repères figurent dans l'infobulle ; dans la fiche, la liste
+ * complète des sources, avec repères et extraits, est en fin de fiche.
+ */
 export function RefsInline({ refs }: { refs: SourceRef[] }) {
   if (refs.length === 0) return null;
+  const parSource = new Map<string, SourceRef[]>();
+  for (const r of refs) parSource.set(r.source, [...(parSource.get(r.source) ?? []), r]);
   return (
-    <details className="discret">
-      <summary>Sources ({refs.length})</summary>
-      <ListeSources refs={refs} compact />
-    </details>
+    <span className="refs-inline">
+      Sources :{' '}
+      {[...parSource.entries()].map(([id, rs], i) => {
+        const s = SOURCES_PAR_ID[id];
+        const reperes = [...new Set(rs.map((r) => r.repere).filter(Boolean))];
+        const libelle = libelleCourt(id, parSource);
+        const titre = s ? `${s.titre}${reperes.length ? ` — ${reperes.join(' ; ')}` : ''}` : `Source « ${id} » absente du registre`;
+        const url = urlAvecAncre(rs.find((r) => r.ancre) ?? rs[0]);
+        const etat = etatSource(id);
+        return (
+          <Fragment key={id}>
+            {i > 0 && ' · '}
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer" title={titre}>
+                {libelle}
+                <span className="sr-only"> (nouvel onglet)</span>
+              </a>
+            ) : (
+              <span title={titre}>{libelle}</span>
+            )}
+            {etat && <span className="etat-source"> ({etat})</span>}
+          </Fragment>
+        );
+      })}
+    </span>
   );
 }

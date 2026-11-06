@@ -321,7 +321,7 @@ export function calculerPrescription(args: {
           for (const dm of choix.manquants)
             manquants.push({ champ: dm.split(' (')[0], pourquoi: `adaptation posologique de ${m.dci} (${refM.grandeur === 'dfg' ? 'DFG' : 'clairance de la créatinine'} en ${refM.unite})`, impact: impactRenal, cible: cibleRenale([dm]) });
           if (choix.discordance && palierAvecAdaptation)
-            manquants.push({ champ: 'choix entre Cockcroft-Gault et DFG désindexé', pourquoi: `les deux estimations conduisent à des paliers différents pour ${m.dci} : décision avec le pharmacien ou le néphrologue`, impact: 'bloque_dose', cible: 'patient.renal.poidsCockcroft' });
+            manquants.push({ champ: 'choix entre Cockcroft-Gault et DFG désindexé', pourquoi: `les deux estimations conduisent à des paliers différents pour ${m.dci} : décision avec le pharmacien ou le néphrologue`, impact: 'bloque_dose', cible: 'patient.renal.creatinine' });
         }
       } else {
         const palier = ar.paliers[palierDe(choix.valeur)];

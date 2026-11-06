@@ -7,17 +7,22 @@ import { GardeErreur, GardeLocale, PanneauErreurTechnique } from './Explication'
 import { contexteUI } from './contexte-ui';
 import { FormulaireDossier } from './FormulaireDossier';
 import { ResumePatient } from './ResumePatient';
-import { alertesUrgentes, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
+import { alertesUrgentes, elementsManquants, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
 import { VERSION_CLINIQUE, estObsolete } from '../clinical/version';
-import { CAS_FICTIFS } from '../tests/cas-fictifs';
-import { Badge, RefsInline } from './composants';
+import { Badge, ChampsManquants, RefsInline } from './composants';
 
-export function App() {
-  const [dossier, setDossier] = useState<Dossier>(() => dossierParDefaut());
+/** `dossierInitial` : dossier de départ (tests) ; par défaut, un dossier vide. */
+export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
+  const [dossier, setDossier] = useState<Dossier>(() => {
+    if (!dossierInitial) return dossierParDefaut();
+    const d = clonerDossier(dossierInitial);
+    nettoyerDossier(d);
+    return d;
+  });
   const [invalidations, setInvalidations] = useState<Invalidation[]>([]);
   const [onglet, setOnglet] = useState<'saisie' | 'resultat'>('saisie');
-  const [modeClinique, setModeClinique] = useState(false);
-  const [resumeReduit, setResumeReduit] = useState(false);
+  // Résumé du patient réduit par défaut : la saisie reste au premier plan.
+  const [resumeReduit, setResumeReduit] = useState(true);
 
   // Plan affiché avant la dernière modification : sert à signaler ce que cette modification change.
   const planCourant = useRef<Plan | undefined>(undefined);
@@ -45,14 +50,30 @@ export function App() {
   // Appel protégé : une panne du moteur est une erreur technique, jamais une conclusion médicale.
   const resultat = useMemo(() => {
     void essai; // « Réessayer » relance le calcul
-    return deciderSansPanne(dossier, { modeUsageClinique: modeClinique });
-  }, [dossier, modeClinique, essai]);
+    return deciderSansPanne(dossier);
+  }, [dossier, essai]);
   const plan: Plan | undefined = resultat.ok ? resultat.plan : undefined;
   useEffect(() => {
     planCourant.current = plan;
   }, [plan]);
   // Modifications de la saisie qui changent la proposition thérapeutique (calcul pur, compatible StrictMode).
   const changements = useMemo(() => (plan && planAvant ? comparerPlans(planAvant, plan) : []), [plan, planAvant]);
+  // Champs à compléter signalés par la fiche : mis en surbrillance dans la saisie.
+  const ciblesManquantes = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const x of plan ? elementsManquants(plan) : []) if (x.cible) m.set(x.cible, (m.get(x.cible) ?? false) || x.impact !== 'affine');
+    return m;
+  }, [plan]);
+  // Données sans champ précis (antibiogramme, signes cliniques, antécédents…) : c'est la section qui est signalée.
+  useEffect(() => {
+    document.querySelectorAll('.section-manquante').forEach((el) => el.classList.remove('section-manquante'));
+    for (const cible of ciblesManquantes.keys()) {
+      if (document.querySelector(`[data-champ="${cible}"]`)) continue;
+      const el = trouverChamp(cible);
+      const section = el?.closest('section.carte');
+      if (section && !section.closest('.fiche')) section.classList.add('section-manquante');
+    }
+  });
   const obsolete = estObsolete(VERSION_CLINIQUE);
   // En cas de panne, l'urgence déclarée (sepsis, choc) reste affichée.
   const urgentes = plan ? alertesUrgentes(plan) : !resultat.ok ? resultat.sortie.actionsUrgentes.map((a) => ({ niveau: 'urgence' as const, texte: a.texte, sources: a.sources })) : [];
@@ -80,31 +101,8 @@ export function App() {
     <div className="app">
       <header className="bandeau">
         <h1>Infectiology — aide à la décision en antibiothérapie (adulte)</h1>
-        <div className="statut" aria-label="État de la base clinique">
-          <span>
-            Version clinique <strong>{VERSION_CLINIQUE.version}</strong>
-          </span>
-          <span>Validation humaine : {VERSION_CLINIQUE.dateValidationHumaine ?? 'aucune'}</span>
-          <span>Dernière veille réussie : {VERSION_CLINIQUE.derniereVeilleReussie ?? 'aucune'}</span>
-          <span>Changements en attente : {VERSION_CLINIQUE.changementsEnAttente.length}</span>
-          {obsolete && <Badge type="urgence">base possiblement obsolète</Badge>}
-          <details className="discret">
-            <summary>Périmètre surveillé</summary>
-            <ul>
-              {VERSION_CLINIQUE.perimetreSurveille.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-            <p className="aide">{VERSION_CLINIQUE.obsolescence.texte}</p>
-          </details>
-          <label>
-            <input type="checkbox" checked={modeClinique} onChange={(e) => setModeClinique(e.target.checked)} /> N'appliquer que les règles validées par un humain
-          </label>
-        </div>
+        {obsolete && <Badge type="urgence">base clinique possiblement obsolète (voir en fin de page)</Badge>}
       </header>
-      <div className="avertissement-global" role="note">
-        <strong>Outil en développement, non validé pour l'usage clinique.</strong> Moteur déterministe et règles sourcées, en attendant l'avis du service de maladies infectieuses et tropicales. Aucune donnée saisie n'est conservée ni transmise. Utilisez des cas fictifs.
-      </div>
 
       {/* Barre permanente : alertes urgentes et résumé du patient, visibles quel que soit l'onglet ou le défilement. */}
       <div className="barre-contexte">
@@ -144,32 +142,7 @@ export function App() {
 
       <main className="contenu">
         <div className={`colonne-saisie ${onglet === 'resultat' ? 'masque-etroit' : ''}`}>
-          <div className="carte">
-            <div className="ligne">
-              <label>
-                Charger un cas fictif :{' '}
-                <select
-                  aria-label="Cas fictif"
-                  value=""
-                  onChange={(e) => {
-                    const c = CAS_FICTIFS.find((x) => x.id === e.target.value);
-                    if (c) {
-                      const d = clonerDossier(c.dossier);
-                      nettoyerDossier(d);
-                      setDossier(d);
-                      setPlanAvant(undefined);
-                      setInvalidations([]);
-                    }
-                  }}
-                >
-                  <option value="">— choisir —</option>
-                  {CAS_FICTIFS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.titre}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          <div className="ligne reinitialiser">
               <button
                 type="button"
                 className="btn discret"
@@ -179,9 +152,8 @@ export function App() {
                   setInvalidations([]);
                 }}
               >
-                Réinitialiser
+                Réinitialiser la saisie
               </button>
-            </div>
           </div>
           {invalidations.length > 0 && (
             <div className="invalidations" role="status">
@@ -197,8 +169,37 @@ export function App() {
             </div>
           )}
           <GardeLocale nom="formulaire" cle={dossier}>
-            <FormulaireDossier dossier={dossier} modifier={modifier} />
+            <ChampsManquants.Provider value={ciblesManquantes}>
+              <FormulaireDossier dossier={dossier} modifier={modifier} />
+            </ChampsManquants.Provider>
           </GardeLocale>
+          {/* En fin de saisie : statut de l'outil et état de la base clinique. */}
+          <footer className="pied pied-saisie">
+            <div className="avertissement-global" role="note">
+              <strong>Outil en développement, non validé pour l'usage clinique.</strong> Moteur déterministe et règles sourcées, en attendant l'avis du service de maladies infectieuses et tropicales. Les règles « vérifiées par IA » ne sont pas validées médicalement. Aucune donnée saisie n'est conservée ni transmise. Utilisez des patients fictifs.
+            </div>
+            <div className="statut" aria-label="État de la base clinique">
+              <span>
+                Version clinique <strong>{VERSION_CLINIQUE.version}</strong>
+              </span>
+              <span>Validation humaine : {VERSION_CLINIQUE.dateValidationHumaine ?? 'aucune'}</span>
+              <span>Dernière veille réussie : {VERSION_CLINIQUE.derniereVeilleReussie ?? 'aucune'}</span>
+              <span>Changements en attente : {VERSION_CLINIQUE.changementsEnAttente.length}</span>
+              {obsolete && <Badge type="urgence">base possiblement obsolète</Badge>}
+              <details className="discret">
+                <summary>Périmètre surveillé</summary>
+                <ul>
+                  {VERSION_CLINIQUE.perimetreSurveille.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+                <p className="aide">{VERSION_CLINIQUE.obsolescence.texte}</p>
+              </details>
+            </div>
+            <p>
+              Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
+            </p>
+          </footer>
         </div>
         <div className={`colonne-resultat ${onglet === 'saisie' ? 'masque-etroit' : ''}`}>
           {resultat.ok && plan ? (
@@ -209,7 +210,7 @@ export function App() {
             !resultat.ok && <PanneauErreurTechnique sortie={resultat.sortie} onReessayer={() => setEssai((n) => n + 1)} />
           )}
           <footer className="pied">
-            Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
+            Outil en développement, non validé pour l'usage clinique. Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
           </footer>
         </div>
       </main>

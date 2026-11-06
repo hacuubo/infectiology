@@ -277,7 +277,6 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
         creatValide = false;
       }
     }
-    if (!c.date) res.limites.push('Date de la créatininémie non renseignée : impossible de savoir si la valeur est récente.');
   }
   const poidsOk = e.poidsKg !== undefined && e.poidsKg >= BORNES_POIDS.min && e.poidsKg <= BORNES_POIDS.max;
   const tailleOk = e.tailleCm !== undefined && e.tailleCm >= BORNES_TAILLE.min && e.tailleCm <= BORNES_TAILLE.max;
@@ -312,11 +311,11 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
   if (c && unite && creatValide) {
     const saisie = `${nombreFr(c.valeur, unite === 'mg/dL' ? 2 : 0)} ${LIBELLE_UNITE_CREAT[unite]}`;
     res.creatinine = { mgDl: creatinineEnMgDl(c.valeur, unite), umolL: creatinineEnUmolL(c.valeur, unite), saisie, date: c.date, heure: c.heure };
-  } else if (!c) res.manquants.push('créatininémie (avec unité et date)');
+  } else if (!c) res.manquants.push('créatininémie (avec unité)');
 
   if (poidsOk && tailleOk) res.surfaceCorporelle = surfaceCorporelleDuBois(e.poidsKg!, e.tailleCm!);
   const cr = res.creatinine;
-  const dateCr = cr?.date ? ` du ${cr.date}${cr.heure ? ` à ${cr.heure}` : ''}` : ' (date non renseignée)';
+  const dateCr = cr?.date ? ` du ${cr.date}${cr.heure ? ` à ${cr.heure}` : ''}` : '';
   const donneeCreat = cr ? `créatininémie ${cr.saisie}${unite === 'umol/L' ? ` (= ${nombreFr(cr.mgDl, 2)} mg/dL)` : ''}${dateCr}` : '';
   const limitesCommunes: string[] = [];
   if (res.etat === 'instable') limitesCommunes.push(`Non valide : ${res.raisonNonApplicable}`);
@@ -350,7 +349,7 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
   const communs: string[] = [];
   if (res.etat === 'dialyse') communs.push('non applicable (dialyse)');
   if (res.etat === 'hors_domaine') communs.push('non applicable (moins de 18 ans)');
-  if (!cr) communs.push(c && !unite ? 'unité de la créatininémie' : c ? 'créatininémie utilisable (valeur, unité ou date à vérifier)' : 'créatininémie');
+  if (!cr) communs.push(c && !unite ? 'unité de la créatininémie' : c ? 'créatininémie utilisable (valeur ou unité à vérifier)' : 'créatininémie');
   if (age === undefined) communs.push(e.ageAns === undefined ? 'âge' : 'âge plausible');
   if (!sexe) communs.push('variable de sexe de l’équation (femme/homme)');
   const propresEquation: string[] = eq === 'ekfc' && age !== undefined && age <= 25 ? ['EKFC : âge > 25 ans requis (Q dépend de l’âge avant 25 ans, non implémenté) — choisir CKD-EPI'] : [];
@@ -448,7 +447,7 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
       cg.sources.push(SOURCES_RENALES.fdaPoidsObese);
     }
     if (imc !== undefined && imc >= 30 && choixPoids === 'reel')
-      cg.limites.push(`Obésité (IMC ${nombreFr(imc, 1)} kg/m²) : le poids de Cockcroft-Gault diverge selon les sources (réel dans la formule des RCP ; idéal ou ajusté selon la FDA 2024) ; ce choix se modifie dans la saisie.`);
+      cg.limites.push(`Obésité (IMC ${nombreFr(imc, 1)} kg/m²) : le poids de Cockcroft-Gault diverge selon les sources (réel dans la formule des RCP ; idéal ou ajusté selon la FDA 2024) ; poids réel utilisé, à discuter avec le pharmacien.`);
   }
   res.estimations = [indexe, des, cg];
 
@@ -466,11 +465,10 @@ export function estimerFonctionRenale(e: EntreesRenales): EstimationRenale {
       utilisable = false;
       lim.push('DFG déclaré en mL/min : ces équations sont rendues indexées (mL/min/1,73 m²) ; valeur désindexée par le laboratoire ? Non utilisée automatiquement.');
     }
-    if (!e.dfg.date) lim.push('Date non renseignée.');
     if (e.dfg.methode === 'inconnue') lim.push('Méthode inconnue : la valeur n’est pas utilisée pour adapter une dose.');
     const calcule = e.dfg.methode === 'CKD-EPI' ? indexe : e.dfg.methode === 'Cockcroft' ? cg : undefined;
     if (calcule?.calculable && calcule.valeur && Math.abs(calcule.valeur - e.dfg.valeur) / calcule.valeur > 0.15)
-      lim.push(`Écart de plus de 15 % (seuil choisi par l'application) avec le calcul de l'application (${nombreFr(calcule.valeur, 0)} ${calcule.unite}) : vérifier la date de la créatininémie, l'unité ou la version de l'équation.`);
+      lim.push(`Écart de plus de 15 % (seuil choisi par l'application) avec le calcul de l'application (${nombreFr(calcule.valeur, 0)} ${calcule.unite}) : vérifier que les deux valeurs portent sur le même prélèvement, l'unité ou la version de l'équation.`);
     res.labo = { utilisable, valeur: e.dfg.valeur, unite: u, methode: e.dfg.methode, date: e.dfg.date, libelle: `Valeur fournie (${e.dfg.methode === 'inconnue' ? 'méthode inconnue' : e.dfg.methode})`, limites: lim };
   }
 

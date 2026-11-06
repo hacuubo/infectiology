@@ -4,12 +4,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../ui/App';
+import { casFictif } from './cas-fictifs';
 
 describe('Interface : indication et antibiogramme guidé', () => {
   test('ECBU sans symptôme : la conclusion « pas d\'antibiothérapie » est complète et aucune option n\'est proposée', async () => {
-    const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'ecbu-colonisation');
+    render(<App dossierInitial={casFictif('ecbu-colonisation')} />);
     expect(screen.getByRole('heading', { name: /Conclusion sur l'indication/ })).toBeInTheDocument();
     expect(screen.getAllByText(/Pas d'antibiothérapie indiquée dans la situation renseignée/).length).toBeGreaterThan(0);
     expect(screen.getByText('Ce qui justifie cette conclusion')).toBeInTheDocument();
@@ -20,18 +19,16 @@ describe('Interface : indication et antibiogramme guidé', () => {
 
   test('l\'étape 1 recalcule la décision : des signes urinaires récents avec fièvre font passer à « traiter »', async () => {
     const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'ecbu-colonisation');
+    render(<App dossierInitial={casFictif('ecbu-colonisation')} />);
     await u.click(within(screen.getByRole('radiogroup', { name: 'Signes urinaires' })).getByRole('radio', { name: 'Présents, récents' }));
     await u.click(within(screen.getByRole('radiogroup', { name: /Fièvre/ })).getByRole('radio', { name: 'Oui' }));
-    expect(screen.getByRole('heading', { name: /B\. Traitement proposé/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Options thérapeutiques/ })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Retenir cette option' }).length).toBeGreaterThan(0);
   });
 
   test('antibiogramme guidé : signaler une BLSE retire la question sur la céphalosporinase et demande la céfoxitine', async () => {
     const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'ecbu-c3gr');
+    render(<App dossierInitial={casFictif('ecbu-c3gr')} />);
     const mecanismes = () => screen.getByRole('group', { name: 'Mécanisme rapporté' });
     expect(within(mecanismes()).getByText('Céphalosporinase hyperproduite ou acquise (AmpC)')).toBeInTheDocument();
     await u.click(within(mecanismes()).getByRole('radio', { name: 'BLSE rapportée' }));
@@ -43,8 +40,7 @@ describe('Interface : indication et antibiogramme guidé', () => {
 
   test('cliquer à nouveau sur une réponse l\'efface (retour à « non renseigné »)', async () => {
     const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'ecbu-c3gr');
+    render(<App dossierInitial={casFictif('ecbu-c3gr')} />);
     const blse = () => within(screen.getByRole('group', { name: 'Mécanisme rapporté' })).getByRole('radio', { name: 'BLSE rapportée' });
     await u.click(blse());
     expect(blse()).toHaveAttribute('aria-checked', 'true');

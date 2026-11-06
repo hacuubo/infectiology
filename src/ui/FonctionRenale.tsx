@@ -65,23 +65,6 @@ function LigneEstimation({ e, detail }: { e: Estimation; detail: boolean }) {
   );
 }
 
-/** Aperçu dans la saisie : recalculé à chaque modification. */
-export function ApercuRenal({ dossier }: { dossier: Dossier }) {
-  const r = contexteUI(dossier).renal;
-  if (!dossier.patient.renal.creatinine && !dossier.patient.renal.dfg) return null;
-  return (
-    <div className="apercu-renal">
-      <strong>Estimations calculées par l’application</strong> (non interchangeables)
-      {!r.applicable && r.raisonNonApplicable && <p className="alerte attention">Non utilisées pour personnaliser une dose : {r.raisonNonApplicable}</p>}
-      <ul>
-        {r.estimations.map((e) => (
-          <LigneEstimation key={e.id} e={e} detail={false} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /** Carte de la fiche : résultat, unité, formule et version, date de la créatinine, données, limites, détail et source. */
 export function CarteFonctionRenale({ dossier, plan, allerAuChamp }: { dossier: Dossier; plan: Plan; allerAuChamp?: AllerAuChamp }) {
   const r = contexteUI(dossier).renal;
@@ -93,7 +76,7 @@ export function CarteFonctionRenale({ dossier, plan, allerAuChamp }: { dossier: 
       <summary>
         Fonction rénale{' '}
         {dialyse ? <Badge type="attention">dialyse : estimations non applicables</Badge> : !r.applicable ? <Badge type="urgence">estimations non utilisées pour les doses</Badge> : r.etat === 'equilibre_non_confirme' ? <Badge type="attention">stabilité non confirmée</Badge> : null}
-        {r.creatinine && <span className="aide"> — créatininémie {r.creatinine.saisie}{r.creatinine.date ? ` du ${r.creatinine.date}${r.creatinine.heure ? ` à ${r.creatinine.heure}` : ''}` : ' (date non renseignée)'}</span>}
+        {r.creatinine && <span className="aide"> — créatininémie {r.creatinine.saisie}{r.creatinine.date ? ` du ${r.creatinine.date}${r.creatinine.heure ? ` à ${r.creatinine.heure}` : ''}` : ''}</span>}
       </summary>
       {r.raisonNonApplicable && <p className="alerte attention">{r.raisonNonApplicable.charAt(0).toUpperCase() + r.raisonNonApplicable.slice(1)}</p>}
       {r.incoherences.map((i) => (
@@ -132,7 +115,7 @@ export function CarteFonctionRenale({ dossier, plan, allerAuChamp }: { dossier: 
       ))}
       <p className="aide">
         {utilise
-          ? 'Chaque adaptation posologique de la section B précise l’estimation utilisée et pourquoi (grandeur et unité exigées par la référence de la molécule).'
+          ? 'Chaque adaptation posologique des options thérapeutiques précise l’estimation utilisée et pourquoi (grandeur et unité exigées par la référence de la molécule).'
           : 'Aucune adaptation posologique n’est calculée sans proposition thérapeutique.'}
         {p.renal.dialyse === 'inconnu' && ' Dialyse non renseignée.'}
       </p>

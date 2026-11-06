@@ -29,7 +29,7 @@ const TABLE: { motif: RegExp; cible: string; domaine: DomaineManquant }[] = [
   { motif: /forme clinique de l.IU masculine/i, cible: 'patient.formeIUMasculine', domaine: 'patient' },
   { motif: /antécédents de BLSE|antibiotiques des 3-6/i, cible: 'patient.antecedentsMicro', domaine: 'patient' },
   { motif: /1re dose|première dose/i, cible: 'horaires.premiereDoseISO', domaine: 'horaires' },
-  { motif: /foyer suspecté/i, cible: 'prelevements', domaine: 'clinique' },
+  { motif: /foyer suspecté/i, cible: 'prelevements.foyer', domaine: 'clinique' },
   {
     motif: /hémoculture|séries|antibiogramme|sensibilit|CMI|mécanisme|oxacilline|céfoxitine|identification|germe|examen direct|phénotype|BLSE|carbapénémase/i,
     cible: 'prelevements',
