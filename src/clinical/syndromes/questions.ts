@@ -1,0 +1,37 @@
+/**
+ * Questions propres à un foyer infectieux (forme clinique, lieu de prise en charge, épisode…), déclarées une fois
+ * et utilisées à la fois par la saisie (affichage), le nettoyage du dossier (réponse effacée si le foyer change)
+ * et les règles (lecture de la réponse). Chaque question a une option « inconnu » : une réponse absente n'est
+ * jamais interprétée comme « non ».
+ */
+import type { FoyerId } from '../types';
+
+export interface OptionQuestion {
+  v: string;
+  l: string;
+}
+
+export interface QuestionSyndrome {
+  /** Identifiant stable, préfixé par le foyer (ex. « pneumonie.lieu »). */
+  id: string;
+  foyers: FoyerId[];
+  libelle: string;
+  aide?: string;
+  /** Options affichées ; « inconnu » est ajouté automatiquement en dernier. */
+  options: OptionQuestion[];
+  /** Affichée seulement si la condition est vraie (réponses aux autres questions). */
+  pertinente?: (reponse: (id: string) => string) => boolean;
+}
+
+/** Registre des questions par foyer, complété domaine par domaine (voir ./index.ts). */
+export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [];
+
+export function optionsAvecInconnu(q: QuestionSyndrome): OptionQuestion[] {
+  return q.options.some((o) => o.v === 'inconnu') ? q.options : [...q.options, { v: 'inconnu', l: 'Inconnu' }];
+}
+
+/** Questions à afficher pour un foyer, compte tenu des réponses déjà données. */
+export function questionsPour(foyer: FoyerId, details: Record<string, string> | undefined): QuestionSyndrome[] {
+  const reponse = (id: string) => details?.[id] ?? 'inconnu';
+  return QUESTIONS_SYNDROME.filter((q) => q.foyers.includes(foyer) && (!q.pertinente || q.pertinente(reponse)));
+}

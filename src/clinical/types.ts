@@ -286,6 +286,8 @@ export type FoyerId =
   | 'cutane'
   | 'pulmonaire'
   | 'digestif'
+  | 'meningite'
+  | 'clostridioides_difficile'
   | 'autre';
 
 export interface Prelevement extends DonneesIsolat {

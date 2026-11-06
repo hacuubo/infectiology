@@ -221,6 +221,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
 /** Champ de saisie ciblé ; à défaut (champ masqué car non pertinent), la section qui le contient. */
 const SECTIONS: [string, string][] = [
   ['entree', 't-entree'],
+  ['details', 't-entree'],
   ['patient.renal', 't-renal'],
   ['patient.gravite', 't-contexte'],
   ['patient.contexte', 't-contexte'],
