@@ -6,6 +6,7 @@ import { fosfomycineTrometamol, pivmecillinam, nitrofurantoine, trimethoprime } 
 import { fidaxomicine, vancomycineOrale } from './clostridioides-difficile';
 import { metronidazole } from './intra-abdominal';
 import { pristinamycine, clindamycine } from './peau-tissus-mous';
+import { spiramycine, clarithromycine, azithromycine, linezolide } from './pneumonies';
 
 export const MOLECULES: Molecule[] = [
   cefotaxime,
@@ -40,6 +41,10 @@ export const MOLECULES: Molecule[] = [
   metronidazole,
   pristinamycine,
   clindamycine,
+  spiramycine,
+  clarithromycine,
+  azithromycine,
+  linezolide,
 ];
 
 export const MOLECULES_PAR_ID: Record<string, Molecule> = Object.fromEntries(MOLECULES.map((m) => [m.id, m]));

@@ -75,6 +75,12 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   // Pristinamycine et clindamycine : aucune adaptation rénale dans le RCP, aucune grandeur citée ; clairance par défaut.
   pristinamycine: clcr('RCP-pristinamycine', 'aucun ajustement posologique n\'est jugé nécessaire chez les patients insuffisants rénaux'),
   clindamycine: { grandeur: 'clairance_creatinine', unite: 'mL/min', sources: [S('RCP-clindamycine-orale', '§4.2 (aucune adaptation rénale mentionnée)', undefined, 'adaptation_renale')] },
+  // Pneumonies (docs/sources/recherche-pneumonies.md §12) : spiramycine et linézolide sans palier ; clarithromycine en clairance (RCP IV) ;
+  // azithromycine : RCP exprimé en « DFG » (mL/min).
+  spiramycine: clcr('RCP-spiramycine', 'Chez le sujet insuffisant rénal : Aucun ajustement posologique n\'est nécessaire'),
+  clarithromycine: clcr('RCP-clarithromycine-IV', 'clairance inférieure à 30 ml/minute, la dose administrée doit être diminuée de moitié'),
+  azithromycine: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-azithromycine', '§4.2', 'Aucune adaptation posologique n\'est nécessaire chez les patients présentant un DFG ≥ 10 mL/min', 'adaptation_renale')] },
+  linezolide: clcr('RCP-linezolide', 'Insuffisance rénale : Aucun ajustement posologique n\'est nécessaire'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */

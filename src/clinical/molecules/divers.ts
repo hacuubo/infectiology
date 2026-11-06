@@ -137,6 +137,27 @@ export const levofloxacine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 29', 'lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'posologie')],
     },
+    // Pneumonies (docs/sources/recherche-pneumonies.md).
+    {
+      id: 'levo-pac-500',
+      libelle: '500 mg toutes les 24 h per os ou IV (pneumonie hors soins critiques)',
+      indication: 'PAC : uniquement en cas d\'allergie grave aux bêta-lactamines (ou contre-indication aux macrolides si bactérie atypique) ; légionellose non grave avec contre-indication aux macrolides (SPILF 2025/2026, HAS 2025).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 1 },
+      voie: 'IV ou PO',
+      modalites: 'per os ou perfusion de 60 min, 1 fois par 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Lévofloxacine « 500 mg/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'dernier recours', 'levofloxacine 500 mg 1 fois par jour', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
+    {
+      id: 'levo-pac-soins-critiques',
+      libelle: '500 à 1 000 mg/j IV (pneumonie grave, soins critiques)',
+      indication: 'PAC grave avec allergie à la C3G ou au macrolide (monothérapie) ; légionellose grave ou du patient immunodéprimé (1re intention, SPILF 2026).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 2, texte: '500 à 1 000 mg/j IV (500 mg une ou deux fois par jour)' },
+      voie: 'IV',
+      modalites: 'perfusion de 60 min, une ou deux fois par 24 h ; relais oral dès la stabilité clinique',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '500 mg à 1000 mg/j', 'posologie'), S('SPILF-2026-legionellose-diapo', 'diapo 9 (soins critiques, IV)', '500 mg à 1000 mg/j', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -186,6 +207,17 @@ export const cotrimoxazole: Molecule = {
         S('RCP-cotrimoxazole', '§4.2', 'Traitement des infections neuro-méningées à Listeria monocytogenes : 30 à 40 mg/kg/j de sulfaméthoxazole et de 6 à 8 mg/kg/j de triméthoprime', 'posologie'),
       ],
       remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
+    },
+    // Pneumonie d'inhalation (docs/sources/recherche-pneumonies.md §6).
+    {
+      id: 'smx-tmp-inhalation',
+      libelle: '800 mg de sulfaméthoxazole toutes les 8 h, per os ou IV (pneumonie d\'inhalation)',
+      indication: 'Pneumonie d\'inhalation avec contre-indication aux bêta-lactamines (SPILF/SFGG 2025).',
+      dose: { type: 'fixe', valeur: 960, unite: 'mg', frequenceParJour: 3, texte: '800 mg de sulfaméthoxazole (+ 160 mg de triméthoprime) toutes les 8 h' },
+      voie: 'IV ou PO',
+      modalites: 'per os ou IV toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '>30ml/min : 800mg de sulfamethoxazole toutes les 8h', 'posologie')],
     },
   ],
   adaptationRenale: {

@@ -11,6 +11,7 @@ import { QUESTIONS_CDIFF } from './clostridioides-difficile';
 import { QUESTIONS_MENINGITE } from './meningites';
 import { QUESTIONS_INTRA_ABDOMINAL } from './intra-abdominal';
 import { QUESTIONS_PEAU } from './peau-tissus-mous';
+import { QUESTIONS_PNEUMONIE } from './pneumonies';
 
 export interface OptionQuestion {
   v: string;
@@ -30,7 +31,7 @@ export interface QuestionSyndrome {
 }
 
 /** Registre des questions par foyer, complété domaine par domaine (voir ./index.ts). */
-export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [...QUESTIONS_URINAIRE, ...QUESTIONS_CDIFF, ...QUESTIONS_MENINGITE, ...QUESTIONS_INTRA_ABDOMINAL, ...QUESTIONS_PEAU];
+export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [...QUESTIONS_URINAIRE, ...QUESTIONS_CDIFF, ...QUESTIONS_MENINGITE, ...QUESTIONS_INTRA_ABDOMINAL, ...QUESTIONS_PEAU, ...QUESTIONS_PNEUMONIE];
 
 export function optionsAvecInconnu(q: QuestionSyndrome): OptionQuestion[] {
   return q.options.some((o) => o.v === 'inconnu') ? q.options : [...q.options, { v: 'inconnu', l: 'Inconnu' }];
