@@ -133,7 +133,7 @@ export const R_SCN: Regle = {
   statut: 'verifiee_ia',
   priorite: 130,
   sources: [S('IDSA-2009-Mermel-ILC', 'rec. 38', undefined, 'controle_micro')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ['scn', 's_lugdunensis'].includes(germePrincipal(ctx).g) && ctx.foyer !== 'endocardite',
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ['scn', 's_lugdunensis'].includes(germePrincipal(ctx).g) && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite',
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const { prl, g } = germePrincipal(ctx);
@@ -222,7 +222,7 @@ export const R_STREPTO: Regle = {
   statut: 'verifiee_ia',
   priorite: 130,
   sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', undefined, 'duree')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ['strepto', 'cgp_chainettes'].includes(germePrincipal(ctx).g) && ctx.foyer !== 'endocardite',
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ['strepto', 'cgp_chainettes'].includes(germePrincipal(ctx).g) && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite',
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const { prl, g } = germePrincipal(ctx);

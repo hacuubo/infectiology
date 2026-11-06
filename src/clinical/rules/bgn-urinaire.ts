@@ -375,7 +375,7 @@ export const R_BGN: Regle = {
   statut: 'verifiee_ia',
   priorite: 130,
   sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bacilles à Gram négatif (dont entérobactéries et BGN non fermentant), streptocoques, entérocoques : 7 jours', 'duree')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'bgn' && ctx.foyer !== 'urinaire' && ctx.foyer !== 'endocardite',
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'bgn' && ctx.foyer !== 'urinaire' && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite',
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const p = ctx.dossier.patient;

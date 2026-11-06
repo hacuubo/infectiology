@@ -32,6 +32,33 @@ export const cefotaxime: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 15, 22', 'Céfotaxime IV 6 g/jour OU ceftriaxone IV 2 g/jour ET amikacine IV 30 mg/kg, dose unique', 'posologie'), S('SPILF-2015-IU', 'annexe 1, p. 41', 'PNA grave : céfotaxime 2 g x 3/jour', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (céfotaxime)', '2 g toutes les 8 h en perfusions de 30 min', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Cefotaxime 1 g x 3 iv [standard] ; 2 g x 3 iv [high]', 'posologie')],
     },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §10.2) : dose concordante avec le RCP (200 à 300 mg/kg/j).
+    {
+      id: 'cefotaxime-meninge-300',
+      libelle: '300 mg/kg/j IV — méningite (cocci à Gram positif, pneumocoque, examen direct négatif)',
+      indication: 'Méningite bactérienne : examen direct à cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 75, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '75 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg sur 1 h (SPILF 2018). Pas de dose maximale consensuelle chez l\'adulte (SPILF) ; RCP : pas de données au-delà de 24 g/j.',
+      statut: 'verifiee_ia',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', 'céfotaxime 300 mg/kg/j IV, en continu (dose de charge 50 mg/kg sur 1 h) ou ≥ 4 perfusions (75 mg/kg/6 h)', 'posologie'),
+        S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour, on ne dispose pas d\'éléments d\'efficacité ou de tolérance au-delà de 24 g/ jour', 'posologie'),
+      ],
+    },
+    {
+      id: 'cefotaxime-meninge-200',
+      libelle: '200 mg/kg/j IV — méningite (méningocoque, H. influenzae, E. coli ; pneumocoque de CMI amoxicilline > 0,5 mg/L)',
+      indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI C3G ≤ 0,5 et CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 50, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '50 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg (SPILF 2018).',
+      statut: 'verifiee_ia',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', 'céfotaxime 200 mg/kg/j (50 mg/kg/6 h ou continu avec charge 50 mg/kg)', 'posologie'),
+        S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour', 'posologie'),
+      ],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -84,6 +111,35 @@ export const ceftriaxone: Molecule = {
       modalites: 'perfusion de 30 min toutes les 12 h',
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 9 (EHJ p. 3982)', 'Ceftriaxone 4 g/day i.v. in 2 doses', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 11', 'Ceftriaxone : 2 g/12h', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (ceftriaxone)', 'forte posologie : 2 g toutes les 12 h', 'posologie')],
+    },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §9.8 point 1, §10.2) : doses SPILF au-dessus du RCP.
+    {
+      id: 'ceftriaxone-meninge-100',
+      libelle: '100 mg/kg/j IV — méningite (pneumocoque, examen direct négatif) — au-dessus du RCP',
+      indication: 'Méningite bactérienne : cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 100, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018). Hors RCP : le RCP prévoit 2 à 4 g une fois par jour pour la méningite ; 100 mg/kg/j dépasse 4 g/j dès 40 kg.',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', 'ceftriaxone 100 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : dose recommandée SPILF supérieure au maximum du RCP.',
+    },
+    {
+      id: 'ceftriaxone-meninge-75',
+      libelle: '75 mg/kg/j IV — méningite (méningocoque, H. influenzae, E. coli) — au-dessus du RCP',
+      indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 75, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018). Hors RCP : le RCP prévoit 2 à 4 g une fois par jour pour la méningite ; 75 mg/kg/j dépasse 4 g/j au-delà de 53 kg.',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', 'ceftriaxone 75 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
     },
   ],
   adaptationRenale: {
@@ -233,6 +289,21 @@ export const amoxicilline: Molecule = {
       modalites: 'perfusion de 30 à 60 min toutes les 4 h (200 mg/kg/j), sans dépasser 12 g/j ; ou perfusion continue après dose de charge de 2 g',
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 7 et 9', 'Amoxicillin 100-200 mg/kg/day i.v. in 4-6 doses ; Amoxicillin 200 mg/kg/day i.v. in 4-6 doses', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 11', 'Amoxicilline : 200 mg/kg/j en 6 inj/j… sans dépasser 12g/j', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (amoxicilline)', '100 à 200 mg/kg/jour en 6 administrations (toutes les 4 h)', 'posologie')],
+    },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §9.8 point 1, §10.2) : pas de plafond SPILF ; au-dessus du maximum du RCP.
+    {
+      id: 'amoxicilline-meninge-200',
+      libelle: '200 mg/kg/j IV — méningite (Listeria, S. agalactiae, pneumocoque sensible) — sans plafond, au-dessus du RCP',
+      indication: 'Méningite bactérienne : bacille à Gram positif ou Listeria (avec gentamicine), examen direct négatif avec arguments pour une listériose, pneumocoque de CMI C3G et amoxicilline ≤ 0,5 mg/L, S. agalactiae (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 33.3, unite: 'mg/kg', frequenceParJour: 6, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '200 mg/kg/j en 4 à 6 perfusions ou en perfusion continue (SPILF 2018), affichés ici en 6 perfusions. Hors RCP : le RCP prévoit pour la méningite 1 à 2 g toutes les 4 à 6 h, au maximum 12 g/j (dépassé au-delà de 60 kg).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3', 'amoxicilline 200 mg/kg/j IV en 4 à 6 perfusions', 'posologie'),
+        S('RCP-amoxicilline', '§4.2', 'Méningite bactérienne 1 g à 2 g toutes les 4 à 6 heures, au maximum 12 g/jour', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : pas de plafond à 12 g/j dans la recommandation SPILF.',
     },
   ],
   adaptationRenale: {
@@ -541,6 +612,17 @@ export const meropeneme: Molecule = {
       modalites: 'perfusion prolongée de 3 à 8 h toutes les 8 h (2 g/8 h en 30 min n\'atteint pas les objectifs pour les souches SFP)',
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 15, 22', 'Imipénème IV 3 g/jour OU méropénème IV 6 g/jour ET amikacine IV 30 mg/kg, dose unique', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (méropénème)', 'forte « 2 g toutes les 8 h en perfusions de 3 à 8 h »', 'posologie')],
+    },
+    // Méningite à E. coli BLSE suspectée (docs/sources/recherche-meningites.md §1, §10.2 : RCP non relu pour la méningite).
+    {
+      id: 'meropeneme-meninge-40',
+      libelle: '40 mg/kg toutes les 8 h en perfusion lente — méningite à E. coli BLSE suspectée (avis d\'expert)',
+      indication: 'Méningite à bacille à Gram négatif ou E. coli avec suspicion de BLSE (colonisation ou prélèvement d\'un autre site) : méropénème et avis d\'expert (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 40, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Perfusion lente toutes les 8 h ; avis d\'expert (SPILF 2018). RCP du méropénème non relu pour la méningite.',
+      statut: 'brouillon',
+      sources: [S('SPILF-2018-meningites', 'p. 22, §12.8.1.5', 'méropénème 40 mg/kg × 3/j en perfusion lente + avis d\'expert', 'posologie')],
     },
   ],
   adaptationRenale: {

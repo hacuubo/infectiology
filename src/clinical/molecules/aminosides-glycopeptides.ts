@@ -212,6 +212,20 @@ export const gentamicine: Molecule = {
       sources: [S(SRC_DOSES_2026, 'Annexe 9 (aminosides)', 'Gentamicine 6 à 7 mg/kg en perfusions de 30 min en dose unique journalière', 'posologie'), S('ANSM-2011-aminosides', 'p. 6', 'gentamicine, tobramycine : 3 à 8 mg/kg/jour', 'posologie')],
       remarques: 'Divergence documentée : ANSM 2011 et RCP 3-8 mg/kg/j ; SPILF/SFPT/CA-SFM 2026 : 6-7 mg/kg.',
     },
+    // Méningite à Listeria (docs/sources/recherche-meningites.md §1) : indication présente dans le RCP (§4.1), posologie du RCP non relue ici.
+    {
+      id: 'gentamicine-5-listeria',
+      libelle: '5 mg/kg/j, les 5 premiers jours — méningite à Listeria (ou suspicion), en association à l\'amoxicilline',
+      indication: 'Méningite à bacille à Gram positif ou à Listeria, examen direct négatif avec arguments pour une listériose : amoxicilline + gentamicine (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 5, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'ajuste', seuilObesiteRatio: 1.25 },
+      voie: 'IV',
+      modalites: 'Une perfusion de 30 min par jour, les 5 premiers jours seulement. SPILF 2018 : 5 à 6 mg/kg/j dans le texte (§12.8.1.3), 5 mg/kg/j dans les tableaux (divergence mineure, la valeur des tableaux est affichée).',
+      statut: 'verifiee_ia',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3 ; Tableau 8', 'gentamicine 5–6 mg/kg/j en une dose sur 30 min (le Tableau 8 indique « 5 mg/kg/day IV in adults »)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 28-29, §14.1.3', 'gentamicine 5 mg/kg/j en une perfusion de 30 min les 5 premiers jours', 'duree'),
+      ],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -359,6 +373,18 @@ export const vancomycine: Molecule = {
         S('RCP-vancomycine', '§4.2', 'La dose recommandée est de 15 à 20 mg/kg de poids corporel toutes les 8 à 12 h (ne pas dépasser 2 g par dose)', 'posologie'),
         S('ASHP-IDSA-2020-vancomycine-STP', 'Rec. 1', 'Doses of 15 to 20 mg/kg (based on actual body weight) administered every 8 to 12 hours', 'posologie'),
       ],
+    },
+    // Méningite, allergie grave aux bêta-lactamines (docs/sources/recherche-meningites.md §1 Tableau 10 ; RCP non relu pour la méningite).
+    {
+      id: 'vancomycine-meninge',
+      libelle: 'Charge 30 mg/kg sur 1 h puis 40 à 60 mg/kg/j — méningite, allergie grave aux bêta-lactamines (avis infectiologique)',
+      indication: 'Méningite à pneumocoque ou à examen direct négatif chez un patient allergique grave aux bêta-lactamines, en association à la rifampicine (SPILF 2018, Tableau 10).',
+      chargeInitiale: { libelle: 'Dose de charge sur 1 h', type: 'ponderale', valeur: 30, unite: 'mg/kg', poidsReference: 'total' },
+      dose: { type: 'ponderale', valeur: 40, unite: 'mg/kg', poidsReference: 'total', texte: '40 à 60 mg/kg/j après la dose de charge ; concentration résiduelle cible 15 à 20 mg/L (SPILF 2018, Tableau 10)' },
+      voie: 'IV',
+      modalites: 'Rythme d\'administration non précisé par la source ; avis infectiologique obligatoire. RCP de la vancomycine non relu pour la méningite.',
+      statut: 'brouillon',
+      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', 'vancomycine (charge 30 mg/kg sur 1 h puis 40–60 mg/kg/j, résiduelle 15–20 mg/L)', 'posologie')],
     },
   ],
   adaptationRenale: {
