@@ -4,6 +4,7 @@ import { cefotaxime, ceftriaxone, cloxacilline, cefazoline, amoxicilline, amoxic
 import { ciprofloxacine, levofloxacine, cotrimoxazole, rifampicine } from './divers';
 import { fosfomycineTrometamol, pivmecillinam, nitrofurantoine, trimethoprime } from './urinaires-oraux';
 import { fidaxomicine, vancomycineOrale } from './clostridioides-difficile';
+import { metronidazole } from './intra-abdominal';
 
 export const MOLECULES: Molecule[] = [
   cefotaxime,
@@ -35,6 +36,7 @@ export const MOLECULES: Molecule[] = [
   trimethoprime,
   fidaxomicine,
   vancomycineOrale,
+  metronidazole,
 ];
 
 export const MOLECULES_PAR_ID: Record<string, Molecule> = Object.fromEntries(MOLECULES.map((m) => [m.id, m]));

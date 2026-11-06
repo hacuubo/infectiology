@@ -70,6 +70,8 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   fidaxomicine: clcr('RCP-fidaxomicine', 'Aucune adaptation posologique n\'est jugée nécessaire.'),
   // Vancomycine orale : aucune adaptation prévue pour la voie orale ; les paliers en clairance du RCP concernent la voie IV.
   vancomycine_orale: clcr('RCP-vancomycine-orale', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)'),
+  // RCP métronidazole IV : aucune réduction de dose en insuffisance rénale ; aucune grandeur citée (clairance par défaut, sans effet sur la dose).
+  metronidazole: clcr('RCP-metronidazole-IV', 'Aucune réduction de dose n\'est nécessaire'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */

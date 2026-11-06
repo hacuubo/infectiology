@@ -7,6 +7,7 @@ import { REGLES_INDICATION } from './indication';
 import { REGLES_CYSTITE } from './cystite';
 import { REGLES_CDIFF } from './clostridioides-difficile';
 import { REGLES_MENINGITES } from './meningites';
+import { REGLES_INTRA_ABDOMINAL } from './intra-abdominal';
 
 /** Base de règles versionnée avec la version clinique (src/clinical/etat-base.json). */
-export const REGLES: Regle[] = [...REGLES_TRANSVERSALES, ...REGLES_INDICATION, ...REGLES_CYSTITE, ...REGLES_CDIFF, ...REGLES_MENINGITES, ...REGLES_BGN, ...REGLES_CGP, ...REGLES_FOYERS];
+export const REGLES: Regle[] = [...REGLES_TRANSVERSALES, ...REGLES_INDICATION, ...REGLES_CYSTITE, ...REGLES_CDIFF, ...REGLES_MENINGITES, ...REGLES_INTRA_ABDOMINAL, ...REGLES_BGN, ...REGLES_CGP, ...REGLES_FOYERS];

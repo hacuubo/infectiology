@@ -426,6 +426,8 @@ export const R_BGN: Regle = {
       f.avis('Bactériémie à BGN sans foyer identifié : avis du SMIT pour le choix probabiliste.', p.gravite === 'choc_septique' || p.gravite === 'sepsis', []);
       return f.fin();
     }
+    // Foyer couvert par une règle de domaine (intra-abdominal, pulmonaire, peau) : son probabiliste s'applique ; pas de schéma extrapolé ici.
+    if ((['digestif', 'pulmonaire', 'cutane'] as string[]).includes(ctx.foyer)) return f.fin();
     const proba = 'probabiliste' as const;
     const st = 'brouillon' as const;
     const commun = p.contexte === 'communautaire' && !ctx.risqueBLSE.present;
