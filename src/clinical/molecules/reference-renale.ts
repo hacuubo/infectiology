@@ -66,6 +66,10 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   nitrofurantoine: clcr('RCP-nitrofurantoine', 'clairance de la créatinine < 45 ml/mn… la nitrofurantoïne est contre-indiquée'),
   trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
+  // RCP fidaxomicine : aucun palier ni grandeur (« Aucune adaptation posologique n'est jugée nécessaire ») ; grandeur par défaut.
+  fidaxomicine: clcr('RCP-fidaxomicine', 'Aucune adaptation posologique n\'est jugée nécessaire.'),
+  // Vancomycine orale : aucune adaptation prévue pour la voie orale ; les paliers en clairance du RCP concernent la voie IV.
+  vancomycine_orale: clcr('RCP-vancomycine-orale', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */
