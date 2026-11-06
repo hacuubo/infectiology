@@ -207,7 +207,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   for (const prl of dossier.prelevements) for (const iso of isolatsDe(prl)) if (iso.organisme) plan.microbiologie.push(analyserIsolat(ctx, prl, iso));
 
   // Indication : une culture positive ne déclenche jamais, à elle seule, une proposition d'antibiotique.
-  if (!plan.indication && plan.options.length > 0 && regleSituation) {
+  if (!plan.indication && plan.options.some((o) => o.rang !== 'conditionnelle') && regleSituation) {
     plan.indication = {
       decision: plan.urgence.niveau === 'immediate' ? 'urgence' : 'traiter',
       qualification: 'infection',

@@ -427,8 +427,29 @@ export const R_BGN: Regle = {
       f.avis('Bactériémie à BGN sans foyer identifié : avis du SMIT pour le choix probabiliste.', p.gravite === 'choc_septique' || p.gravite === 'sepsis', []);
       return f.fin();
     }
-    // Foyer couvert par une règle de domaine (intra-abdominal, pulmonaire, peau) : son probabiliste s'applique ; pas de schéma extrapolé ici.
-    if ((['digestif', 'pulmonaire', 'cutane'] as string[]).includes(ctx.foyer)) return f.fin();
+    // Foyer couvert par une règle de domaine (intra-abdominal, pulmonaire, peau) : son probabiliste s'applique ; pas de schéma
+    // extrapolé ici. L'indication reste explicite : une bactériémie à BGN se traite, même si la règle du foyer conclut autrement
+    // (ex. diverticulite non compliquée « sans antibiotique »).
+    if ((['digestif', 'pulmonaire', 'cutane'] as string[]).includes(ctx.foyer)) {
+      const graveBgn = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
+      f.c.indication = {
+        decision: graveBgn ? 'urgence' : 'traiter',
+        qualification: 'infection',
+        titre: 'Bactériémie à BGN : traitement indiqué',
+        raison: 'Un bacille à Gram négatif dans les hémocultures est traité (les recommandations lues en fixent la durée) ; le choix probabiliste suit la règle du foyer déclaré.',
+        conditions: ['BGN dans au moins une hémoculture', `foyer déclaré : ${ctx.foyer}`],
+        exceptions: [],
+        actions: [graveBgn ? 'Antibiothérapie probabiliste dans l’heure (schéma du foyer) ; avis réanimation / SMIT' : 'Antibiothérapie selon le schéma du foyer, adaptée à l’antibiogramme'],
+        surveillance: [],
+        reconsiderer: ['Antibiogramme rendu'],
+        questions: [],
+        sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree')],
+        statut: 'verifiee_ia',
+        regleId: 'R-BACTERIEMIE-BGN',
+      };
+      f.alerte('info', 'Bactériémie à BGN : la durée du traitement du foyer est à confronter à celle d’une bactériémie (7 jours pour une bactériémie à BGN non compliquée, SPILF/GPIP 2021).', [S('SPILF-GPIP-2021-durees', 'diapo 21', undefined, 'duree')]);
+      return f.fin();
+    }
     const proba = 'probabiliste' as const;
     const st = 'brouillon' as const;
     const commun = p.contexte === 'communautaire' && !ctx.risqueBLSE.present;
