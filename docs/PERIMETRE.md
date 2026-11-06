@@ -18,6 +18,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 | Gravité, réévaluation, persistance des hémocultures, colonisation urinaire | règles transversales | SSC 2026, HAS 2008/2025, SRLF 2020 |
 | Indication devant un ECBU positif : infection, colonisation, contamination possible, situation indéterminée ; signes non spécifiques du sujet âgé ; porteur de sonde ; exceptions grossesse et gestes urologiques (liste AFU 2026) | `R-INDICATION-ECBU` | SPILF 2015 (texte court et argumentaire), SPILF 2026, IUAS 2015, AFU/CIAFU 2026, IDSA 2019, HAS (femme enceinte) |
 | Sepsis sans foyer ni germe identifié : urgence, sans proposition de molécule | `R-SEPSIS-FOYER-INCONNU` | SSC 2026, HAS 2025 |
+| Méningite bactérienne communautaire de l'adulte : antibiotique dans l'heure, antibiotique avant la PL (purpura fulminans, imagerie, contre-indication), probabiliste selon l'examen direct, dexaméthasone (geste), adaptation à la CMI et durées par germe (pneumocoque, méningocoque, Listeria, H. influenzae, E. coli, S. agalactiae), PL de contrôle, déclaration obligatoire | `R-MENINGITE-BACTERIENNE` | SPILF 2018 (en cours de révision), DGS 2018, RCP |
 | Prélèvement superficiel positif : pas d'antibiotique sans signe clinique d'infection | `R-PRELEVEMENT-SUPERFICIEL` | HAS/SPILF/SFD 2019, IWGDF/IDSA 2023 |
 | Hémocultures : S. aureus jamais traité comme contaminant ; SCN sur une seule série → refaire les hémocultures | `R-BACTERIEMIE-S-AUREUS`, `R-BACTERIEMIE-SCN` | IDSA/ESCMID 2026 (Table 1), IDSA 2009 rec. 38, Doern 2019 |
 | Antibiogramme guidé : questions par famille de germes, mécanismes rapportés, résistances attendues lues R, phénotypes inhabituels et résultats contradictoires signalés, molécules sensibles mais non pertinentes | `src/clinical/microbiologie/` | CA-SFM 2026, EUCAST v16.1, EUCAST phénotypes attendus et inhabituels, EUCAST détection v2.01 |
@@ -38,6 +39,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
   - fièvre sans signe urinaire ni autre foyer avec bactériurie : IDSA 2019 (remarque) et SPILF 2026 divergent ; avis SMIT, spectre non modélisé ;
   - changement de sonde JJ ou de néphrostomie : zone grise dans le texte AFU 2026.
 - **Cystite, colonisation gravidique, colonisation avant geste** : l'indication est sourcée, mais les molécules de 1re intention (fosfomycine-trométamol, pivmécillinam, nitrofurantoïne, triméthoprime) ne sont pas dans la base. Seule l'amoxicilline est proposée pendant la grossesse si la souche est sensible.
+- **Méningites, brouillons** : ceftriaxone 75-100 mg/kg/j, amoxicilline 200 mg/kg/j et cotrimoxazole au-dessus du RCP (écart affiché) ; schémas d'allergie grave (vancomycine + rifampicine, ciprofloxacine sans fréquence) ; antibioprophylaxie des contacts d'un méningocoque (instruction DGS 2018 et DGS-Urgent 2025_06 affichés sans trancher) ; adaptation rénale SPILF ≠ RCP signalée, non calculée. Germes méningocoque, Listeria et H. influenzae saisis par la question du foyer (absents de la liste des organismes).
 - **Prélèvements polymicrobiens** : chaque antibiogramme reste rattaché à son isolat, mais les propositions ne portent que sur le germe principal (alerte affichée).
 - **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 
@@ -48,6 +50,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - Entérobactéries productrices de carbapénémase, ERV.
 - Foyers pulmonaires, digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
 - Endocardites à BGN, champignons, germes intracellulaires.
+- Méningite associée aux soins (post-neurochirurgicale, dérivation, drain) : avis spécialisé, absence de recommandation expliquée (IDSA 2017 en recoupement seulement).
 - Candidémies.
 - Prélèvements respiratoires ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
 - Transplanté rénal de moins d'un mois avec bactériurie (aucune recommandation, IDSA 2019) ; ce terrain n'est pas saisi dans l'application.

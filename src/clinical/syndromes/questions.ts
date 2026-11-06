@@ -7,6 +7,7 @@
 import type { FoyerId } from '../types';
 import type { Dossier } from '../../engine/etat';
 import { QUESTIONS_URINAIRE } from './urinaire';
+import { QUESTIONS_MENINGITE } from './meningites';
 
 export interface OptionQuestion {
   v: string;
@@ -26,7 +27,7 @@ export interface QuestionSyndrome {
 }
 
 /** Registre des questions par foyer, complété domaine par domaine (voir ./index.ts). */
-export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [...QUESTIONS_URINAIRE];
+export const QUESTIONS_SYNDROME: QuestionSyndrome[] = [...QUESTIONS_URINAIRE, ...QUESTIONS_MENINGITE];
 
 export function optionsAvecInconnu(q: QuestionSyndrome): OptionQuestion[] {
   return q.options.some((o) => o.v === 'inconnu') ? q.options : [...q.options, { v: 'inconnu', l: 'Inconnu' }];
