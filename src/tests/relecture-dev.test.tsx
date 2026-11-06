@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../ui/App';
+import { casFictif } from './cas-fictifs';
 import { nombreFr, formaterDose } from '../calc/format';
 import { ckdEpi2021, cockcroftGault, creatininePlausible, estimerFonctionRenale, poidsAjuste, poidsIdealDevine, surfaceCorporelleDuBois } from '../calc/renal';
 import { dosePonderalePlafonnee, calculerPrescription } from '../engine/posologie';
@@ -254,17 +255,18 @@ describe('Interface : parcours, accessibilité, responsive', () => {
   test('groupes radio : un seul arrêt de tabulation, flèches pour changer de choix', async () => {
     const u = userEvent.setup();
     render(<App />);
-    const groupe = screen.getByRole('radiogroup', { name: /^Sexe/ });
+    // Groupe à trois choix (le sexe n'en a plus que deux).
+    const groupe = screen.getByRole('radiogroup', { name: /^Contexte de l'infection/ });
     const radios = within(groupe).getAllByRole('radio');
     expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
     radios[0].focus();
     await u.keyboard('{ArrowRight}');
-    expect(within(groupe).getByRole('radio', { name: 'Homme' })).toHaveAttribute('aria-checked', 'true');
-    expect(within(groupe).getByRole('radio', { name: 'Homme' })).toHaveFocus();
+    expect(within(groupe).getByRole('radio', { name: 'Associé aux soins' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(groupe).getByRole('radio', { name: 'Associé aux soins' })).toHaveFocus();
     await u.keyboard('{End}');
     expect(within(groupe).getByRole('radio', { name: 'Inconnu' })).toHaveAttribute('aria-checked', 'true');
     await u.keyboard('{ArrowRight}');
-    expect(within(groupe).getByRole('radio', { name: 'Femme' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(groupe).getByRole('radio', { name: 'Communautaire' })).toHaveAttribute('aria-checked', 'true');
   });
 
   test('choisir l\'unité de créatininémie avant la valeur ne crée pas de créatininémie à 0 (anomalie corrigée)', async () => {
@@ -279,9 +281,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
   });
 
   test('alertes urgentes dans la barre permanente, une seule fois ; avertissements communs regroupés', async () => {
-    const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'blse-amk');
+    render(<App dossierInitial={casFictif('blse-amk')} />);
     const barre = screen.getByRole('region', { name: "Niveau d'urgence et alertes urgentes" });
     expect(within(barre).getByText(/urgence immédiate/)).toBeInTheDocument();
     expect(within(barre).getByText(/Sepsis : antibiothérapie IV immédiate/)).toBeInTheDocument();
@@ -291,9 +291,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
   });
 
   test('résumé lisible : libellés accentués, pas de valeur codée brute', async () => {
-    const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'blse-amk');
+    render(<App dossierInitial={casFictif('blse-amk')} />);
     const resume = screen.getByLabelText('Résumé du patient');
     expect(resume).toHaveTextContent(/pas encore contrôlées/);
     expect(resume).toHaveTextContent(/foyer confirmé/);
@@ -320,9 +318,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
   });
 
   test('frise : moment court en colonne, détails (pourquoi, cible, conduite) dans un panneau dépliable', async () => {
-    const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'blse-amk');
+    render(<App dossierInitial={casFictif('blse-amk')} />);
     const table = screen.getByRole('table', { name: /Calendrier de surveillance/ });
     const lignePic = within(table).getAllByRole('row').find((r) => /dosage \(pic\)/.test(r.textContent ?? ''))!;
     expect(within(lignePic).getByRole('rowheader')).toHaveTextContent(/1re dose : fin de perfusion \+ 30 min · /);

@@ -254,3 +254,10 @@ export const CAS_FICTIFS: CasFictif[] = [
   { id: 'ecbu-geste', titre: '17. Colonisation avant urétéroscopie', description: 'Exception : traitement avant le geste.', dossier: CAS_ECBU_AVANT_GESTE },
   { id: 'ecbu-c3gr', titre: '18. PNA à E. coli résistant aux C3G, mécanisme non rapporté', description: 'Résistance aux C3G sans BLSE démontrée.', dossier: CAS_ECBU_C3G_R },
 ];
+
+/** Dossier d'un cas fictif par identifiant (tests de l'interface, qui n'a plus de sélecteur de cas). */
+export function casFictif(id: string) {
+  const c = CAS_FICTIFS.find((x) => x.id === id);
+  if (!c) throw new Error(`cas fictif inconnu : ${id}`);
+  return c.dossier;
+}

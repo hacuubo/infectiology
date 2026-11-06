@@ -11,6 +11,7 @@ import { choisirEstimation, estimation, estimerFonctionRenale, type EntreesRenal
 import { referenceRenale } from '../clinical/molecules/reference-renale';
 import { irChroniqueSevere } from '../clinical/rules/bgn-urinaire';
 import { App } from '../ui/App';
+import { casFictif } from './cas-fictifs';
 import type { Plan } from '../clinical/types';
 import { CAS_ECBU_COLONISATION, CAS_ECOLI_I, CAS_SAB_SASM } from './cas-fictifs';
 
@@ -173,21 +174,20 @@ describe('Relecture documentaire v3', () => {
 });
 
 describe('Interface', () => {
-  test('M4. avis de changement visible sous StrictMode, absent au chargement d’un autre cas', async () => {
+  test('M4. avis de changement visible sous StrictMode, absent après réinitialisation de la saisie', async () => {
     const u = userEvent.setup();
     render(
       <StrictMode>
-        <App />
+        <App dossierInitial={casFictif('sab')} />
       </StrictMode>,
     );
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'sab');
     expect(screen.queryByText(/Votre dernière modification change la proposition/)).toBeNull();
     const creat = screen.getByLabelText('Valeur de la créatininémie');
     await u.clear(creat);
     await u.type(creat, '400');
     const avis = await screen.findByText(/Votre dernière modification change la proposition/);
     expect(within(avis.closest('div')!).getAllByText(/adaptation rénale modifiée/).length).toBeGreaterThan(0);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'sarm-hd');
+    await u.click(screen.getByRole('button', { name: 'Réinitialiser la saisie' }));
     expect(screen.queryByText(/Votre dernière modification change la proposition/)).toBeNull();
   }, 20000);
 });

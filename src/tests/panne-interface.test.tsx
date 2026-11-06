@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { App } from '../ui/App';
+import { casFictif } from './cas-fictifs';
 
 vi.mock('../calc/renal', async (importOriginal) => {
   const reel = await importOriginal<typeof import('../calc/renal')>();
@@ -22,8 +23,7 @@ test('panne du calcul rénal : erreur technique affichée, saisie conservée, au
   // React journalise les erreurs captées par les limites d'erreur : attendu ici.
   const journal = vi.spyOn(console, 'error').mockImplementation(() => {});
   const u = userEvent.setup();
-  render(<App />);
-  await u.selectOptions(screen.getByLabelText('Cas fictif'), 'sab');
+  render(<App dossierInitial={casFictif('sab')} />);
   const age = screen.getByLabelText('Âge') as HTMLInputElement;
   await u.clear(age);
   await u.type(age, '99');

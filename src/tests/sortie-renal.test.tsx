@@ -10,6 +10,7 @@ import { clonerDossier, nettoyerDossier, nouveauPrelevement, type Dossier } from
 import { TEXTE_NON_COUVERTE } from '../engine/sortie';
 import { PanneauErreurTechnique } from '../ui/Explication';
 import { App } from '../ui/App';
+import { casFictif } from './cas-fictifs';
 import type { Plan } from '../clinical/types';
 import {
   CAS_BGN_90,
@@ -240,21 +241,18 @@ describe('Fonction rénale dans les propositions', () => {
 describe('Interface : explication et accès direct aux champs', () => {
   test('« Compléter » mène directement au champ du poids', async () => {
     const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'sarm-hd');
+    render(<App dossierInitial={casFictif('sarm-hd')} />);
     const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
     expect(within(fiche).getByRole('region', { name: /Pourquoi/ })).toBeInTheDocument();
     const boutons = within(fiche).getAllByRole('button', { name: 'Compléter' });
     expect(boutons.length).toBeGreaterThan(0);
     const cible = boutons.find((b) => /poids/i.test(b.closest('li')?.textContent ?? ''))!;
     await u.click(cible);
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Poids (facultatif)')));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Poids')));
   });
 
   test('fiche patient : estimations distinctes avec formule, version, unité et détail du calcul', async () => {
-    const u = userEvent.setup();
-    render(<App />);
-    await u.selectOptions(screen.getByLabelText('Cas fictif'), 'sab');
+    render(<App dossierInitial={casFictif('sab')} />);
     const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
     expect(within(fiche).getByText(/DFG estimé indexé/)).toBeInTheDocument();
     expect(within(fiche).getAllByText(/mL\/min\/1,73 m²/).length).toBeGreaterThan(0);

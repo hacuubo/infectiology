@@ -28,7 +28,7 @@ export interface Dossier {
 
 export function patientParDefaut(): Patient {
   return {
-    sexe: 'inconnu',
+    sexe: 'femme', // choix par défaut de la saisie (variable binaire des équations rénales)
     grossesse: 'inconnu',
     allaitement: 'inconnu',
     renal: { stabilite: 'inconnu', insuffisanceRenaleAigue: 'inconnu', dialyse: 'inconnu' },

@@ -42,9 +42,9 @@ a { color: var(--accent); }
 /* Bandeau */
 .bandeau { background: var(--surface); border-bottom: 1px solid var(--bord); padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
 .bandeau h1 { margin: 0; }
-.bandeau .statut { font-size: 0.82rem; color: var(--texte-2); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
-.bandeau .statut details { margin: 0; }
-.avertissement-global { background: var(--attention-clair); border-bottom: 1px solid #f3c48d; padding: 6px 16px; font-size: 0.88rem; }
+.statut { font-size: 0.82rem; color: var(--texte-2); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.statut details { margin: 0; }
+.avertissement-global { background: var(--attention-clair); border: 1px solid #f3c48d; border-radius: 6px; padding: 6px 10px; font-size: 0.88rem; }
 .avertissement-global strong { color: var(--attention); }
 
 /* Barre permanente : urgence + résumé du patient */
@@ -238,9 +238,9 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 .surbrillance { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 4px; transition: outline-color 0.3s; }
 
 /* Fonction rénale */
-.apercu-renal, .carte-renale { border: 1px solid var(--bord); border-radius: var(--rayon); padding: 8px 10px; margin: 8px 0; background: var(--surface); }
+.carte-renale { border: 1px solid var(--bord); border-radius: var(--rayon); padding: 8px 10px; margin: 8px 0; background: var(--surface); }
 .carte-renale summary { cursor: pointer; font-weight: 600; }
-.estimations, .apercu-renal ul { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.estimations { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
 .estimation .valeur { font-weight: 700; font-size: 1.05em; }
 .estimation.non-calculable .valeur { font-weight: 400; }
 .labo { margin: 6px 0; }
@@ -248,3 +248,15 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
   .motif-dl { grid-template-columns: 1fr; }
   .motif-dl dt { margin-top: 4px; }
 }
+
+/* Saisie compacte (v4) : deux champs par ligne, y compris sur téléphone. */
+.deux-colonnes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; align-items: start; }
+.deux-colonnes .champ input[type='number'] { width: 5.5rem; max-width: 100%; min-width: 0; }
+.deux-colonnes .ligne { flex-wrap: wrap; gap: 4px 6px; }
+.valeur-calculee { font-weight: 700; font-size: 1.1em; padding: 6px 0; }
+.definition { font-size: 0.85rem; color: var(--texte-2); margin: -4px 0 6px; }
+.definition p { margin: 0 0 2px; }
+.reinitialiser { justify-content: flex-end; }
+.pied-saisie { display: grid; gap: 6px; padding: 8px 0 16px; }
+.deux-colonnes .boutons-choix { gap: 4px; }
+.deux-colonnes .boutons-choix button { padding: 7px 9px; }

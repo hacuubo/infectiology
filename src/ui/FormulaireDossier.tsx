@@ -4,13 +4,25 @@ import { nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } 
 import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, FoyerId, Prelevement, TraitementAssocie } from '../clinical/types';
 import { AntibiogrammeGuide, ChampReferentiel, ContexteECBUSaisie, IsolatsSupplementaires, SelectOrganisme } from './Microbiologie';
 import { SectionIndication } from './Indication';
-import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, Select } from './composants';
+import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, RefsInline, Select } from './composants';
 import { creatininePlausible } from '../calc/renal';
 import { FOYERS_ENTREE_A, LIBELLE_FOYER, LIBELLE_TRAITEMENT } from './libelles';
-import { ApercuRenal } from './FonctionRenale';
+import { contexteUI } from './contexte-ui';
+import { nombreFr } from '../calc/format';
+import { S } from '../clinical/molecules/base';
 import { GardeLocale } from './Explication';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
+
+/**
+ * Définition des infections associées aux soins (CTINILS 2007), citée par la recommandation IUAS 2015.
+ * « Communautaire » (les autres situations) : complément formulé par l'application.
+ */
+const DEFINITION_IAS = S(
+  'SPILF-AFU-SF2H-2015-IUAS',
+  'Sous-question 4 « Quels sont les critères définissant l’association aux soins ? » (définition du CTINILS citée) ; « communautaire » : complément formulé par l’application',
+  '« Une infection est dite associée aux soins (IAS) si elle survient au cours ou au décours d’une prise en charge […] et si elle n’était ni présente, ni en incubation au début de la prise en charge. »',
+);
 
 function pertinent(champ: string, d: Dossier): boolean {
   const r = REGLES_PERTINENCE.find((x) => x.champ === champ);
@@ -59,18 +71,13 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
 
       <section className="carte" aria-labelledby="t-patient">
         <h2 id="t-patient">2. Patient</h2>
-        <div className="grille-2">
+        <div className="deux-colonnes">
           <ChampNombre libelle="Âge" valeur={p.age} onChange={(v) => modifier((x) => (x.patient.age = v))} unite="ans" min={0} max={120} step={1} cible="patient.age" />
-          <ChoixRadio
-            libelle="Sexe (variable des équations rénales et des poids de référence)"
-            aide="Les équations CKD-EPI, EKFC et Cockcroft-Gault utilisent une variable binaire femme/homme ; sans elle, elles ne sont pas calculées."
-            valeur={p.sexe}
-            options={[{ v: 'femme', l: 'Femme' }, { v: 'homme', l: 'Homme' }, { v: 'inconnu', l: 'Inconnu' }]}
-            onChange={(v) => modifier((x) => (x.patient.sexe = v))}
-            cible="patient.sexe"
-          />
-          <ChampNombre libelle="Poids (facultatif)" aide="Nécessaire pour les doses pondérales, Cockcroft-Gault et la désindexation du DFG ; pas pour le DFG indexé." valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={25} max={300} cible="patient.poidsKg" />
-          <ChampNombre libelle="Taille (facultatif)" aide="Nécessaire pour la surface corporelle (désindexation du DFG) et les poids idéal/ajusté ; pas pour le DFG indexé." valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={120} max={230} cible="patient.tailleCm" />
+          <ChoixRadio libelle="Sexe" valeur={p.sexe} options={[{ v: 'femme', l: 'Femme' }, { v: 'homme', l: 'Homme' }]} onChange={(v) => modifier((x) => (x.patient.sexe = v))} cible="patient.sexe" />
+        </div>
+        <div className="deux-colonnes">
+          <ChampNombre libelle="Poids" valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={25} max={300} cible="patient.poidsKg" />
+          <ChampNombre libelle="Taille" valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={120} max={230} cible="patient.tailleCm" />
         </div>
         {pertinent('patient.grossesse', d) && (
           <div className="grille-2">
@@ -80,9 +87,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
         )}
 
         <h3 id="t-renal">Fonction rénale</h3>
-        <div className="grille-2">
+        <div className="deux-colonnes">
           <ChampCreatinine creatinine={p.renal.creatinine} modifier={modifier} />
-          <ChampDfg dfg={p.renal.dfg} modifier={modifier} />
+          <ChampDfg dossier={d} modifier={modifier} />
         </div>
         <div className="grille-2">
           <ChoixTri libelle="Insuffisance rénale aiguë en cours ?" valeur={p.renal.insuffisanceRenaleAigue} onChange={(v) => modifier((x) => (x.patient.renal.insuffisanceRenaleAigue = v))} cible="patient.renal.insuffisanceRenaleAigue" />
@@ -92,38 +99,6 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           <ChoixRadio libelle="Fonction rénale stable ?" aide="Instable : créatininémie variant nettement sur 24-48 h. Les formules d'estimation ne s'appliquent qu'à l'état d'équilibre." valeur={p.renal.stabilite} options={[{ v: 'stable', l: 'Stable' }, { v: 'instable', l: 'Instable / changeante' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.renal.stabilite = v))} cible="patient.renal.stabilite" />
         )}
         {pertinent('patient.renal.horairesDialyse', d) && <ChampTexte libelle="Jours et horaires des séances de dialyse" aide="Ex. : lundi/mercredi/vendredi 8 h-12 h. Sert à positionner les doses après séance." valeur={p.renal.horairesDialyse} onChange={(v) => modifier((x) => (x.patient.renal.horairesDialyse = v))} cible="patient.renal.horairesDialyse" />}
-        <details className="discret">
-          <summary>Équation du DFG et poids de Cockcroft-Gault</summary>
-          <div className="grille-2">
-            <Select
-              libelle="Équation du DFG estimé"
-              aide="Choisir celle de votre laboratoire. Par défaut CKD-EPI 2009 sans coefficient racial (recommandée en Europe par l'EFLM 2022) ; la HAS demande « CKD-EPI » sans préciser la version. Aucune correction ethnique n'est appliquée."
-              valeur={p.renal.equationDfg ?? 'ckd_epi_2009'}
-              options={[
-                { v: 'ckd_epi_2009', l: 'CKD-EPI 2009 sans coefficient racial (défaut)' },
-                { v: 'ckd_epi_2021', l: 'CKD-EPI 2021' },
-                { v: 'ekfc', l: 'EKFC (adulte de plus de 25 ans)' },
-              ]}
-              onChange={(v) => modifier((x) => (x.patient.renal.equationDfg = v))}
-              cible="patient.renal.equationDfg"
-            />
-            <ChoixRadio
-              libelle="Poids utilisé dans Cockcroft-Gault"
-              aide="Les RCP écrivent « poids (kg) » ; chez la personne obèse, la FDA (2024) juge le poids idéal ou ajusté plus exact. Les sources divergent : choix explicite."
-              valeur={p.renal.poidsCockcroft ?? 'reel'}
-              options={[
-                { v: 'reel', l: 'Poids réel (défaut)' },
-                { v: 'ideal', l: 'Poids idéal (Devine)' },
-                { v: 'ajuste', l: 'Poids ajusté' },
-              ]}
-              onChange={(v) => modifier((x) => (x.patient.renal.poidsCockcroft = v))}
-              cible="patient.renal.poidsCockcroft"
-            />
-          </div>
-        </details>
-        <GardeLocale nom="aperçu de la fonction rénale" cle={d}>
-          <ApercuRenal dossier={d} />
-        </GardeLocale>
 
         <h3>Terrain</h3>
         <div className="grille-2">
@@ -157,9 +132,14 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
       <section className="carte" aria-labelledby="t-contexte">
         <h2 id="t-contexte">3. Contexte, gravité et matériel</h2>
         <ChoixRadio libelle="Contexte de l'infection" cible="patient.contexte" valeur={p.contexte} options={[{ v: 'communautaire', l: 'Communautaire' }, { v: 'associe_aux_soins', l: 'Associé aux soins' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.contexte = v))} />
+        <div className="definition">
+          <p>
+            <strong>Associée aux soins</strong> : survenue au cours ou au décours d'une prise en charge (diagnostique, thérapeutique, palliative, préventive ou éducative), sans être présente ni en incubation à son début. Si l'état initial est mal connu, un délai d'au moins 48 h, ou supérieur à la période d'incubation, est couramment accepté ; la plausibilité du lien avec les soins s'apprécie au cas par cas. <strong>Communautaire</strong> : les autres situations (complément formulé par l'application).
+          </p>
+          <RefsInline refs={[DEFINITION_IAS]} />
+        </div>
         <ChoixRadio
           libelle="Gravité" cible="patient.gravite"
-          aide="Sepsis : dysfonction d'organe (SOFA ≥ 2 points). Choc septique : vasopresseurs nécessaires pour PAM ≥ 65 mmHg et lactate > 2 mmol/L malgré remplissage (Sepsis-3)."
           valeur={p.gravite}
           options={[{ v: 'stable', l: 'Stable, sans dysfonction d\'organe' }, { v: 'sepsis', l: 'Sepsis' }, { v: 'choc_septique', l: 'Choc septique' }, { v: 'inconnu', l: 'Inconnu' }]}
           onChange={(v) => modifier((x) => (x.patient.gravite = v))}
@@ -372,16 +352,15 @@ type Creatinine = Dossier['patient']['renal']['creatinine'];
 type UniteCreat = 'umol/L' | 'mg/dL';
 
 /**
- * Créatininémie : valeur, unité explicite (jamais déduite de la valeur), date et heure du prélèvement.
- * Sans unité choisie, la valeur est conservée mais n'est pas utilisée. Une valeur non plausible pour
- * l'unité est signalée et n'est pas utilisée par les calculs.
+ * Créatininémie : valeur et unité explicite (jamais déduite de la valeur). Sans unité choisie, la valeur est
+ * conservée mais n'est pas utilisée. Une valeur non plausible pour l'unité est signalée et n'est pas utilisée.
  */
 function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; modifier: Modifier }) {
   const [unitePendante, setUnitePendante] = useState<UniteCreat | ''>('');
   const unite = creatinine ? (creatinine.unite ?? '') : unitePendante;
   const verif = creatinine && creatinine.unite ? creatininePlausible(creatinine.valeur, creatinine.unite) : undefined;
   return (
-    <Champ libelle="Créatininémie" aide="Valeur, unité (à choisir explicitement), date et heure du prélèvement." cible="patient.renal.creatinine">
+    <Champ libelle="Créatininémie" cible="patient.renal.creatinine">
       <div className="ligne">
         <input
           type="number"
@@ -394,8 +373,7 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
             const v = e.target.value === '' ? undefined : Number(e.target.value);
             if (unite) setUnitePendante(unite); // l'unité choisie est conservée si la valeur est effacée
             modifier((x) => {
-              const ancien = x.patient.renal.creatinine;
-              x.patient.renal.creatinine = v === undefined || !Number.isFinite(v) ? undefined : { valeur: v, unite: unite || undefined, date: ancien?.date, heure: ancien?.heure };
+              x.patient.renal.creatinine = v === undefined || !Number.isFinite(v) ? undefined : { valeur: v, unite: unite || undefined };
             });
           }}
         />
@@ -416,10 +394,6 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
           <option value="mg/dL">mg/dL</option>
         </select>
       </div>
-      <div className="ligne">
-        <input type="date" aria-label="Date du prélèvement de créatininémie" disabled={!creatinine} value={creatinine?.date ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.date = e.target.value || undefined; })} />
-        <input type="time" aria-label="Heure du prélèvement de créatininémie" disabled={!creatinine} value={creatinine?.heure ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.creatinine) x.patient.renal.creatinine.heure = e.target.value || undefined; })} />
-      </div>
       {creatinine && !creatinine.unite && (
         <span className="erreur" role="alert">
           Unité non choisie : la valeur n’est pas utilisée (l’application ne devine pas l’unité).
@@ -436,70 +410,92 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
 
 type Dfg = Dossier['patient']['renal']['dfg'];
 type MethodeDfg = NonNullable<Dfg>['methode'];
-type UniteDfg = NonNullable<NonNullable<Dfg>['unite']>;
 
-/** Valeur rendue par le laboratoire : conservée avec sa méthode, son unité et sa date, distincte du calcul de l'application. */
-function ChampDfg({ dfg, modifier }: { dfg: Dfg; modifier: Modifier }) {
+/**
+ * DFG estimé indexé (mL/min/1,73 m²) : affiché directement dès que l'application peut le calculer (créatininémie
+ * avec unité, âge, sexe) ; sinon, saisi à partir du compte rendu du laboratoire, avec son équation.
+ * Le DFG désindexé, la clairance de Cockcroft-Gault et le détail des calculs figurent dans la fiche.
+ */
+function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
+  // Une panne du calcul ne doit pas effacer le formulaire : le champ redevient alors une saisie manuelle.
+  let renal: ReturnType<typeof contexteUI>['renal'] | undefined;
+  try {
+    renal = contexteUI(dossier).renal;
+  } catch {
+    renal = undefined;
+  }
+  const indexe = renal?.estimations.find((e) => e.id === 'dfg_indexe');
+  const dfg = dossier.patient.renal.dfg;
   const [methodePendante, setMethodePendante] = useState<MethodeDfg>('inconnue');
-  const [unitePendante, setUnitePendante] = useState<UniteDfg | ''>('');
   const methode = dfg?.methode ?? methodePendante;
-  const unite = dfg ? (dfg.unite ?? '') : unitePendante;
+  if (indexe?.calculable && indexe.valeur !== undefined) {
+    return (
+      <Champ libelle="DFG estimé" cible="patient.renal.dfg">
+        <div className="ligne">
+          <output className="valeur-calculee" aria-label="DFG estimé calculé">
+            {nombreFr(indexe.valeur, 0)}
+          </output>
+          <span>
+            {indexe.unite} ({indexe.nomCourt})
+          </span>
+        </div>
+        {renal && !renal.applicable && <span className="erreur">Non utilisé pour adapter les doses (voir la fiche).</span>}
+        {dfg && (
+          <div className="ligne">
+            <span>
+              Valeur saisie : {nombreFr(dfg.valeur, 0)} {dfg.unite ?? '(unité non précisée)'}
+            </span>
+            <button type="button" className="btn discret" onClick={() => modifier((x) => (x.patient.renal.dfg = undefined))}>
+              Effacer
+            </button>
+          </div>
+        )}
+      </Champ>
+    );
+  }
+  const unite = dfg?.unite ?? 'mL/min/1,73 m²';
   return (
-    <Champ libelle="Valeur fournie par le laboratoire (facultatif)" aide="DFG ou clairance déjà rendus : précisez méthode, unité et date. Un DFG indexé (mL/min/1,73 m²) n'est pas une clairance de Cockcroft-Gault (mL/min)." cible="patient.renal.dfg">
+    <Champ libelle="DFG estimé" cible="patient.renal.dfg">
       <div className="ligne">
         <input
           type="number"
           inputMode="decimal"
           min={0}
-          aria-label="Valeur fournie par le laboratoire"
+          aria-label="DFG estimé (valeur du laboratoire)"
           value={dfg?.valeur ?? ''}
           onChange={(e) => {
             const v = e.target.value === '' ? undefined : Number(e.target.value);
             setMethodePendante(methode);
-            if (unite) setUnitePendante(unite);
             modifier((x) => {
               const ancien = x.patient.renal.dfg;
-              x.patient.renal.dfg = v === undefined || !Number.isFinite(v) || v <= 0 ? undefined : { valeur: v, methode, unite: unite || undefined, date: ancien?.date };
+              x.patient.renal.dfg = v === undefined || !Number.isFinite(v) || v <= 0 ? undefined : { valeur: v, methode, unite: ancien?.unite ?? 'mL/min/1,73 m²', date: ancien?.date };
             });
           }}
         />
-        <select
-          aria-label="Unité de la valeur fournie"
-          value={unite}
-          onChange={(e) => {
-            const u = e.target.value as UniteDfg | '';
-            setUnitePendante(u);
-            modifier((x) => {
-              if (x.patient.renal.dfg) x.patient.renal.dfg.unite = u || undefined;
-            });
-          }}
-        >
-          <option value="">— unité —</option>
-          <option value="mL/min/1,73 m²">mL/min/1,73 m² (indexé)</option>
-          <option value="mL/min">mL/min (non indexé)</option>
-        </select>
+        <span>{unite}</span>
       </div>
-      <div className="ligne">
-        <select
-          aria-label="Méthode de la valeur fournie"
-          value={methode}
-          onChange={(e) => {
-            const m = e.target.value as MethodeDfg;
-            setMethodePendante(m);
-            modifier((x) => {
-              if (x.patient.renal.dfg) x.patient.renal.dfg.methode = m;
-            });
-          }}
-        >
-          <option value="inconnue">Méthode inconnue</option>
-          <option value="CKD-EPI">CKD-EPI</option>
-          <option value="EKFC">EKFC</option>
-          <option value="MDRD">MDRD</option>
-          <option value="Cockcroft">Cockcroft-Gault</option>
-          <option value="mesure">Mesuré</option>
-        </select>
-        <input type="date" aria-label="Date de la valeur fournie" disabled={!dfg} value={dfg?.date ?? ''} onChange={(e) => modifier((x) => { if (x.patient.renal.dfg) x.patient.renal.dfg.date = e.target.value || undefined; })} />
-      </div>
+      <select
+        aria-label="Équation du DFG saisi"
+        value={methode}
+        onChange={(e) => {
+          const m = e.target.value as MethodeDfg;
+          setMethodePendante(m);
+          modifier((x) => {
+            if (x.patient.renal.dfg) x.patient.renal.dfg.methode = m;
+          });
+        }}
+      >
+        <option value="inconnue">— équation —</option>
+        <option value="CKD-EPI">CKD-EPI</option>
+        <option value="EKFC">EKFC</option>
+        <option value="MDRD">MDRD</option>
+        <option value="mesure">Mesuré</option>
+      </select>
+      {dfg && methode === 'inconnue' && (
+        <span className="erreur" role="alert">
+          Équation non précisée : la valeur n’est pas utilisée pour adapter une dose.
+        </span>
+      )}
     </Champ>
   );
 }
