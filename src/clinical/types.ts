@@ -333,6 +333,7 @@ export type Famille =
   | 'glycopeptide'
   | 'lipopeptide'
   | 'oxazolidinone'
+  | 'macrolide'
   | 'fluoroquinolone'
   | 'sulfamide'
   | 'rifamycine'

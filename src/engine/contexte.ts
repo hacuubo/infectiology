@@ -50,6 +50,8 @@ export function familleDeclaree(molecule: string): Famille | 'betalactamine_inde
   if (n.includes('sulfam') || n.includes('cotrimoxazole') || n.includes('trimethoprime')) return 'sulfamide';
   if (n.includes('daptomycine')) return 'lipopeptide';
   if (n.includes('linezolide')) return 'oxazolidinone';
+  // Macrolides (RCP : hypersensibilité « à tout antibiotique de la famille des macrolides » pour l'azithromycine).
+  if (['macrolide', 'erythromycine', 'azithromycine', 'clarithromycine', 'roxithromycine', 'spiramycine'].some((m) => n.includes(m))) return 'macrolide';
   if (n.includes('rifampicine')) return 'rifamycine';
   return 'autre';
 }

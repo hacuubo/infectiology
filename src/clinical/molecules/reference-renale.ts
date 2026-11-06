@@ -65,6 +65,12 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   nitrofurantoine: { grandeur: 'dfg', unite: 'mL/min/1,73 m²', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'débit de filtration glomérulaire < 45 ml/min', 'adaptation_renale')] },
   trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
+  // Pneumonies (docs/sources/recherche-pneumonies.md §12) : spiramycine et linézolide sans palier ; clarithromycine en clairance (RCP IV) ;
+  // azithromycine : RCP exprimé en « DFG » (mL/min).
+  spiramycine: clcr('RCP-spiramycine', 'Chez le sujet insuffisant rénal : Aucun ajustement posologique n\'est nécessaire'),
+  clarithromycine: clcr('RCP-clarithromycine-IV', 'clairance inférieure à 30 ml/minute, la dose administrée doit être diminuée de moitié'),
+  azithromycine: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-azithromycine', '§4.2', 'Aucune adaptation posologique n\'est nécessaire chez les patients présentant un DFG ≥ 10 mL/min', 'adaptation_renale')] },
+  linezolide: clcr('RCP-linezolide', 'Insuffisance rénale : Aucun ajustement posologique n\'est nécessaire'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */

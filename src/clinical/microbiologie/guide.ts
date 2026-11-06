@@ -124,6 +124,10 @@ const LIB_MOLECULE: Record<string, string> = {
   teicoplanine: 'Téicoplanine',
   linezolide: 'Linézolide',
   clindamycine: 'Clindamycine',
+  erythromycine: 'Érythromycine',
+  spiramycine: 'Spiramycine',
+  clarithromycine: 'Clarithromycine',
+  azithromycine: 'Azithromycine',
 };
 export function libelleMolecule(dci: string): string {
   return LIB_MOLECULE[dci] ?? dci;

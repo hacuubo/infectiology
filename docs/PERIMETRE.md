@@ -19,6 +19,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 | Indication devant un ECBU positif : infection, colonisation, contamination possible, situation indéterminée ; signes non spécifiques du sujet âgé ; porteur de sonde ; exceptions grossesse et gestes urologiques (liste AFU 2026) | `R-INDICATION-ECBU` | SPILF 2015 (texte court et argumentaire), SPILF 2026, IUAS 2015, AFU/CIAFU 2026, IDSA 2019, HAS (femme enceinte) |
 | Sepsis sans foyer ni germe identifié : urgence, sans proposition de molécule | `R-SEPSIS-FOYER-INCONNU` | SSC 2026, HAS 2025 |
 | Prélèvement superficiel positif : pas d'antibiotique sans signe clinique d'infection | `R-PRELEVEMENT-SUPERFICIEL` | HAS/SPILF/SFD 2019, IWGDF/IDSA 2023 |
+| Pneumonie aiguë communautaire (ambulatoire, hospitalisée non grave, grave ; grippe, bactérie atypique, LPV, colonisation à P. aeruginosa), légionellose, pneumonie d'inhalation, fausse route sans pneumonie ; examens selon la gravité, hydrocortisone de la PAC grave (divergences affichées), durée 3/5/7 jours selon la stabilité | `R-PNEUMONIE` | SPILF/SPLF 2025, HAS 2025, HAS 2023 (M. pneumoniae), SPILF/SFGG 2025 et SPILF 2026 (diaporamas), Afssaps 2010 (orientation), RCP et CRAT des macrolides et du linézolide |
 | Hémocultures : S. aureus jamais traité comme contaminant ; SCN sur une seule série → refaire les hémocultures | `R-BACTERIEMIE-S-AUREUS`, `R-BACTERIEMIE-SCN` | IDSA/ESCMID 2026 (Table 1), IDSA 2009 rec. 38, Doern 2019 |
 | Antibiogramme guidé : questions par famille de germes, mécanismes rapportés, résistances attendues lues R, phénotypes inhabituels et résultats contradictoires signalés, molécules sensibles mais non pertinentes | `src/clinical/microbiologie/` | CA-SFM 2026, EUCAST v16.1, EUCAST phénotypes attendus et inhabituels, EUCAST détection v2.01 |
 | Fonction rénale : DFG estimé indexé (CKD-EPI 2009 sans coefficient racial par défaut ; 2021 ou EKFC au choix), DFG désindexé (Du Bois), clairance de Cockcroft-Gault ; valeur du laboratoire conservée à part ; choix de l'estimation selon la référence de chaque molécule | `src/calc/renal.ts`, `src/clinical/molecules/reference-renale.ts` | HAS 2023 (MRC), KDIGO 2024, EFLM 2022, Levey 2009, Inker 2021, Du Bois 1916, RCP, FDA 2024, EMA 2015 |
@@ -38,6 +39,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
   - fièvre sans signe urinaire ni autre foyer avec bactériurie : IDSA 2019 (remarque) et SPILF 2026 divergent ; avis SMIT, spectre non modélisé ;
   - changement de sonde JJ ou de néphrostomie : zone grise dans le texte AFU 2026.
 - **Cystite, colonisation gravidique, colonisation avant geste** : l'indication est sourcée, mais les molécules de 1re intention (fosfomycine-trométamol, pivmécillinam, nitrofurantoïne, triméthoprime) ne sont pas dans la base. Seule l'amoxicilline est proposée pendant la grossesse si la souche est sensible.
+- **Pneumonies, points en brouillon ou expliqués** : durée de la PAC grave non fixée (absence expliquée) ; céfotaxime en soins critiques (80-100 vs 100 mg/kg/j) et clarithromycine IV (hors AMM) en brouillon ; durée des macrolides dans la PAC atypique ambulatoire (HAS 2023 vs SPILF 2025) en brouillon ; pneumonie associée aux soins de réanimation (PAVM) selon la RFE SFAR/SRLF 2017 en brouillon (protocole d'avis d'experts, correspondance molécule/posologie reconstituée) ; pneumonie associée aux soins hors réanimation : aucun texte français, absence expliquée et avis du SMIT. Pristinamycine, doxycycline, roxithromycine, clindamycine, ceftazidime, ofloxacine : citées mais absentes de la base (mentionnées dans les commentaires).
 - **Prélèvements polymicrobiens** : chaque antibiogramme reste rattaché à son isolat, mais les propositions ne portent que sur le germe principal (alerte affichée).
 - **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 
@@ -46,10 +48,10 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - Pédiatrie.
 - Neutropénie fébrile (ECIL-4 : avis immédiat).
 - Entérobactéries productrices de carbapénémase, ERV.
-- Foyers pulmonaires, digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
+- Foyers digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
 - Endocardites à BGN, champignons, germes intracellulaires.
 - Candidémies.
-- Prélèvements respiratoires ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
+- Prélèvements respiratoires (traitement documenté de la pneumonie non modélisé : désescalade signalée) ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
 - Transplanté rénal de moins d'un mois avec bactériurie (aucune recommandation, IDSA 2019) ; ce terrain n'est pas saisi dans l'application.
 
 ## Limites connues
