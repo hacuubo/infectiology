@@ -51,6 +51,8 @@ export function familleDeclaree(molecule: string): Famille | 'betalactamine_inde
   if (n.includes('daptomycine')) return 'lipopeptide';
   if (n.includes('linezolide')) return 'oxazolidinone';
   if (n.includes('rifampicine')) return 'rifamycine';
+  // Métronidazole : contre-indiqué en cas d'hypersensibilité « aux nitroimidazolés » (RCP IV §4.3), « aux imidazolés » (RCP oral §4.3).
+  if (n.includes('nidazole') || n.includes('imidazole')) return 'nitroimidazole';
   return 'autre';
 }
 

@@ -17,6 +17,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 | Infection liée au cathéter | `R-INFECTION-CATHETER` | IDSA 2009, SRLF 2020, SPILF 2021 |
 | Gravité, réévaluation, persistance des hémocultures, colonisation urinaire | règles transversales | SSC 2026, HAS 2008/2025, SRLF 2020 |
 | Indication devant un ECBU positif : infection, colonisation, contamination possible, situation indéterminée ; signes non spécifiques du sujet âgé ; porteur de sonde ; exceptions grossesse et gestes urologiques (liste AFU 2026) | `R-INDICATION-ECBU` | SPILF 2015 (texte court et argumentaire), SPILF 2026, IUAS 2015, AFU/CIAFU 2026, IDSA 2019, HAS (femme enceinte) |
+| Infections intra-abdominales nécessitant un geste : péritonite communautaire (sans gravité, sepsis, choc, facteurs de risque de BLSE), IIA associée aux soins (BMR, dosage du céfépime), appendicite opérée, diverticulite non compliquée (pas d'antibiotique sauf exceptions HAS ; non-réponse : amoxicilline-acide clavulanique 7 j) ; durées courtes après contrôle de la source ; métronidazole (RCP IV et oral) | `R-INTRA-ABDOMINAL` | SFAR 2026, HAS 2017/2021, WSES 2020, SPILF/GPIP 2021, RCP et CRAT |
 | Sepsis sans foyer ni germe identifié : urgence, sans proposition de molécule | `R-SEPSIS-FOYER-INCONNU` | SSC 2026, HAS 2025 |
 | Prélèvement superficiel positif : pas d'antibiotique sans signe clinique d'infection | `R-PRELEVEMENT-SUPERFICIEL` | HAS/SPILF/SFD 2019, IWGDF/IDSA 2023 |
 | Hémocultures : S. aureus jamais traité comme contaminant ; SCN sur une seule série → refaire les hémocultures | `R-BACTERIEMIE-S-AUREUS`, `R-BACTERIEMIE-SCN` | IDSA/ESCMID 2026 (Table 1), IDSA 2009 rec. 38, Doern 2019 |
@@ -38,6 +39,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
   - fièvre sans signe urinaire ni autre foyer avec bactériurie : IDSA 2019 (remarque) et SPILF 2026 divergent ; avis SMIT, spectre non modélisé ;
   - changement de sonde JJ ou de néphrostomie : zone grise dans le texte AFU 2026.
 - **Cystite, colonisation gravidique, colonisation avant geste** : l'indication est sourcée, mais les molécules de 1re intention (fosfomycine-trométamol, pivmécillinam, nitrofurantoïne, triméthoprime) ne sont pas dans la base. Seule l'amoxicilline est proposée pendant la grossesse si la souche est sensible.
+- **Infections intra-abdominales en brouillon ou sans molécule** : avis d'experts SFAR 2026 (carbapénème et choix de la molécule, pipéracilline-tazobactam sans dosage du céfépime, anti-entérocoque, allergie) en brouillon ; complication postopératoire après IIA (molécules non nommées), antifongiques, cholécystite (grille TG18 non lue), appendicite non opérée et abcès hépatique : absence expliquée, avis. Angiocholite (TG18, durées SPILF 3 j / TG18 4-7 j affichées), diverticulite compliquée traitée médicalement (HAS 2017, durée non recommandée) et infection spontanée du liquide d'ascite (EASL 2018, albumine) : options en brouillon.
 - **Prélèvements polymicrobiens** : chaque antibiogramme reste rattaché à son isolat, mais les propositions ne portent que sur le germe principal (alerte affichée).
 - **Statut grossesse non vérifié** : imipénème, rifampicine, daptomycine, témocilline, aztréonam, méropénème.
 
@@ -46,7 +48,7 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - Pédiatrie.
 - Neutropénie fébrile (ECIL-4 : avis immédiat).
 - Entérobactéries productrices de carbapénémase, ERV.
-- Foyers pulmonaires, digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
+- Foyers pulmonaires, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte) ; pancréatite infectée.
 - Endocardites à BGN, champignons, germes intracellulaires.
 - Candidémies.
 - Prélèvements respiratoires ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
