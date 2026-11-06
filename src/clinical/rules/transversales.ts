@@ -37,6 +37,8 @@ export const R_GRAVITE: Regle = {
     const sscSrc = S('SSC-2026', 'page SCCM — contrôle de la source', 'early source control over late source control, ideally within 6 hr of diagnosis', 'geste');
     const has = S('HAS-2025-sepsis', 'page de présentation', 'Appliquer au mieux dans la première heure, un groupe d\'actions coordonnées et standardisées', 'autre');
     if (g === 'choc_septique' || g === 'sepsis') {
+      if (ctx.foyer === 'clostridioides_difficile')
+        f.alerte('info', 'Infection à C. difficile : son traitement est oral (ou intraluminal), voir la fiche ; l\'antibiothérapie IV probabiliste du sepsis vise un autre foyer suspecté.', [S('ESCMID-2021-ICD-traitement', 'recommandations', undefined, 'autre')]);
       f.urgence('immediate')
         .alerte('urgence', `${g === 'choc_septique' ? 'Choc septique' : 'Sepsis'} : antibiothérapie IV immédiate, idéalement dans l'heure ; hémocultures (au moins 40 mL, 2-3 paires) et lactate sans retarder l'antibiothérapie ; avis réanimation.`, [ssc1h, sscHc, has])
         .geste('Contrôle de la source le plus tôt possible, idéalement dans les 6 h du diagnostic (drainage, ablation de matériel infecté, levée d\'obstacle).', [sscSrc])
@@ -46,6 +48,8 @@ export const R_GRAVITE: Regle = {
       f.urgence('elevee')
         .alerte('attention', 'Gravité non renseignée : rechercher un sepsis (dysfonction d\'organe, SOFA ≥ 2) ou un choc septique ; elle conditionne le délai (1 h si sepsis probable ou choc, 3 h si sepsis seulement possible) et le schéma (ajout d\'un aminoside).', [ssc1h, S('SSC-2026', 'page SCCM — sepsis possible', 'within 3 hours from the time when sepsis was first suspected', 'autre')])
         .manque('gravité (sepsis, choc septique ou stable)', 'conditionne le délai et le schéma probabiliste', 'bloque_decision');
+    } else if (ctx.foyer === 'meningite') {
+      // Méningite : l'urgence (antibiotique dans l'heure) est portée par R-MENINGITE-BACTERIENNE ; pas de délai de 3 h.
     } else {
       f.alerte('info', 'Pas de dysfonction d\'organe déclarée : réévaluer la gravité à chaque étape ; en cas de sepsis seulement possible, antibiothérapie dans les 3 h si la suspicion persiste.', [S('SSC-2026', 'page SCCM — sepsis possible', 'within 3 hours from the time when sepsis was first suspected', 'autre')]);
     }

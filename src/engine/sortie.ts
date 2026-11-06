@@ -289,6 +289,21 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       origine: ['donnees-manquantes'],
     });
 
+  // Options seulement conditionnelles (aucune 1re ligne) sans autre explication : le dire.
+  if (traitement === 'partiel' && premieres.length === 0 && motifs.length === 0)
+    motifs.push({
+      type: 'non_validee',
+      rang: 55,
+      statut: 'Pas d’option de 1re ligne : options conditionnelles seulement',
+      motif: 'Les options affichées dépendent chacune d’une condition (voir leur libellé) ; aucune n’est proposée sans condition.',
+      verifie: [],
+      dejaPropose: dejaTraitement,
+      aCompleter: [],
+      prochaineAction: avis[0] ?? 'Vérifier les conditions de chaque option ; avis du SMIT.',
+      sources: [],
+      origine: ['moteur'],
+    });
+
   // Filet de sécurité : jamais d'absence de proposition sans motif.
   if (traitement === 'aucun' && motifs.length === 0)
     motifs.push({

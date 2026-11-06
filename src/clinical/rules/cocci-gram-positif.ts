@@ -41,7 +41,7 @@ export const R_SAB: Regle = {
   priorite: 150,
   sources: [S(IDSA26, 'Executive Summary, CS1-CS7', undefined, 'autre')],
   sApplique: (ctx) => {
-    if (!adulte(ctx) || !bacteriemie(ctx) || ctx.foyer === 'endocardite') return false;
+    if (!adulte(ctx) || !bacteriemie(ctx) || ctx.foyer === 'endocardite' || ctx.foyer === 'meningite') return false;
     const g = germePrincipal(ctx).g;
     return g === 's_aureus' || g === 'cgp_amas';
   },
@@ -256,7 +256,7 @@ export const R_ENTERO: Regle = {
   statut: 'verifiee_ia',
   priorite: 130,
   sources: [S('SPILF-GPIP-2021-durees', 'diapo 19, 21', undefined, 'duree')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'entero' && ctx.foyer !== 'endocardite',
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'entero' && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite',
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const { prl } = germePrincipal(ctx);

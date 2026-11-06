@@ -168,7 +168,10 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   plan.indicationsSecondaires = indications.filter((i) => i !== principale);
   // Sans traitement, les éléments propres au traitement sont écartés (options, contrôles et réévaluation des règles thérapeutiques).
   const garder = (x: { ra: RegleAppliquee; c: Contribution }) =>
-    traitement || nonTraitement(x.c) || ((x.c.options?.length ?? 0) === 0 && !REGLES_DU_TRAITEMENT.includes(x.ra.id));
+    traitement ||
+    nonTraitement(x.c) ||
+    ((x.c.options?.length ?? 0) === 0 && !REGLES_DU_TRAITEMENT.includes(x.ra.id)) ||
+    (x.ra.id === 'R-GRAVITE-SEPSIS' && (dossier.patient.gravite === 'sepsis' || dossier.patient.gravite === 'choc_septique'));
   const situationCandidate = contributions.find((x) => x.c.situation && (!traitement || !nonTraitement(x.c))) ?? contributions.find((x) => x.c.situation);
   if (situationCandidate) {
     plan.situation = situationCandidate.c.situation!;

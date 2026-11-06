@@ -380,7 +380,8 @@ export const R_BGN: Regle = {
     const f = new Fiche(ctx, 'verifiee_ia');
     const p = ctx.dossier.patient;
     const { prl } = germePrincipal(ctx);
-    const foyerConnu = ctx.foyer !== 'inconnu';
+    // Une colite à C. difficile n'est pas la source d'une bactériémie à BGN : foyer considéré comme non déterminé.
+    const foyerConnu = ctx.foyer !== 'inconnu' && ctx.foyer !== 'clostridioides_difficile';
     const nonIdentifie = !prl?.organisme || prl.organisme === 'bgn_non_identifie' || prl.stade === 'examen_direct';
     f.situation('bacteriemie-bgn', `Bactériémie à ${nonIdentifie ? 'BGN non identifié' : 'BGN'}${foyerConnu ? '' : ' — foyer non déterminé'}`, 'partielle', foyerConnu ? 'Foyer suspecté hors urinaire.' : 'Le foyer conditionne le spectre, la durée et le contrôle de la source : le rechercher activement (urinaire, digestif/biliaire, cathéter, pulmonaire). Les propositions restent conditionnelles tant que la gravité, le contexte et le foyer ne sont pas précisés.');
     const duree: DureeDecidee = { texte: '7 jours pour une bactériémie non compliquée avec foyer contrôlé ; durée à adapter au foyer s\'il est profond ou non contrôlé. (L\'essai BALANCE 2024 conforte 7 j mais n\'est pas une recommandation.)', pointDeDepart: 'premier jour d\'antibiothérapie efficace (après contrôle du foyer) — point de départ non précisé par la source', dureePrevueJours: 7, sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree'), S('SRLF-2020-catheters', 'R3.13', '7j pour les autres pathogènes', 'duree'), S('BALANCE-2024-NEJM', 'résultat principal', 'antibiotic treatment for 7 days was noninferior to treatment for 14 days', 'autre')] };

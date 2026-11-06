@@ -54,7 +54,8 @@ export const R_INDICATION_ECBU: Regle = {
         for (const q of ev.questions) f.manque(q, 'nécessaire pour conclure sur l\'indication d\'antibiothérapie', 'bloque_decision');
         break;
       case 'urgence':
-        if (!ev.foyerUrinaire) {
+        // Un foyer non urinaire déclaré (méningite, pneumonie…) porte la situation : pas de « foyer non établi ».
+        if (!ev.foyerUrinaire && (ctx.foyer === 'inconnu' || ctx.foyer === 'urinaire')) {
           f.situation('sepsis-foyer-indetermine', 'Sepsis avec bactériurie, foyer non établi', 'non_couverte', 'Le spectre doit couvrir les sources urinaires et non urinaires ; ce choix n\'est pas modélisé : avis réanimation / SMIT immédiat.');
           f.urgence('immediate').avis('Sepsis sans foyer établi : avis réanimation / SMIT immédiat pour l\'antibiothérapie probabiliste.', true, ev.sources);
         }

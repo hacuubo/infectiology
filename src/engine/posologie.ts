@@ -281,9 +281,12 @@ export function calculerPrescription(args: {
 
   // --- Adaptation rénale
   let adaptationRequise = false;
-  const ar = m.adaptationRenale;
+  const ar = r.adaptationRenale ?? m.adaptationRenale;
   const p = ctx.dossier.patient;
-  if (ar.statut !== 'retiree') {
+  if (m.absorptionSystemiqueNegligeable) {
+    adaptations.push(`Pas d'adaptation à la fonction rénale ni à la dialyse : ${m.absorptionSystemiqueNegligeable.texte}`);
+    sources.push(...m.absorptionSystemiqueNegligeable.sources);
+  } else if (ar.statut !== 'retiree') {
     if (p.renal.dialyse === 'hemodialyse_intermittente' || p.renal.dialyse === 'eer_continue' || p.renal.dialyse === 'dialyse_peritoneale') adaptationRequise = true;
     if (p.renal.dialyse === 'hemodialyse_intermittente') {
       adaptations.push(ar.hemodialyse ? `Hémodialyse intermittente : ${ar.hemodialyse.texte}` : `Hémodialyse intermittente : modalité non renseignée dans la base pour ${m.dci} — avis pharmacologique/néphrologique requis.`);

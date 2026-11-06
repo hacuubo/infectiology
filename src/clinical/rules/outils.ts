@@ -72,8 +72,8 @@ export class Fiche {
     this.c.alertes.push({ niveau, texte, sources });
     return this;
   }
-  manque(champ: string, pourquoi: string, impact: DonneeManquante['impact'] = 'bloque_decision') {
-    this.c.donneesManquantes.push({ champ, pourquoi, impact });
+  manque(champ: string, pourquoi: string, impact: DonneeManquante['impact'] = 'bloque_decision', cible?: string) {
+    this.c.donneesManquantes.push({ champ, pourquoi, impact, ...(cible ? { cible } : {}) });
     return this;
   }
   /** Proposition écartée par la règle : raison structurée, affichée dans « Pourquoi cette proposition n'est-elle pas disponible ? ». */

@@ -367,8 +367,10 @@ function precision(avant: OrganismeId, apres: OrganismeId): boolean {
 
 /** Foyers dont les questions sont posées : foyer déclaré, et foyer urinaire dès qu'un ECBU est saisi. */
 export function foyersQuestions(d: Dossier): FoyerId[] {
-  const f = foyerDeclare(d);
-  return d.prelevements.some((x) => x.type === 'urine') && f !== 'urinaire' ? [f, 'urinaire'] : [f];
+  const l: FoyerId[] = [foyerDeclare(d)];
+  if (d.entree === 'syndrome' && d.syndrome !== 'non_choisi' && !l.includes(d.syndrome)) l.push(d.syndrome);
+  if (d.prelevements.some((x) => x.type === 'urine') && !l.includes('urinaire')) l.push('urinaire');
+  return l;
 }
 
 /** Foyer déclaré (syndrome choisi, sinon foyer du prélèvement principal), sans déduction à partir de l'ECBU. */

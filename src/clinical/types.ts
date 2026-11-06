@@ -369,6 +369,11 @@ export interface Regimen {
   statut: StatutValidation;
   sources: SourceRef[];
   remarques?: string;
+  /**
+   * Adaptation rénale propre à ce régime (ex. doses méningées : paliers de la recommandation, pas ceux du schéma
+   * standard du RCP). Prioritaire sur celle de la molécule.
+   */
+  adaptationRenale?: AdaptationRenale;
 }
 
 export interface PalierRenal {
@@ -482,6 +487,8 @@ export interface Molecule {
   adaptationRenale: AdaptationRenale;
   surveillance: ElementSurveillance[];
   stp?: SpecSTP[];
+  /** Molécule non absorbée (voie orale à action intraluminale) : ni adaptation rénale ni réglage en dialyse. */
+  absorptionSystemiqueNegligeable?: { texte: string; sources: SourceRef[] };
   grossesse?: { statut: 'utilisable' | 'eviter' | 'contre_indique' | 'non_verifie'; texte: string; sources: SourceRef[] };
   insuffisanceHepatique?: { texte: string; sources: SourceRef[] };
   interactionsPertinentes?: { avec: TraitementAssocie; texte: string; sources: SourceRef[] }[];
