@@ -665,6 +665,8 @@ export interface Plan {
   contientReglesNonValidees: boolean;
   /** Option dont le calendrier est affiché (retenue par le prescripteur ou 1re ligne). */
   optionRetenueId?: string;
+  /** Points sans recommandation dédiée : expliqués, jamais comblés par extrapolation. */
+  absencesRecommandation: AbsenceRecommandation[];
   /** État de sortie explicite : pourquoi la proposition est complète, partielle ou absente. */
   sortie: EtatSortie;
 }
@@ -717,6 +719,21 @@ export interface MotifSortie {
 }
 
 /** Proposition écartée par le moteur, avec une raison structurée et vérifiable. */
+/**
+ * Absence de recommandation dédiée, déclarée par une règle : l'application ne comble pas ce vide par une
+ * extrapolation ; elle l'explique (ce qui a été cherché, ce qui reste à faire).
+ */
+export interface AbsenceRecommandation {
+  /** Ce qui n'est pas tranché (ex. « choix probabiliste d'une bactériémie à BGN sans foyer »). */
+  sujet: string;
+  /** Ce qui a été cherché et quand. */
+  recherche: string;
+  /** Ce que l'application propose à la place (gestes, contrôles, avis). */
+  aFaire: string[];
+  sources: SourceRef[];
+  origine: string;
+}
+
 export interface PropositionEcartee {
   libelle: string;
   type: 'allergie' | 'resistance' | 'contre_indication' | 'non_validee' | 'source_retiree' | 'inadaptee';

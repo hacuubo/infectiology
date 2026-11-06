@@ -49,6 +49,7 @@ export class Fiche {
     avisSpecialise: [],
     donneesManquantes: [],
     ecartees: [],
+    absences: [],
   };
   constructor(
     public readonly ctx: ContexteDecision,
@@ -78,6 +79,11 @@ export class Fiche {
   /** Proposition écartée par la règle : raison structurée, affichée dans « Pourquoi cette proposition n'est-elle pas disponible ? ». */
   ecarter(libelle: string, type: PropositionEcartee['type'], raison: string, sources: SourceRef[] = []) {
     this.c.ecartees.push({ libelle, type, raison, sources, origine: '' });
+    return this;
+  }
+  /** Point sans recommandation dédiée : l'application l'explique au lieu de proposer une extrapolation. */
+  absence(sujet: string, recherche: string, aFaire: string[], sources: SourceRef[] = []) {
+    this.c.absences.push({ sujet, recherche, aFaire, sources });
     return this;
   }
   avis(texte: string, urgent: boolean, sources: SourceRef[]) {

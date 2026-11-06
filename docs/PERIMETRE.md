@@ -27,8 +27,8 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 
 ## Partiellement couvert (règles en brouillon ou avis spécialisé requis)
 
-- **Bactériémie à BGN sans foyer, probabiliste** : aucune recommandation dédiée trouvée ; options conditionnelles en **brouillon**, extrapolées des IU graves.
-- **Staphylocoques à coagulase négative** : pas de recommandation dédiée aux critères contamination/infection ; choix de molécule en brouillon. La conduite « 1 seule série → refaire les hémocultures » est sourcée (IDSA 2009, rec. 38).
+- **Bactériémie à BGN sans foyer, probabiliste** : aucune recommandation dédiée trouvée. Depuis le 2026-11-06, l'application **ne propose plus de schéma extrapolé** : elle explique l'absence (« Aucune recommandation dédiée : pas de proposition automatisée »), garde l'indication de traiter, la recherche du foyer et l'avis du SMIT. Avec un foyer connu ou un antibiogramme, les règles du foyer et le traitement documenté s'appliquent.
+- **Staphylocoques à coagulase négative** : pas de recommandation dédiée aux critères contamination/infection ; choix de molécule non tranché : depuis le 2026-11-06, l'absence est expliquée (pas de céfazoline extrapolée) ; seule la vancomycine probabiliste d'une infection liée au cathéter reste proposée (SRLF 2020 R3.11, brouillon). La conduite « 1 seule série → refaire les hémocultures » est sourcée (IDSA 2009, rec. 38).
 - **S. aureus avant la sensibilité à la méticilline** : choix probabiliste non tranché par les sources lues (brouillon).
 - **Infection ostéoarticulaire sur matériel** : recommandations SPILF 2026 présentées aux JNI, publication finale non localisée ; schéma probabiliste en brouillon.
 - **P. aeruginosa** documenté : forte posologie uniquement, avis spécialisé.

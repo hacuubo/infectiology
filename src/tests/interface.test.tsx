@@ -11,12 +11,13 @@ describe('Interface', () => {
     expect(screen.getByLabelText('Résumé du patient')).toBeInTheDocument();
   });
 
-  test('charger le cas « 90 ans, BGN » : fiche partielle, options conditionnelles, informations manquantes visibles', async () => {
+  test('charger le cas « 90 ans, BGN » : fiche partielle, absence de recommandation expliquée, informations manquantes visibles', async () => {
     render(<App dossierInitial={casFictif('bgn-90')} />);
-    expect(screen.getByText(/Bactériémie à BGN non identifié/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Bactériémie à BGN non identifié/).length).toBeGreaterThan(0);
     expect(screen.getByText(/partiellement couverte/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Éléments manquants/ })).toBeInTheDocument();
-    expect(screen.getByText(/Alternatives et options conditionnelles/)).toBeInTheDocument();
+    expect(screen.getByText('Aucune recommandation dédiée : pas de proposition automatisée')).toBeInTheDocument();
+    expect(screen.queryByText(/Alternatives et options conditionnelles/)).toBeNull();
   });
 
   test('« inconnu » est distinct de « non » et le recalcul est immédiat', async () => {

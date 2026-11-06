@@ -4,6 +4,7 @@
  * résultat est identique (aucun aléa, aucun appel réseau, aucun modèle génératif).
  */
 import type {
+  AbsenceRecommandation,
   Alerte,
   Couverture,
   IndicationPlan,
@@ -45,6 +46,8 @@ export interface Contribution {
   indication?: IndicationPlan;
   /** Propositions écartées par la règle, avec leur raison structurée. */
   ecartees?: PropositionEcartee[];
+  /** Points sans recommandation dédiée : expliqués, non comblés. */
+  absences?: Omit<AbsenceRecommandation, 'origine'>[];
 }
 
 export interface Regle {
@@ -133,6 +136,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     regles: [],
     sources: [],
     contientReglesNonValidees: false,
+    absencesRecommandation: [],
     sortie: { traitement: 'aucun', urgence: false, actionsUrgentes: [], motifs: [], ecartees: [] },
   };
   const ecartees: PropositionEcartee[] = [];
@@ -173,6 +177,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
 
   for (const { ra, c } of contributions.filter(garder)) {
     if (c.ecartees) ecartees.push(...c.ecartees.map((e) => ({ ...e, origine: ra.id })));
+    if (c.absences) plan.absencesRecommandation.push(...c.absences.map((a) => ({ ...a, origine: ra.id })));
     if (c.couvertureMax && RANG_COUV[c.couvertureMax] < RANG_COUV[couvertureMax]) couvertureMax = c.couvertureMax;
     if (c.urgence && RANG_URGENCE[c.urgence] > RANG_URGENCE[plan.urgence.niveau]) plan.urgence.niveau = c.urgence;
     if (c.alertes) plan.urgence.alertes.push(...c.alertes);

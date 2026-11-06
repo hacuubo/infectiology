@@ -386,6 +386,41 @@ export const R_BGN: Regle = {
       documenterBGN(f, prl, 'autre', p.gravite === 'sepsis' || p.gravite === 'choc_septique', duree);
       return f.fin();
     }
+    // Foyer inconnu : aucune recommandation dédiée au choix probabiliste. L'absence est expliquée, pas comblée
+    // par un schéma extrapolé des infections urinaires graves (demande de l'utilisateur du 2026-11-06).
+    if (!foyerConnu) {
+      // Sans option, l'indication doit être explicite : une bactériémie à BGN se traite (durée fixée par SPILF/GPIP 2021) ;
+      // seul le choix probabiliste n'est pas tranché.
+      const graveBgn = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
+      const srcIndic = [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree')];
+      f.c.indication = {
+        decision: graveBgn ? 'urgence' : 'traiter',
+        qualification: 'infection',
+        titre: 'Bactériémie à BGN : traitement indiqué, choix probabiliste non tranché sans foyer',
+        raison: 'Un bacille à Gram négatif dans les hémocultures est traité (les recommandations lues en fixent la durée) ; sans foyer identifié, aucune recommandation ne fixe le choix probabiliste.',
+        conditions: ['BGN dans au moins une hémoculture', 'foyer non identifié'],
+        exceptions: [],
+        actions: ['Rechercher le foyer', graveBgn ? 'Antibiothérapie probabiliste dans l\'heure selon le protocole local ; avis réanimation / SMIT immédiat' : 'Avis du SMIT pour le choix probabiliste'],
+        surveillance: [],
+        reconsiderer: ['Foyer identifié', 'Antibiogramme rendu'],
+        questions: [],
+        sources: srcIndic,
+        statut: 'verifiee_ia',
+        regleId: 'R-BACTERIEMIE-BGN',
+      };
+      f.absence(
+        'Choix probabiliste d\'une bactériémie à BGN sans foyer identifié',
+        'Recherche du 2026-11-04 : aucune recommandation française (SPILF, HAS) ni ESCMID dédiée ; les textes lus traitent les BGN par foyer (urinaire, intra-abdominal, pulmonaire, cathéter) ou une fois l\'antibiogramme connu (SPILF 2023 d\'après ESCMID 2022).',
+        [
+          'Rechercher le foyer (ECBU, cathéters, voies biliaires et abdomen, poumon) : le choix suit ensuite les règles du foyer',
+          p.gravite === 'sepsis' || p.gravite === 'choc_septique' ? 'Sepsis ou choc : antibiothérapie probabiliste dans l\'heure selon le protocole local, avis réanimation / SMIT immédiat' : 'Avis du SMIT pour le choix probabiliste',
+          'Saisir l\'antibiogramme dès qu\'il est rendu : le traitement documenté est proposé',
+        ],
+        [S('SPILF-2023-BGN-MDR-diapo', 'traitement documenté', undefined, 'choix'), S('HAS-2025-sepsis', 'page de présentation', 'antibiothérapie IV adaptée « au site, aux germes, à l\'origine communautaire ou non, au risque de bactéries multirésistantes et à l\'écologie locale »', 'choix')],
+      );
+      f.avis('Bactériémie à BGN sans foyer identifié : avis du SMIT pour le choix probabiliste.', p.gravite === 'choc_septique' || p.gravite === 'sepsis', []);
+      return f.fin();
+    }
     const proba = 'probabiliste' as const;
     const st = 'brouillon' as const;
     const commun = p.contexte === 'communautaire' && !ctx.risqueBLSE.present;

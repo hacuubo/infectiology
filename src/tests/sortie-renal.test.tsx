@@ -88,11 +88,11 @@ describe('Aucune fiche thérapeutique vide sans explication', () => {
     expect(duree?.impact).toBe('bloque_duree');
   });
 
-  test('C. identification en attente : résultat manquant nommé, traitement probabiliste sourcé déjà proposable', () => {
+  test('C. identification en attente : résultat manquant nommé ; sans foyer, aucun probabiliste sourcé n’est inventé', () => {
     const p = plan(CAS_BGN_90);
     const m = p.sortie.motifs.find((x) => x.type === 'microbiologie_insuffisante')!;
     expect(m.aCompleter.map((x) => x.texte).join(' ')).toMatch(/identification du germe \(examen direct seul : BGN\)/);
-    expect(m.dejaPropose.join(' ')).toMatch(/Traitement probabiliste sourcé/);
+    expect(m.dejaPropose.join(' ')).toMatch(/Aucun traitement probabiliste sourcé/);
     // Le foyer suspecté est une donnée clinique, pas microbiologique.
     expect(p.sortie.motifs.find((x) => x.type === 'informations_manquantes' && x.rang === 20)!.aCompleter.map((x) => x.texte).join(' ')).toMatch(/foyer suspecté/);
   });

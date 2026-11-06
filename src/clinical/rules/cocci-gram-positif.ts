@@ -188,8 +188,24 @@ export const R_SCN: Regle = {
       : ctx.materielVasculairePresent
         ? { texte: 'Après retrait du cathéter : 3 jours si apyrexie et absence de matériel endovasculaire (SPILF 2021) ; 5 à 7 jours (IDSA 2009) ; 7 jours (SRLF 2020) — divergence non résolue. Cathéter conservé avec verrou : 10 jours de traitement systémique.', pointDeDepart: 'retrait du cathéter et première hémoculture négative', dureePrevueJours: 7, sources: [S('SPILF-GPIP-2021-durees', 'diapo 19-20', 'Staphylocoque à coagulase négative : 3 jours si apyrexie et absence de matériel endovasculaire', 'duree'), S('IDSA-2009-Mermel-ILC', 'rec. 75', 'treat with antibiotics for 5–7 days if the catheter is removed', 'duree'), S('SRLF-2020-catheters', 'Table 3', '7 days if positive without distant complications', 'duree')] }
         : { texte: 'Durée selon le foyer et le matériel : non déterminable sans foyer identifié (avis infectiologique).', pointDeDepart: 'à définir', sources: [] };
-    const item = oxa === 'S' ? { m: 'cefazoline', r: 'cefazoline-2g-x3' } : { m: 'vancomycine', r: 'vancomycine-continu' };
-    f.option({ id: 'scn-traitement', libelle: oxa === 'S' ? 'Céfazoline (SCN sensible à la méticilline)' : 'Vancomycine (SCN méticillino-résistant ou sensibilité inconnue)', type: oxa === undefined ? 'probabiliste' : 'documente', rang: 'premiere_ligne', items: [item], duree, statut: 'brouillon', sources: [S('SRLF-2020-catheters', 'R3.11', 'Vancomycine, mais pas teicoplanine (probabiliste ILC)', 'choix')], commentaire: 'Choix de molécule pour les SCN non couvert par une recommandation dédiée lue ; à valider avec le SMIT. La seule ablation du cathéter peut suffire selon l\'évolution (avis spécialisé).' });
+    // Choix de molécule pour un SCN : aucune recommandation dédiée. Seule la vancomycine probabiliste d'une infection
+    // liée au cathéter est sourcée (SRLF 2020 R3.11) ; ailleurs, l'absence est expliquée, pas comblée (2026-11-06).
+    if (!ctx.materielVasculairePresent || oxa === 'S') {
+      f.absence(
+        `Choix de l'antibiotique d'une bactériémie à ${lugd ? 'S. lugdunensis' : 'staphylocoque à coagulase négative'}${ctx.materielVasculairePresent ? ' sensible à la méticilline' : ' sans cathéter'}`,
+        'Recherche du 2026-11-04 : pas de recommandation dédiée au choix de la molécule pour les staphylocoques à coagulase négative ; les sources lues fixent la durée (SPILF/GPIP 2021) et le traitement probabiliste d\'une infection liée au cathéter (SRLF 2020), pas le traitement documenté.',
+        [
+          'Confirmer la bactériémie vraie (même espèce et même antibiogramme sur au moins 2 séries)',
+          'Rechercher le foyer et le matériel (cathéter, prothèse, valve)',
+          'Avis du SMIT pour le choix de la molécule, selon l\'antibiogramme',
+        ],
+        [S('SPILF-GPIP-2021-durees', 'diapo 19-21', undefined, 'duree'), S('SRLF-2020-catheters', 'R3.11', 'Vancomycine, mais pas teicoplanine (probabiliste ILC)', 'choix')],
+      );
+      f.reeval('La seule ablation du cathéter peut suffire en fonction de l\'évolution clinique (sur avis spécialisé).', [S('SPILF-GPIP-2021-durees', 'diapo 19', 'La seule ablation du cathéter peut suffire en fonction de l\'évolution clinique (sur avis spécialisé)', 'duree')]);
+      return f.fin();
+    }
+    const item = { m: 'vancomycine', r: 'vancomycine-continu' };
+    f.option({ id: 'scn-traitement', libelle: 'Vancomycine (infection liée au cathéter à SCN méticillino-résistant ou de sensibilité inconnue)', type: oxa === undefined ? 'probabiliste' : 'documente', rang: 'premiere_ligne', items: [item], duree, statut: 'brouillon', sources: [S('SRLF-2020-catheters', 'R3.11', 'Vancomycine, mais pas teicoplanine (probabiliste ILC)', 'choix')], commentaire: 'Seule la vancomycine probabiliste d\'une infection liée au cathéter est sourcée (SRLF 2020 R3.11) ; pas de recommandation dédiée aux SCN : à valider avec le SMIT. La seule ablation du cathéter peut suffire selon l\'évolution (avis spécialisé).' });
     f.reeval('La seule ablation du cathéter peut suffire en fonction de l\'évolution clinique (sur avis spécialisé).', [S('SPILF-GPIP-2021-durees', 'diapo 19', 'La seule ablation du cathéter peut suffire en fonction de l\'évolution clinique (sur avis spécialisé)', 'duree')]);
     return f.fin();
   },
