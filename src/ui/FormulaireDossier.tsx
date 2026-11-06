@@ -496,6 +496,9 @@ function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier 
           Équation non précisée : la valeur n’est pas utilisée pour adapter une dose.
         </span>
       )}
+      {!dfg && dossier.patient.renal.creatinine?.valeur !== undefined && indexe && indexe.manquants.length > 0 && (
+        <span className="aide">Calcul automatique impossible, il manque : {indexe.manquants.join(', ')}.</span>
+      )}
     </Champ>
   );
 }

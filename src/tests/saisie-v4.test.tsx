@@ -27,11 +27,13 @@ describe('Saisie simplifiée', () => {
     expect(document.getElementById('resume-patient')).toBeVisible();
   });
 
-  test('sexe : femme sélectionnée par défaut, sans choix « Inconnu » ; poids et taille sans texte d’aide', () => {
+  test('sexe : aucun choix présélectionné, sans choix « Inconnu » ; poids et taille sans texte d’aide', () => {
     const { container } = render(<App />);
     const groupe = screen.getByRole('radiogroup', { name: 'Sexe' });
     expect(within(groupe).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Femme', 'Homme']);
-    expect(within(groupe).getByRole('radio', { name: 'Femme' })).toHaveAttribute('aria-checked', 'true');
+    for (const r of within(groupe).getAllByRole('radio')) expect(r).toHaveAttribute('aria-checked', 'false');
+    // Le sexe manquant reste signalé (résumé).
+    expect(document.getElementById('resume-patient')).toHaveTextContent('sexe ?');
     for (const c of ['patient.age', 'patient.sexe', 'patient.poidsKg', 'patient.tailleCm']) expect(container.querySelector(`[data-champ="${c}"] .aide`)).toBeNull();
     // Âge et sexe sur une même ligne, poids et taille sur la suivante.
     const lignes = [...container.querySelectorAll('#t-patient ~ .deux-colonnes')];
@@ -49,6 +51,9 @@ describe('Saisie simplifiée', () => {
     await u.type(screen.getByLabelText('Âge'), '70');
     await u.selectOptions(screen.getByLabelText('Unité de la créatininémie'), 'umol/L');
     await u.type(screen.getByLabelText('Valeur de la créatininémie'), '90');
+    // Sexe non renseigné : pas de calcul, la donnée manquante est nommée.
+    expect(screen.getByText(/Calcul automatique impossible, il manque : variable de sexe/)).toBeInTheDocument();
+    await u.click(within(screen.getByRole('radiogroup', { name: 'Sexe' })).getByRole('radio', { name: 'Femme' }));
     // Femme, 70 ans, 90 µmol/L : CKD-EPI 2009 ≈ 56 mL/min/1,73 m² (141 × (1,018/0,7)^−1,209 × 0,993^70 × 1,018).
     const champ = document.querySelector('[data-champ="patient.renal.dfg"]') as HTMLElement;
     expect(within(champ).getByLabelText('DFG estimé calculé')).toHaveTextContent('56');
@@ -67,6 +72,7 @@ describe('Saisie simplifiée', () => {
     await u.type(screen.getByLabelText('Âge'), '70');
     await u.selectOptions(screen.getByLabelText('Unité de la créatininémie'), 'umol/L');
     await u.type(screen.getByLabelText('Valeur de la créatininémie'), '90');
+    await u.click(within(screen.getByRole('radiogroup', { name: 'Sexe' })).getByRole('radio', { name: 'Femme' }));
     expect(screen.getByText(/Valeur saisie : 45 mL\/min\/1,73 m²/)).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: 'Effacer' }));
     expect(screen.queryByText(/Valeur saisie/)).toBeNull();
