@@ -65,6 +65,10 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   nitrofurantoine: { grandeur: 'dfg', unite: 'mL/min/1,73 m²', sources: [S('RCP-nitrofurantoine', '§4.3', 'Insuffisance rénale (TFGe inférieur à 45 ml/min)', 'adaptation_renale'), S('HAS-2021-cystite-femme', 'nitrofurantoïne', 'débit de filtration glomérulaire < 45 ml/min', 'adaptation_renale')] },
   trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
+  // RCP fidaxomicine : aucun palier ni grandeur (« Aucune adaptation posologique n'est jugée nécessaire ») ; grandeur par défaut.
+  fidaxomicine: clcr('RCP-fidaxomicine', 'Aucune adaptation posologique n\'est jugée nécessaire.'),
+  // Vancomycine orale : aucune adaptation prévue pour la voie orale ; les paliers en clairance du RCP concernent la voie IV.
+  vancomycine_orale: clcr('RCP-vancomycine-orale', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */
