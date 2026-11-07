@@ -1997,9 +1997,9 @@
     "type": "essai",
     "url": "https://doi.org/10.1056/NEJMoa1411162",
     "dateConsultation": "2026-11-06",
-    "statutAcces": "consultee",
+    "statutAcces": "contenu_non_lisible",
     "statutVigueur": "en_vigueur",
-    "notes": "Résumé lu (Europe PMC, PMC4469182) : durée fixe 4±1 jours vs jusqu'à 2 jours après résolution (max 10 j)."
+    "notes": "Résumé lu (Europe PMC, PMC4469182) : durée fixe 4±1 jours vs jusqu'à 2 jours après résolution (max 10 j). Statut : seul le résumé a été lu (convention de la note : texte intégral non lu)."
   },
   {
     "id": "DURAPOP-2018",
@@ -2009,9 +2009,9 @@
     "type": "essai",
     "url": "https://doi.org/10.1007/s00134-018-5088-x",
     "dateConsultation": "2026-11-06",
-    "statutAcces": "consultee",
+    "statutAcces": "contenu_non_lisible",
     "statutVigueur": "en_vigueur",
-    "notes": "Résumé lu (Europe PMC) : 8 j vs 15 j (SFAR 2026 écrit 14 j)."
+    "notes": "Résumé lu (Europe PMC) : 8 j vs 15 j (SFAR 2026 écrit 14 j). Statut : seul le résumé a été lu (convention de la note : texte intégral non lu)."
   },
   {
     "id": "EASL-2018-cirrhose",

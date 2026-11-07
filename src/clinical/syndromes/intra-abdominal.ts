@@ -19,7 +19,14 @@ const type = (r: R) => r('digestif.type');
 const grave = (d: Dossier) => d.patient.gravite === 'sepsis' || d.patient.gravite === 'choc_septique';
 /** Infection intra-abdominale relevant de SFAR 2026 (geste de contrôle de la source). */
 const iiaSfar = (r: R) => type(r) === 'peritonite' || (type(r) === 'diverticulite' && r('digestif.diverticulite.forme') === 'peritonite') || (type(r) === 'appendicite' && r('digestif.appendicite.prise_en_charge') === 'appendicectomie');
-const premierEpisodeSoins = (r: R, d: Dossier) => iiaSfar(r) && d.patient.contexte === 'associe_aux_soins' && r('digestif.postop') !== 'complication_iia';
+const divForme = (r: R) => (type(r) === 'diverticulite' ? r('digestif.diverticulite.forme') : '');
+/** Diverticulite abcédée drainée (ou drainage prévu) : IIA avec contrôle de la source par drainage (SFAR 2026 R2.2.3). */
+const abcesDraine = (r: R) => divForme(r) === 'abces' && (r('digestif.source') === 'obtenu' || r('digestif.source') === 'en_attente');
+/** Parcours qui applique le schéma SFAR 2026 (directement, ou par extrapolation affichée en sepsis ou choc). */
+const regimeSfar = (r: R, d: Dossier) => iiaSfar(r) || abcesDraine(r) || (['abces', 'bulles', 'non_compliquee'].includes(divForme(r)) && grave(d));
+/** Parcours SFAR avec liquide péritonéal ou collection (critères antifongiques) : pas la diverticulite non compliquée. */
+const avecCollection = (r: R, d: Dossier) => regimeSfar(r, d) && divForme(r) !== 'non_compliquee';
+const premierEpisodeSoins = (r: R, d: Dossier) => regimeSfar(r, d) && d.patient.contexte === 'associe_aux_soins' && r('digestif.postop') !== 'complication_iia';
 
 export const QUESTIONS_INTRA_ABDOMINAL: QuestionSyndrome[] = [
   {
@@ -48,7 +55,7 @@ export const QUESTIONS_INTRA_ABDOMINAL: QuestionSyndrome[] = [
       { v: 'postop_reglee', l: 'Premier épisode, postopératoire d\'une chirurgie réglée' },
       { v: 'complication_iia', l: 'Complication après une intervention pour IIA' },
     ],
-    pertinente: (r, d) => (type(r) === 'peritonite' || (type(r) === 'diverticulite' && r('digestif.diverticulite.forme') === 'peritonite')) && d.patient.contexte === 'associe_aux_soins',
+    pertinente: (r, d) => regimeSfar(r, d) && d.patient.contexte === 'associe_aux_soins',
   },
   {
     id: 'digestif.appendicite.forme',
@@ -125,7 +132,7 @@ export const QUESTIONS_INTRA_ABDOMINAL: QuestionSyndrome[] = [
       { v: 'en_attente', l: 'Geste prévu, pas encore réalisé' },
       { v: 'non', l: 'Pas de geste réalisé ni prévu' },
     ],
-    pertinente: (r) => iiaSfar(r) || type(r) === 'angiocholite',
+    pertinente: (r, d) => iiaSfar(r) || type(r) === 'angiocholite' || divForme(r) === 'abces' || (divForme(r) === 'bulles' && grave(d)),
   },
   {
     id: 'digestif.fdr_blse',
@@ -137,7 +144,7 @@ export const QUESTIONS_INTRA_ABDOMINAL: QuestionSyndrome[] = [
       { v: 'autre_fdr', l: 'Autre facteur de risque seulement' },
       { v: 'aucun', l: 'Aucun' },
     ],
-    pertinente: (r, d) => iiaSfar(r) && d.patient.contexte === 'communautaire' && grave(d),
+    pertinente: (r, d) => regimeSfar(r, d) && d.patient.contexte === 'communautaire' && grave(d),
   },
   {
     id: 'digestif.bmr',
@@ -172,21 +179,21 @@ export const QUESTIONS_INTRA_ABDOMINAL: QuestionSyndrome[] = [
     foyers: F,
     libelle: 'Examen direct du liquide péritonéal positif à levures ?',
     options: ouiNon,
-    pertinente: (r, d) => iiaSfar(r) && (d.patient.contexte === 'associe_aux_soins' || grave(d)),
+    pertinente: (r, d) => avecCollection(r, d) && (d.patient.contexte === 'associe_aux_soins' || grave(d)),
   },
   {
     id: 'digestif.sus_mesocolique',
     foyers: F,
     libelle: 'Chirurgie sus-mésocolique ?',
     options: ouiNon,
-    pertinente: (r, d) => iiaSfar(r) && (d.patient.contexte === 'associe_aux_soins' || grave(d)) && r('digestif.levures') !== 'oui',
+    pertinente: (r, d) => avecCollection(r, d) && (d.patient.contexte === 'associe_aux_soins' || grave(d)) && r('digestif.levures') !== 'oui',
   },
   {
     id: 'digestif.atb_48h',
     foyers: F,
     libelle: 'Antibiothérapie en cours depuis plus de 48 heures ?',
     options: ouiNon,
-    pertinente: (r, d) => iiaSfar(r) && (d.patient.contexte === 'associe_aux_soins' || grave(d)) && r('digestif.levures') !== 'oui',
+    pertinente: (r, d) => avecCollection(r, d) && (d.patient.contexte === 'associe_aux_soins' || grave(d)) && r('digestif.levures') !== 'oui',
   },
   {
     id: 'digestif.angiocholite.dysfonction',

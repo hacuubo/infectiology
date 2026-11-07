@@ -160,6 +160,10 @@ export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecis
       return p.traitementsAssocies.includes('qt_allongeant');
     case 'anticoagulant_associe':
       return p.traitementsAssocies.includes('avk') || p.traitementsAssocies.includes('aod');
+    case 'avk_associe':
+      return p.traitementsAssocies.includes('avk');
+    case 'ciprofloxacine_associee':
+      return opts.coPrescriptions.includes('ciprofloxacine');
     case 'perfusion_continue':
       return opts.continue === true;
     case 'perfusion_intermittente':

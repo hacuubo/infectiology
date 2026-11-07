@@ -35,6 +35,9 @@ const TABLE: { motif: RegExp; cible: string; domaine: DomaineManquant }[] = [
   { motif: /antécédents de BLSE|antibiotiques des 3-6/i, cible: 'patient.antecedentsMicro', domaine: 'patient' },
   { motif: /1re dose|première dose/i, cible: 'horaires.premiereDoseISO', domaine: 'horaires' },
   { motif: /foyer suspecté/i, cible: 'prelevements.foyer', domaine: 'clinique' },
+  // Questions cliniques du foyer intra-abdominal dont le libellé cite « BLSE » ou « examen direct » : pas de la microbiologie.
+  { motif: /^antécédent documenté de colonisation ou d.infection à BLSE|^facteurs de risque de BLSE/i, cible: 'details.digestif.fdr_blse', domaine: 'clinique' },
+  { motif: /^critères d.antifongique probabiliste|^levures à l.examen direct du liquide péritonéal/i, cible: 'details.digestif.levures', domaine: 'clinique' },
   {
     motif: /hémoculture|séries|antibiogramme|sensibilit|CMI|mécanisme|oxacilline|céfoxitine|identification|germe|examen direct|phénotype|BLSE|carbapénémase/i,
     cible: 'prelevements',
