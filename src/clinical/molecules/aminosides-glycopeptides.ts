@@ -212,18 +212,20 @@ export const gentamicine: Molecule = {
       sources: [S(SRC_DOSES_2026, 'Annexe 9 (aminosides)', 'Gentamicine 6 à 7 mg/kg en perfusions de 30 min en dose unique journalière', 'posologie'), S('ANSM-2011-aminosides', 'p. 6', 'gentamicine, tobramycine : 3 à 8 mg/kg/jour', 'posologie')],
       remarques: 'Divergence documentée : ANSM 2011 et RCP 3-8 mg/kg/j ; SPILF/SFPT/CA-SFM 2026 : 6-7 mg/kg.',
     },
-    // Méningite à Listeria (docs/sources/recherche-meningites.md §1) : indication présente dans le RCP (§4.1), posologie du RCP non relue ici.
+    // Méningite à Listeria (docs/sources/recherche-meningites.md §1) : indication présente dans le RCP (§4.1), posologie du RCP non relue ici ;
+    // brouillon tant que la révision SPILF n'est pas publiée (note §9). Adaptation rénale : celle de la molécule (RCP) —
+    // même dose à chaque injection, intervalle guidé par la résiduelle : aucun plafond du schéma standard sous la dose méningée.
     {
       id: 'gentamicine-5-listeria',
       libelle: '5 mg/kg/j, les 5 premiers jours — méningite à Listeria (ou suspicion), en association à l\'amoxicilline',
       indication: 'Méningite à bacille à Gram positif ou à Listeria, examen direct négatif avec arguments pour une listériose : amoxicilline + gentamicine (SPILF 2018).',
       dose: { type: 'ponderale', valeur: 5, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'ajuste', seuilObesiteRatio: 1.25 },
       voie: 'IV',
-      modalites: 'Une perfusion de 30 min par jour, les 5 premiers jours seulement. SPILF 2018 : 5 à 6 mg/kg/j dans le texte (§12.8.1.3), 5 mg/kg/j dans les tableaux (divergence mineure, la valeur des tableaux est affichée).',
-      statut: 'verifiee_ia',
+      modalites: 'Une perfusion de 30 min par jour, les 5 premiers jours seulement. SPILF 2018 : 5 à 6 mg/kg/j dans le texte (§12.8.1.3), 5 mg/kg/j dans les tableaux (divergence mineure, la valeur des tableaux est affichée). Poids de référence non précisé par la SPILF : l\'application reprend le poids ajusté des autres schémas de gentamicine (formule du RCP) ; le seuil d\'obésité de 1,25 est un choix de l\'application, non sourcé.',
+      statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3 ; Tableau 8', 'gentamicine 5–6 mg/kg/j en une dose sur 30 min (le Tableau 8 indique « 5 mg/kg/day IV in adults »)', 'posologie'),
-        S('SPILF-2018-meningites', 'p. 28-29, §14.1.3', 'gentamicine 5 mg/kg/j en une perfusion de 30 min les 5 premiers jours', 'duree'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3 ; Tableau 8', '[reformulation] gentamicine 5–6 mg/kg/j en une dose sur 30 min (le Tableau 8 indique « 5 mg/kg/day IV in adults »)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 28-29, §14.1.3', '[reformulation] gentamicine 5 mg/kg/j en une perfusion de 30 min les 5 premiers jours', 'duree'),
       ],
     },
   ],
@@ -382,9 +384,25 @@ export const vancomycine: Molecule = {
       chargeInitiale: { libelle: 'Dose de charge sur 1 h', type: 'ponderale', valeur: 30, unite: 'mg/kg', poidsReference: 'total' },
       dose: { type: 'ponderale', valeur: 40, unite: 'mg/kg', poidsReference: 'total', texte: '40 à 60 mg/kg/j après la dose de charge ; concentration résiduelle cible 15 à 20 mg/L (SPILF 2018, Tableau 10)' },
       voie: 'IV',
-      modalites: 'Rythme d\'administration non précisé par la source ; avis infectiologique obligatoire. RCP de la vancomycine non relu pour la méningite.',
+      modalites: 'Rythme d\'administration non précisé par la source ; avis infectiologique obligatoire. RCP de la vancomycine non relu pour la méningite. Dose de charge sans plafond dans la source (au-delà de 100 kg, elle dépasse les 3 g des autres schémas de vancomycine : divergence non tranchée). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
       statut: 'brouillon',
-      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', 'vancomycine (charge 30 mg/kg sur 1 h puis 40–60 mg/kg/j, résiduelle 15–20 mg/L)', 'posologie')],
+      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] vancomycine (charge 30 mg/kg sur 1 h puis 40–60 mg/kg/j, résiduelle 15–20 mg/L)', 'posologie')],
+      // Les paliers du RCP (15 à 20 mg/kg par administration) visent la posologie standard : pas sous la dose méningée.
+      adaptationRenale: {
+        methode: 'Cockcroft',
+        statut: 'brouillon',
+        texteGeneral: 'Dose méningée : aucune adaptation rénale chiffrée dans les sources lues ; entretien guidé par la concentration résiduelle (15 à 20 mg/L, SPILF 2018).',
+        paliers: [
+          { clcrMin: 50, texte: 'ClCr ≥ 50 mL/min : schéma habituel de la dose méningée, ajusté sur la concentration résiduelle (cible 15 à 20 mg/L, SPILF 2018).', sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')] },
+          {
+            clcrMax: 50,
+            texte: 'ClCr < 50 mL/min : dose de charge non réduite (RCP) ; entretien de la dose méningée guidé par la concentration résiduelle (cible 15 à 20 mg/L, SPILF 2018), avec avis pharmacologique. Les paliers du RCP visent la posologie standard et ne s\'appliquent pas à la dose méningée.',
+            sources: [S('RCP-vancomycine', '§4.2', 'Chez les patients avec insuffisance rénale légère ou modérée, la dose initiale ne doit pas être diminuée', 'adaptation_renale'), S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')],
+          },
+        ],
+        hemodialyse: { texte: 'Hémodialyse intermittente : non traitée par les sources lues pour la dose méningée ; dosages (cible résiduelle 15 à 20 mg/L, SPILF 2018) et avis pharmacologique.', sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')] },
+        eerContinue: { texte: 'Épuration extrarénale continue : non traitée par les sources lues pour la dose méningée ; dosages (cible résiduelle 15 à 20 mg/L, SPILF 2018) et avis pharmacologique.', sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')] },
+      },
     },
   ],
   adaptationRenale: {

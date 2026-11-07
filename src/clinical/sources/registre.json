@@ -645,9 +645,11 @@
     "annee": 2026,
     "type": "rcp",
     "url": "https://base-donnees-publique.medicaments.gouv.fr/medicament/63096551/extrait",
-    "dateConsultation": "2026-11-04",
+    "dateConsultation": "2026-11-06",
     "statutAcces": "consultee",
-    "statutVigueur": "en_vigueur"
+    "statutVigueur": "en_vigueur",
+    "version": "RCP mis à jour par l'ANSM le 08/04/2026",
+    "notes": "Date de mise à jour ANSM du RCP lue le 2026-11-06 : 08/04/2026 (docs/sources/recherche-meningites.md §10.2)."
   },
   {
     "id": "RCP-ciprofloxacine",
@@ -1646,8 +1648,8 @@
     "urlPdf": "https://www.sfmu.org/upload/consensus/cc_méningite_long_2018.pdf",
     "dateConsultation": "2026-11-06",
     "statutAcces": "consultee",
-    "statutVigueur": "en_vigueur",
-    "notes": "Texte long lu (PDF hébergé par la SFMU). Texte court (doi 10.1016/j.medmal.2019.03.008) non lu directement. La page « recommandations » de la SPILF marque ce texte « (en cours de révision) » au 06/11/2026 ; aucune nouvelle version trouvée. Remplace la conférence de consensus 2008. Document protégé (propriété SPILF) : citer par fragments."
+    "statutVigueur": "incertain",
+    "notes": "Texte long lu (PDF hébergé par la SFMU). Texte court (doi 10.1016/j.medmal.2019.03.008) non lu directement. La page « recommandations » de la SPILF marque ce texte « (en cours de révision) » au 06/11/2026 ; aucune nouvelle version trouvée. Remplace la conférence de consensus 2008. Document protégé (propriété SPILF) : citer par fragments. Statut de vigueur « incertain » (2026-11-06) : texte en cours de révision (page SPILF « recommandations », mention « (en cours de révision) ») ; tout le domaine méningites reste en brouillon tant que la révision n'est pas publiée (docs/sources/recherche-meningites.md §9)."
   },
   {
     "id": "SPILF-2018-meningites-diapo",

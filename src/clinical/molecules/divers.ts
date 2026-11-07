@@ -91,7 +91,7 @@ export const ciprofloxacine: Molecule = {
       voie: 'IV',
       modalites: 'Fréquence non précisée par SPILF 2018 (Tableau 10) ; RCP de la ciprofloxacine IV non relu pour cette indication : avis infectiologique et pharmacologique.',
       statut: 'brouillon',
-      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', 'méningocoque → ciprofloxacine « 800–1200 mg » (fréquence non précisée)', 'posologie')],
+      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] méningocoque → ciprofloxacine « 800–1200 mg » (fréquence non précisée)', 'posologie')],
     },
   ],
   adaptationRenale: {
@@ -198,12 +198,13 @@ export const cotrimoxazole: Molecule = {
       id: 'smx-tmp-meninge',
       libelle: '10 à 20 mg/kg/j de triméthoprime IV en 4 prises — méningite à Listeria (allergie) — au-dessus du RCP',
       indication: 'Méningite à Listeria (ou bacille à Gram positif, ou arguments pour une listériose) chez un patient allergique aux pénicillines (SPILF 2018, Tableaux 10 et 11).',
-      dose: { type: 'ponderale', valeur: 10, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total', texte: '10 à 20 mg/kg/j de triméthoprime, en 4 prises (SPILF 2018) — RCP (infections neuro-méningées à Listeria) : 6 à 8 mg/kg/j de triméthoprime et 30 à 40 mg/kg/j de sulfaméthoxazole' },
+      // valeur par prise (2,5 mg/kg × 4 = 10 mg/kg/j, bas de la fourchette) ; l'affichage repose sur `texte`.
+      dose: { type: 'ponderale', valeur: 2.5, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total', texte: '10 à 20 mg/kg/j de triméthoprime, en 4 prises (SPILF 2018) — RCP (infections neuro-méningées à Listeria) : 6 à 8 mg/kg/j de triméthoprime et 30 à 40 mg/kg/j de sulfaméthoxazole' },
       voie: 'IV',
-      modalites: 'Hors RCP : la dose SPILF dépasse la posologie du RCP pour la listériose neuro-méningée (divergence non tranchée) ; avis infectiologique.',
+      modalites: 'Hors RCP : la dose SPILF dépasse la posologie du RCP pour la listériose neuro-méningée (divergence non tranchée) ; avis infectiologique. Poids de référence non précisé par la source.',
       statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'Tableau 10 p. 24', 'Listeria → cotrimoxazole 10–20 mg/kg/j de triméthoprime en 4 prises', 'posologie'),
+        S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] Listeria → cotrimoxazole 10–20 mg/kg/j de triméthoprime en 4 prises', 'posologie'),
         S('RCP-cotrimoxazole', '§4.2', 'Traitement des infections neuro-méningées à Listeria monocytogenes : 30 à 40 mg/kg/j de sulfaméthoxazole et de 6 à 8 mg/kg/j de triméthoprime', 'posologie'),
       ],
       remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
@@ -276,8 +277,8 @@ export const rifampicine: Molecule = {
       modalites: 'Voie non précisée par la source. Divergence SPILF 2018 : 300 mg × 2/j (Tableau 10) ; 10 mg/kg/12 h en cas d\'échec à pneumocoque (§14.1.1). Inducteur enzymatique : l\'effet de la dexaméthasone peut être réduit (RCP dexaméthasone).',
       statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'Tableau 10 p. 24', 'rifampicine (adulte 300 mg × 2/j)', 'posologie'),
-        S('SPILF-2018-meningites', 'p. 27, §14.1', 'ajout rifampicine 10 mg/kg/12 h ou vancomycine', 'posologie'),
+        S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] rifampicine (adulte 300 mg × 2/j)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 27, §14.1', '[reformulation] ajout rifampicine 10 mg/kg/12 h ou vancomycine', 'posologie'),
         S('RCP-dexamethasone-krka', '§4.5', 'L\'effet des corticoïdes peut être réduit', 'autre'),
       ],
     },
@@ -293,7 +294,8 @@ export const rifampicine: Molecule = {
       sources: [
         S('RCP-rifampicine-orale', '§4.2', 'La rifampicine sera donnée pendant 48 heures à la posologie suivante : Adulte : 600 mg toutes les 12 heures', 'posologie'),
         S('DGS-2018-IIM', 'p. 18, fiche 8-2', 'Adulte : 600 mg (2 gélules de 300 mg), deux fois par jour', 'posologie'),
-        S('RCP-rifampicine-orale', '§4.6', 'contraception non hormonale hautement efficace pendant et 6 mois après (femme) ; grossesse « que lorsque cela est strictement nécessaire »', 'autre'),
+        S('RCP-rifampicine-orale', '§4.6', 'ne doit être utilisé pendant la grossesse que lorsque cela est strictement nécessaire', 'autre'),
+        S('RCP-rifampicine-orale', '§4.6', '[reformulation] contraception non hormonale hautement efficace pendant le traitement et jusqu\'à 6 mois après la dernière dose (femme)', 'autre'),
       ],
       remarques: 'Le RCP précise que la rifampicine n\'est pas un traitement de la méningite à méningocoque (§4.1).',
     },
