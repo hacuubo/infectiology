@@ -1,8 +1,93 @@
-import type { Molecule } from '../types';
+import type { AdaptationRenale, Molecule } from '../types';
 import { S, SRC_DOSES_2026, encephalopathieBetaLactamine, stpBetaLactamineReanimation } from './base';
 
 const CRAT_PENI = S('CRAT-penicillines-grossesse', 'En pratique', "L'utilisation des pénicillines suivantes est possible quel que soit le terme de la grossesse", 'autre');
 const CRAT_CEPH = S('CRAT-cephalosporines-grossesse', 'En pratique', 'céfotaxime, ceftriaxone, ceftazidime utilisables « quel que soit le terme de la grossesse, en raison de leur intérêt thérapeutique »', 'autre');
+
+/* ------------------------------------------------------------------ */
+/* Doses méningées : adaptation rénale propre au régime (SPILF 2018)    */
+/* ------------------------------------------------------------------ */
+// docs/sources/recherche-meningites.md §1 (Tableau 8, §12.8.2.4), §2 (dia 11), §9.3. Les paliers des RCP visent la
+// posologie standard : ils ne s'appliquent jamais sous une dose méningée (relecture v7, constat bloquant 1).
+const SP_MEN = 'SPILF-2018-meningites';
+const DIA_MEN = 'SPILF-2018-meningites-diapo';
+const SRC_24H = S(DIA_MEN, 'dia 11', '[reformulation] pas d\'adaptation les 24 premières heures quel que soit le DFG', 'adaptation_renale');
+const SRC_DOSAGE_LCS = S(SP_MEN, '§12.8.2.4 p. 23', '[reformulation] Doser plasma et LCS pour vérifier des concentrations dans le LCS ≥ 10 fois la CMI', 'adaptation_renale');
+const SRC_HEMOFILTRATION = S(DIA_MEN, 'dia 11', '[reformulation] doses habituelles sous hémofiltration continue', 'adaptation_renale');
+const HD_MENINGE = (molecule: string) => ({
+  texte: `Hémodialyse intermittente : non traitée par les sources lues pour la dose méningée de ${molecule}. Pleine dose les 24 premières heures (SPILF 2018 : quel que soit le DFG), puis avis pharmacologique et dosages plasmatiques (et dans le LCS). Le palier « hémodialyse » du RCP vise la posologie standard : il ne s'applique pas à la dose méningée.`,
+  sources: [SRC_24H, SRC_DOSAGE_LCS],
+});
+
+/** Céfotaxime méningé : pleine dose 24 h puis −25 / −50 / −75 % selon le DFG (SPILF 2018, Tableau 8 ; diaporama 11). */
+function renalCefotaximeMeninge(dose: 300 | 200): AdaptationRenale {
+  const red = (pc: number) => (dose * (100 - pc)) / 100;
+  const calc = dose === 300 ? '(valeur du diaporama SPILF)' : '(pourcentage SPILF appliqué par l\'application à 200 mg/kg/j)';
+  const src = S(SP_MEN, 'Tableau 8 p. 22 ; §12.8.2.4 p. 23', '[reformulation] céfotaxime — même dose les 24 premières heures, puis réduction de 25 % (DFG 30–60), 50 % (DFG 15–30), 75 % (DFG < 15) ; pas d\'adaptation sous hémofiltration continue', 'adaptation_renale');
+  const dia = S(DIA_MEN, 'dia 11', '[reformulation] céfotaxime 225 mg/kg/j (30 < DFG ≤ 60), 150 mg/kg/j (15 < DFG ≤ 30), 75 mg/kg/j (DFG ≤ 15)', 'adaptation_renale');
+  const palier = (bornes: string, pc: number) =>
+    `${bornes} : pleine dose (${dose} mg/kg/j) les 24 premières heures, puis réduction de ${pc} % : ${red(pc)} mg/kg/j ${calc}. Seuils SPILF exprimés en DFG sans formule précisée (non tranché). Doser plasma et LCS.`;
+  return {
+    methode: 'non_precisee',
+    statut: 'brouillon',
+    texteGeneral: 'Dose méningée (SPILF 2018) : pas d\'adaptation les 24 premières heures quel que soit le DFG ; les paliers du RCP (posologie standard) ne s\'appliquent pas.',
+    paliers: [
+      { clcrMin: 60.01, texte: 'DFG > 60 mL/min : pas d\'adaptation de la dose méningée (SPILF 2018).', sources: [src] },
+      { clcrMin: 30.01, clcrMax: 60.01, texte: palier('DFG 31-60 mL/min (SPILF : 30 < DFG ≤ 60)', 25), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+      { clcrMin: 15.01, clcrMax: 30.01, texte: palier('DFG 16-30 mL/min (SPILF : 15 < DFG ≤ 30)', 50), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+      { clcrMax: 15.01, texte: palier('DFG ≤ 15 mL/min', 75), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+    ],
+    hemodialyse: HD_MENINGE('céfotaxime'),
+    eerContinue: { texte: 'Hémofiltration continue : doses habituelles, pas d\'adaptation (SPILF 2018). Doser plasma et LCS.', sources: [src, SRC_HEMOFILTRATION, SRC_DOSAGE_LCS] },
+  };
+}
+
+/** Ceftriaxone méningée : pas d'adaptation si ClCr ≥ 30 ; sinon pleine dose 24 h (2 injections) puis −50 % en 1 injection (SPILF 2018). */
+function renalCeftriaxoneMeninge(dose: 100 | 75): AdaptationRenale {
+  const calc = dose === 100 ? '50 mg/kg/j (valeur du diaporama SPILF)' : '37,5 mg/kg/j (pourcentage SPILF appliqué par l\'application à 75 mg/kg/j)';
+  const src = S(SP_MEN, 'Tableau 8 p. 22', '[reformulation] Ceftriaxone — si ClCr < 30 : même dose 24 h (en 2 injections) puis −50 % en 1 injection', 'adaptation_renale');
+  const info = S('SPILF-2019-info-antibio-90', 'tableau', 'Si DFG <30mL/min: même dose pdt 24h (en 2 perfusions), puis, baisse de 50% en 1 perfusion', 'adaptation_renale');
+  return {
+    methode: 'non_precisee',
+    statut: 'brouillon',
+    texteGeneral: 'Dose méningée (SPILF 2018) : pas d\'adaptation si ClCr ≥ 30 mL/min ; les paliers du RCP (posologie standard, plafond de 2 g/j) ne s\'appliquent pas.',
+    paliers: [
+      { clcrMin: 30, texte: 'ClCr ≥ 30 mL/min : pas d\'adaptation de la dose méningée (SPILF 2018).', sources: [src] },
+      {
+        clcrMax: 30,
+        texte: `ClCr < 30 mL/min : pleine dose (${dose} mg/kg/j, en 2 injections) les 24 premières heures, puis réduction de 50 % en 1 injection : ${calc}. Seuil < 30 (texte long, Info-antibio ; « ≤ 30 » lu dans le diaporama) ; grandeur rénale non tranchée (clairance ou DFG). Doser plasma et LCS.`,
+        sources: [src, info, S(DIA_MEN, 'dia 11', '[reformulation] ceftriaxone 100 mg/kg/j en 2 fois/j puis 50 mg/kg/j en 1 fois/j', 'adaptation_renale'), SRC_DOSAGE_LCS],
+      },
+    ],
+    hemodialyse: HD_MENINGE('ceftriaxone'),
+    eerContinue: { texte: 'Hémofiltration continue : doses habituelles, pas d\'adaptation (SPILF 2018, diaporama 11). Doser plasma et LCS.', sources: [SRC_HEMOFILTRATION, SRC_DOSAGE_LCS] },
+  };
+}
+
+/**
+ * Amoxicilline méningée (200 mg/kg/j) : aucune adaptation rénale de cette dose dans les sources lues (la SPILF ne
+ * détaille que les C3G ; les paliers du RCP visent sa posologie, au plus 12 g/j). Seuil de 30 mL/min du RCP conservé
+ * pour signaler où commence l'adaptation, sans en reprendre les doses.
+ */
+const RENAL_AMOXICILLINE_MENINGE: AdaptationRenale = {
+  methode: 'non_precisee',
+  statut: 'brouillon',
+  texteGeneral: 'Dose méningée : aucune adaptation rénale chiffrée dans les sources lues ; les paliers du RCP (posologie standard, au plus 12 g/j) ne s\'appliquent pas.',
+  paliers: [
+    {
+      clcrMin: 30.01,
+      texte: 'DFG > 30 mL/min : pas d\'adaptation selon le RCP (seuil établi pour la posologie du RCP, au plus 12 g/j) ; la SPILF 2018 ne traite pas l\'adaptation rénale de l\'amoxicilline à dose méningée.',
+      sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '> 30 : pas d\'adaptation', 'adaptation_renale')],
+    },
+    {
+      clcrMax: 30.01,
+      texte: 'DFG ≤ 30 mL/min : aucune adaptation de la dose méningée dans les sources lues (SPILF 2018 : paliers des seules C3G ; paliers du RCP établis pour la posologie standard, inapplicables à 200 mg/kg/j). Pleine dose les 24 premières heures (principe SPILF énoncé avant les paliers des C3G, extension à l\'amoxicilline non explicite), puis avis pharmacologique et dosages plasmatiques (et dans le LCS) ; surveiller l\'apparition de convulsions (RCP).',
+      sources: [SRC_24H, SRC_DOSAGE_LCS, S('RCP-amoxicilline', '§4.4', 'Des convulsions peuvent apparaitre chez les patients insuffisant rénaux ou recevant des doses élevées', 'surveillance')],
+    },
+  ],
+  hemodialyse: HD_MENINGE('l\'amoxicilline'),
+  eerContinue: { texte: 'Épuration extrarénale continue : non traitée par les sources lues pour l\'amoxicilline à dose méningée : avis pharmacologique et dosages plasmatiques (et dans le LCS).', sources: [SRC_DOSAGE_LCS] },
+};
 
 /* ------------------------------------------------------------------ */
 export const cefotaxime: Molecule = {
@@ -32,19 +117,22 @@ export const cefotaxime: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 15, 22', 'Céfotaxime IV 6 g/jour OU ceftriaxone IV 2 g/jour ET amikacine IV 30 mg/kg, dose unique', 'posologie'), S('SPILF-2015-IU', 'annexe 1, p. 41', 'PNA grave : céfotaxime 2 g x 3/jour', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (céfotaxime)', '2 g toutes les 8 h en perfusions de 30 min', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Cefotaxime 1 g x 3 iv [standard] ; 2 g x 3 iv [high]', 'posologie')],
     },
-    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §10.2) : dose concordante avec le RCP (200 à 300 mg/kg/j).
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §10.2) : dose concordante avec le RCP (200 à 300 mg/kg/j),
+    // sans données du RCP au-delà de 24 g/j ; brouillon tant que la révision SPILF n'est pas publiée (note §9).
     {
       id: 'cefotaxime-meninge-300',
       libelle: '300 mg/kg/j IV — méningite (cocci à Gram positif, pneumocoque, examen direct négatif)',
       indication: 'Méningite bactérienne : examen direct à cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
       dose: { type: 'ponderale', valeur: 75, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
       voie: 'IV',
-      modalites: '75 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg sur 1 h (SPILF 2018). Pas de dose maximale consensuelle chez l\'adulte (SPILF) ; RCP : pas de données au-delà de 24 g/j.',
-      statut: 'verifiee_ia',
+      modalites: '75 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg sur 1 h (SPILF 2018). Pas de dose maximale consensuelle chez l\'adulte (SPILF) ; RCP : pas de données au-delà de 24 g/j (dépassé au-delà de 80 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', 'céfotaxime 300 mg/kg/j IV, en continu (dose de charge 50 mg/kg sur 1 h) ou ≥ 4 perfusions (75 mg/kg/6 h)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', '[reformulation] céfotaxime 300 mg/kg/j IV, en continu (dose de charge 50 mg/kg sur 1 h) ou ≥ 4 perfusions (75 mg/kg/6 h)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1', 'some studies report doses of 24 g/day of cefotaxime', 'posologie'),
         S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour, on ne dispose pas d\'éléments d\'efficacité ou de tolérance au-delà de 24 g/ jour', 'posologie'),
       ],
+      adaptationRenale: renalCefotaximeMeninge(300),
     },
     {
       id: 'cefotaxime-meninge-200',
@@ -52,12 +140,13 @@ export const cefotaxime: Molecule = {
       indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI C3G ≤ 0,5 et CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
       dose: { type: 'ponderale', valeur: 50, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
       voie: 'IV',
-      modalites: '50 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg (SPILF 2018).',
-      statut: 'verifiee_ia',
+      modalites: '50 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg (SPILF 2018). RCP : pas de données au-delà de 24 g/j (dépassé au-delà de 120 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', 'céfotaxime 200 mg/kg/j (50 mg/kg/6 h ou continu avec charge 50 mg/kg)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', '[reformulation] céfotaxime 200 mg/kg/j (50 mg/kg/6 h ou continu avec charge 50 mg/kg)', 'posologie'),
         S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour', 'posologie'),
       ],
+      adaptationRenale: renalCefotaximeMeninge(200),
     },
     {
       id: 'cefotaxime-iia',
@@ -146,31 +235,48 @@ export const ceftriaxone: Molecule = {
     // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §9.8 point 1, §10.2) : doses SPILF au-dessus du RCP.
     {
       id: 'ceftriaxone-meninge-100',
-      libelle: '100 mg/kg/j IV — méningite (pneumocoque, examen direct négatif) — au-dessus du RCP',
+      libelle: '100 mg/kg/j IV en 1 ou 2 perfusions — méningite (pneumocoque, examen direct négatif) — au-dessus du RCP',
       indication: 'Méningite bactérienne : cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
-      dose: { type: 'ponderale', valeur: 100, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'total' },
+      dose: { type: 'ponderale', valeur: 50, unite: 'mg/kg', frequenceParJour: 2, poidsReference: 'total' },
       voie: 'IV',
-      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018). Hors RCP : le RCP prévoit 2 à 4 g une fois par jour pour la méningite ; 100 mg/kg/j dépasse 4 g/j dès 40 kg.',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018), affichée en 2 perfusions (RCP : 2 administrations par jour envisageables au-delà de 2 g/j) ; une prise unique n\'est pas imposée. Hors RCP : le RCP prévoit 2 à 4 g par jour pour la méningite ; 100 mg/kg/j dépasse 4 g/j dès 40 kg. Pas de dose maximale consensuelle (SPILF). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
       statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', 'ceftriaxone 100 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', '[reformulation] ceftriaxone 100 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
         S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
       ],
       remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : dose recommandée SPILF supérieure au maximum du RCP.',
+      adaptationRenale: renalCeftriaxoneMeninge(100),
     },
     {
       id: 'ceftriaxone-meninge-75',
-      libelle: '75 mg/kg/j IV — méningite (méningocoque, H. influenzae, E. coli) — au-dessus du RCP',
+      libelle: '75 mg/kg/j IV en 1 ou 2 perfusions — méningite (méningocoque, H. influenzae, E. coli) — au-dessus du RCP',
       indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
-      dose: { type: 'ponderale', valeur: 75, unite: 'mg/kg', frequenceParJour: 1, poidsReference: 'total' },
+      dose: { type: 'ponderale', valeur: 37.5, unite: 'mg/kg', frequenceParJour: 2, poidsReference: 'total' },
       voie: 'IV',
-      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018). Hors RCP : le RCP prévoit 2 à 4 g une fois par jour pour la méningite ; 75 mg/kg/j dépasse 4 g/j au-delà de 53 kg.',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018), affichée en 2 perfusions (RCP : 2 administrations par jour envisageables au-delà de 2 g/j) ; une prise unique n\'est pas imposée. Hors RCP : le RCP prévoit 2 à 4 g par jour pour la méningite ; 75 mg/kg/j dépasse 4 g/j au-delà de 53 kg. Poids de référence non précisé par la source (poids réel retenu par l\'application).',
       statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', 'ceftriaxone 75 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', '[reformulation] ceftriaxone 75 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
         S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
       ],
       remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
+      adaptationRenale: renalCeftriaxoneMeninge(75),
+    },
+    // Prophylaxie du portage de méningocoque (docs/sources/recherche-meningites.md §5, §9.8 point 11) : dose absente du RCP.
+    {
+      id: 'ceftriaxone-prophylaxie-iim-250',
+      libelle: '250 mg en injection unique — prophylaxie des infections invasives à méningocoque (hors RCP)',
+      indication: 'Prophylaxie du portage de méningocoque (instruction DGS 2018 : en cas de contre-indication, de résistance ou d\'infections répétées ; DGS-Urgent 2025_06 relayé par l\'AP-HP : si la souche est résistante à la ciprofloxacine ou non documentée).',
+      dose: { type: 'fixe', valeur: 250, unite: 'mg', frequenceParJour: 1, texte: '250 mg en injection unique' },
+      voie: 'IM ou IV',
+      modalites: 'Injection unique. Posologie absente du RCP (pas d\'indication de prophylaxie des IIM) : usage recommandé par la DGS, hors RCP.',
+      statut: 'brouillon',
+      sources: [
+        S('DGS-2018-IIM', 'p. 18, fiche 8-2', 'Ceftriaxone par voie injectable, en dose unique : Adulte : injection unique de 250 mg', 'posologie'),
+        S('SPILF-2018-IIM-diapo', 'dia 6', 'ceftriaxone IV dose unique (250 mg chez l\'adulte', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 11).',
     },
     {
       id: 'ceftriaxone-iia',
@@ -391,13 +497,14 @@ export const amoxicilline: Molecule = {
       indication: 'Méningite bactérienne : bacille à Gram positif ou Listeria (avec gentamicine), examen direct négatif avec arguments pour une listériose, pneumocoque de CMI C3G et amoxicilline ≤ 0,5 mg/L, S. agalactiae (SPILF 2018).',
       dose: { type: 'ponderale', valeur: 33.3, unite: 'mg/kg', frequenceParJour: 6, poidsReference: 'total' },
       voie: 'IV',
-      modalites: '200 mg/kg/j en 4 à 6 perfusions ou en perfusion continue (SPILF 2018), affichés ici en 6 perfusions. Hors RCP : le RCP prévoit pour la méningite 1 à 2 g toutes les 4 à 6 h, au maximum 12 g/j (dépassé au-delà de 60 kg).',
+      modalites: '200 mg/kg/j en 4 à 6 perfusions ou en perfusion continue (SPILF 2018), affichés ici en 6 perfusions. Hors RCP : le RCP prévoit pour la méningite 1 à 2 g toutes les 4 à 6 h, au maximum 12 g/j (dépassé au-delà de 60 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
       statut: 'brouillon',
       sources: [
-        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3', 'amoxicilline 200 mg/kg/j IV en 4 à 6 perfusions', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3', '[reformulation] amoxicilline 200 mg/kg/j IV en 4 à 6 perfusions', 'posologie'),
         S('RCP-amoxicilline', '§4.2', 'Méningite bactérienne 1 g à 2 g toutes les 4 à 6 heures, au maximum 12 g/jour', 'posologie'),
       ],
       remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : pas de plafond à 12 g/j dans la recommandation SPILF.',
+      adaptationRenale: RENAL_AMOXICILLINE_MENINGE,
     },
     // Pneumonies (docs/sources/recherche-pneumonies.md).
     {
@@ -806,9 +913,9 @@ export const meropeneme: Molecule = {
       indication: 'Méningite à bacille à Gram négatif ou E. coli avec suspicion de BLSE (colonisation ou prélèvement d\'un autre site) : méropénème et avis d\'expert (SPILF 2018).',
       dose: { type: 'ponderale', valeur: 40, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total' },
       voie: 'IV',
-      modalites: 'Perfusion lente toutes les 8 h ; avis d\'expert (SPILF 2018). RCP du méropénème non relu pour la méningite.',
+      modalites: 'Perfusion lente toutes les 8 h ; avis d\'expert (SPILF 2018). RCP du méropénème non relu pour la méningite. Poids de référence non précisé par la source (poids réel retenu par l\'application).',
       statut: 'brouillon',
-      sources: [S('SPILF-2018-meningites', 'p. 22, §12.8.1.5', 'méropénème 40 mg/kg × 3/j en perfusion lente + avis d\'expert', 'posologie')],
+      sources: [S('SPILF-2018-meningites', 'p. 22, §12.8.1.5', '[reformulation] méropénème 40 mg/kg × 3/j en perfusion lente + avis d\'expert', 'posologie')],
     },
     {
       id: 'meropeneme-iia',
