@@ -4,8 +4,11 @@
  * HCSP 2008, RCP fidaxomicine et vancomycine orale), indépendamment du code.
  */
 import { decider } from '../engine/decider';
-import { dossierParDefaut, nettoyerDossier, type Dossier } from '../engine/etat';
+import { construireContexte } from '../engine/contexte';
+import { dossierParDefaut, nettoyerDossier, nouveauPrelevement, type Dossier } from '../engine/etat';
 import { questionsPour } from '../clinical/syndromes/questions';
+import { QUESTIONS_CDIFF } from '../clinical/syndromes/clostridioides-difficile';
+import { R_CDIFF } from '../clinical/rules/clostridioides-difficile';
 import { MOLECULES_PAR_ID } from '../clinical/molecules';
 import { SOURCES_PAR_ID } from '../clinical/sources';
 import type { Plan } from '../clinical/types';
@@ -75,7 +78,9 @@ describe('Qui tester, qui ne pas traiter', () => {
     expect(p.indication?.decision).toBe('attendre_resultat');
     expect(p.options).toHaveLength(0);
     expect(p.controles.find((c) => c.id === 'ctl-cdiff-recherche')?.categorie).toBe('indique');
-    expect(p.gestes.some((g) => /Précautions complémentaires contact dès la suspicion/.test(g.texte))).toBe(true);
+    // IDSA 2017 : précautions préemptives si le résultat n'est pas disponible le jour même (pas « dès la suspicion », non sourcé).
+    expect(p.gestes.some((g) => /préemptives si le résultat n'est pas disponible le jour même/.test(g.texte))).toBe(true);
+    expect(p.gestes.some((g) => /dès la suspicion/.test(g.texte))).toBe(false);
   });
 
   test('recherche négative : pas de traitement, pas de nouveau test dans les 7 jours', () => {
@@ -108,6 +113,10 @@ describe('1er épisode', () => {
     expect(vo.voie).toBe('PO');
     expect(option(p, 'cdiff-1er-vanco').commentaire).toMatch(/Métronidazole/);
     expect(p.sortie.traitement).toBe('complet');
+    // Branche SPILF 2026 illisible (note §15.4 A, §15.7 n° 1) : non tranchée → brouillon, couverture partielle.
+    expect(option(p, 'cdiff-1er-fidaxo').statut).toBe('brouillon');
+    expect(option(p, 'cdiff-1er-vanco').statut).toBe('brouillon');
+    expect(p.situation.couverture).toBe('partielle');
   });
 
   test('vancomycine orale : ni paliers rénaux ni STP de la voie IV, même en insuffisance rénale', () => {
@@ -117,7 +126,8 @@ describe('1er épisode', () => {
     }));
     const vo = option(p, 'cdiff-1er-vanco').prescriptions[0];
     const txt = vo.adaptations.join(' ');
-    expect(txt).toMatch(/pas d'adaptation posologique prévue/);
+    expect(txt).toMatch(/Pas d'adaptation à la fonction rénale ni à la dialyse/);
+    expect(txt).toMatch(/colite pseudomembraneuse/);
     expect(txt).not.toMatch(/mg\/kg|toutes les 24 h/);
     expect(vo.doseAffichee).not.toMatch(/Dose de référence/);
     expect(vo.surveillance.some((s) => (s.element as { parametre?: string }).parametre !== undefined)).toBe(false);
@@ -155,7 +165,7 @@ describe('1er épisode', () => {
 });
 
 describe('Forme grave et compliquée (fulminante)', () => {
-  test('divergence IDSA / ESCMID-SPILF affichée sans être tranchée ; avis chirurgical immédiat', () => {
+  test('divergence IDSA / ESCMID-SPILF affichée sans être tranchée ; avis chirurgical systématique et précoce', () => {
     const p = plan(cdiff({ 'cdiff.compliquee': 'oui' }));
     expect(p.situation.id).toBe('cdiff-fulminante');
     expect(p.urgence.niveau).toBe('immediate');
@@ -246,5 +256,347 @@ describe('Terrain, voie d’administration et mesures associées', () => {
       for (const r of refs) if (!SOURCES_PAR_ID[r.source]) manquantes.add(r.source);
     }
     expect([...manquantes]).toEqual([]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Relecture v7 (clinique et développement)                            */
+/* ------------------------------------------------------------------ */
+
+const SANS_TRAITEMENT = ['ne_pas_traiter', 'attendre_resultat', 'informations_insuffisantes'];
+const TESTS = ['non_preleve', 'en_attente', 'negatif', 'toxine_positive', 'taan_seul', 'discordant'];
+/** Contribution de R-CDIFF seule (pour vérifier ce que la règle elle-même produit). */
+const contribution = (d: Dossier) => {
+  nettoyerDossier(d);
+  return R_CDIFF.appliquer(construireContexte(d, MAINTENANT));
+};
+
+describe('v7 — forme fulminante : urgence quel que soit le test', () => {
+  test('fulminante + GDH/TAAN positif et toxines négatives : urgence immédiate, avis chirurgical, options conditionnelles en brouillon, point non résolu', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'discordant', 'cdiff.compliquee': 'oui' }));
+    expect(p.urgence.niveau).toBe('immediate');
+    expect(p.indication?.decision).toBe('urgence');
+    expect(p.indication?.pointNonResolu).toMatch(/portage/);
+    expect(p.options.length).toBe(3);
+    expect(p.options.every((o) => o.rang === 'conditionnelle' && o.statut === 'brouillon' && /SMIT/.test(o.condition ?? ''))).toBe(true);
+    expect(p.avisSpecialise.some((a) => a.urgent && /chirurgical systématique et précoce/.test(a.texte))).toBe(true);
+    expect(p.urgence.alertes.some((a) => a.niveau === 'urgence' && /grave et compliquée/.test(a.texte))).toBe(true);
+  });
+
+  test('choc septique + recherche négative : pas de « ne pas traiter », urgence conservée, avis chirurgical et infectiologique, autre cause', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'negatif' }, (d) => (d.patient.gravite = 'choc_septique')));
+    expect(p.urgence.niveau).toBe('immediate');
+    expect(p.indication?.decision).toBe('urgence');
+    expect(p.indication?.actions.join(' ')).toMatch(/Revoir le diagnostic/);
+    expect(p.avisSpecialise.some((a) => a.urgent && /chirurgical et infectiologique/.test(a.texte))).toBe(true);
+    expect(p.sortie.motifs.some((m) => m.type === 'non_indiquee')).toBe(false);
+  });
+
+  test('iléus + recherche négative : urgence conservée (l’iléus classe la forme comme grave et compliquée)', () => {
+    const p = plan(cdiff({ 'cdiff.diarrhee': 'ileus', 'cdiff.test': 'negatif' }));
+    expect(p.urgence.niveau).toBe('immediate');
+    expect(p.indication?.raison).toMatch(/iléus/);
+  });
+
+  test('le motif de la forme fulminante est dit en clair (iléus seul)', () => {
+    const p = plan(cdiff({ 'cdiff.diarrhee': 'ileus', 'cdiff.test': 'toxine_positive' }));
+    expect(p.situation.id).toBe('cdiff-fulminante');
+    expect(p.situation.description).toMatch(/Classée grave et compliquée : iléus/);
+    expect(questionsPour('clostridioides_difficile', cdiff()).find((q) => q.id === 'cdiff.diarrhee')?.options?.some((o) => /iléus \(forme grave et compliquée\)/.test(o.l))).toBe(true);
+  });
+
+  test('attente du résultat avec forme compliquée non renseignée : donnée manquante bloquante', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'en_attente', 'cdiff.compliquee': '' }, (d) => delete d.details!['cdiff.compliquee']));
+    expect(p.indication?.decision).toBe('attendre_resultat');
+    const m = p.donneesManquantes.find((x) => /forme grave et compliquée/.test(x.champ))!;
+    expect(m.impact).toBe('bloque_decision');
+    expect(m.cible).toBe('details.cdiff.compliquee');
+  });
+
+  test('IDSA : forte dose « per os » (l’extrait ne dit pas « par sonde ») ; grossesse : options fulminantes signalées déconseillées', () => {
+    const p = plan(cdiff({ 'cdiff.compliquee': 'oui' }, (d) => {
+      d.patient.sexe = 'femme';
+      d.patient.age = 30;
+      d.patient.grossesse = 'oui';
+    }));
+    expect(option(p, 'cdiff-fulminante-idsa').libelle).not.toMatch(/sonde/);
+    expect(option(p, 'cdiff-fulminante-idsa').condition).toMatch(/grossesse : fortes doses de vancomycine déconseillées/);
+    expect(option(p, 'cdiff-fulminante-fidaxo').condition).toMatch(/grossesse : préférable d'éviter/);
+  });
+
+  test('fulminante sans test : fidaxomicine signalée « SMR insuffisant si C. difficile non objectivé »', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'non_preleve', 'cdiff.compliquee': 'oui' }));
+    expect(option(p, 'cdiff-fulminante-fidaxo').commentaire).toMatch(/SMR jugé insuffisant/);
+  });
+});
+
+describe('v7 — sepsis ou choc : jamais masqué par une conclusion propre à C. difficile', () => {
+  test('sepsis/choc × diarrhée × chaque résultat de test : urgence immédiate, alerte sepsis, jamais de conclusion globale sans traitement', () => {
+    for (const gravite of ['sepsis', 'choc_septique'] as const)
+      for (const diarrhee of ['oui', 'non', 'inconnu'])
+        for (const t of TESTS) {
+          const d = cdiff({ 'cdiff.test': t, 'cdiff.diarrhee': diarrhee }, (x) => (x.patient.gravite = gravite));
+          if (diarrhee === 'inconnu') delete d.details!['cdiff.diarrhee'];
+          const p = plan(d);
+          const cas = `${gravite} / diarrhée ${diarrhee} / ${t}`;
+          expect(p.urgence.niveau, cas).toBe('immediate');
+          expect(p.urgence.alertes.some((a) => a.niveau === 'urgence' && /Sepsis|Choc septique/.test(a.texte)), cas).toBe(true);
+          expect(SANS_TRAITEMENT.includes(p.indication?.decision ?? ''), cas).toBe(false);
+          expect(p.sortie.motifs.some((m) => m.type === 'non_indiquee'), cas).toBe(false);
+          if (p.sortie.traitement !== 'complet') expect(p.sortie.motifs.length, cas).toBeGreaterThan(0);
+        }
+  });
+
+  test('sepsis + recherche négative : conclusion limitée à C. difficile, autre cause à rechercher', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'negatif' }, (d) => (d.patient.gravite = 'sepsis')));
+    expect(p.indication?.titre).toMatch(/pour C. difficile seulement : recherche négative/);
+    expect(p.indication?.actions[0]).toMatch(/Prise en charge du sepsis sans attendre/);
+    expect(p.urgence.alertes.some((a) => /autre cause à rechercher/.test(a.texte))).toBe(true);
+    expect(p.situation.couverture).toBe('partielle');
+  });
+
+  test('choc sans diarrhée avec test positif : reconsidérer un iléus ou un mégacôlon', () => {
+    const p = plan(cdiff({ 'cdiff.diarrhee': 'non' }, (d) => (d.patient.gravite = 'choc_septique')));
+    expect(p.indication?.reconsiderer.join(' ')).toMatch(/iléus, ou mégacôlon toxique/);
+  });
+
+  test('choc + diarrhée inconnue : la forme fulminante possible est signalée', () => {
+    const d = cdiff({}, (x) => (x.patient.gravite = 'choc_septique'));
+    delete d.details!['cdiff.diarrhee'];
+    const p = plan(d);
+    expect(p.urgence.alertes.some((a) => /classerait l'infection à C. difficile en forme grave et compliquée/.test(a.texte))).toBe(true);
+  });
+
+  test('aide de la question « forme compliquée » : le sepsis seul n’est pas un critère des sources lues', () => {
+    expect(QUESTIONS_CDIFF.find((q) => q.id === 'cdiff.compliquee')?.aide).toMatch(/sepsis sans choc n'est pas, en soi, un critère/);
+  });
+});
+
+describe('v7 — diagnostic', () => {
+  test('laxatif dans les 48 h : recherche non systématique (cohérent avec l’alerte)', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'non_preleve', 'cdiff.laxatif': 'oui' }));
+    expect(p.controles.find((c) => c.id === 'ctl-cdiff-recherche')?.categorie).toBe('non_systematique');
+    expect(p.indication?.actions[0]).toMatch(/Laxatif/);
+  });
+
+  test('TAAN seul : options en brouillon, positions IDSA (toxines) et ESCMID 2021 (Ct bas) affichées, recherche de toxines demandée', () => {
+    const p = plan(cdiff({ 'cdiff.test': 'taan_seul' }, (d) => (d.patient.age = 72)));
+    expect(p.options.length).toBeGreaterThan(0);
+    expect(p.options.every((o) => o.statut === 'brouillon')).toBe(true);
+    expect(p.situation.couverture).toBe('partielle');
+    expect(p.urgence.alertes.some((a) => /IDSA 2017 préfère un test de toxines/.test(a.texte) && /Ct bas/.test(a.texte))).toBe(true);
+    expect(p.controles.some((c) => c.id === 'ctl-cdiff-toxines')).toBe(true);
+  });
+
+  test('diarrhée inconnue : une seule ligne « Compléter » (même libellé), vers la question', () => {
+    const d = cdiff();
+    delete d.details!['cdiff.diarrhee'];
+    const p = plan(d);
+    const lignes = p.sortie.motifs.flatMap((m) => m.aCompleter).filter((x) => /diarrhée/.test(x.texte));
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0].cible).toBe('details.cdiff.diarrhee');
+  });
+
+  test('critère créatinine : divergence IDSA (valeur absolue) affichée dans l’aide de la question', () => {
+    expect(QUESTIONS_CDIFF.find((q) => q.id === 'cdiff.gravite')?.aide).toMatch(/IDSA 2017 en valeur absolue \(> 1,5 mg\/dL/);
+  });
+});
+
+describe('v7 — épisodes et récidives', () => {
+  test('récidives multiples : options en brouillon, schéma non précisé par la source', () => {
+    const p = plan(cdiff({ 'cdiff.episode': 'recidives_multiples', 'cdiff.traitement_precedent': 'vancomycine' }));
+    for (const id of ['cdiff-multi-vanco', 'cdiff-multi-fidaxo']) {
+      expect(option(p, id).statut).toBe('brouillon');
+      expect(option(p, id).libelle).toMatch(/schéma non précisé par la source/);
+    }
+  });
+
+  test('TMF en 1re récidive : « quel que soit le traitement reçu » réservé aux > 70 ans, grade AE du haut risque, divergence IDSA', () => {
+    const p = plan(cdiff({ 'cdiff.episode': 'premiere_recidive', 'cdiff.traitement_precedent': 'vancomycine' }));
+    const tmf = p.avisSpecialise.find((a) => /TMF/.test(a.texte))!.texte;
+    expect(tmf).toMatch(/réfractaire\) \(grade AE\)/);
+    expect(tmf).toMatch(/quel que soit le traitement reçu chez les patients de plus de 70 ans \(grade C\)/);
+    expect(tmf).toMatch(/IDSA 2017 ne propose la TMF qu'après au moins 2 récidives/);
+  });
+
+  test('65 ans et autre facteur inconnu : la divergence du seuil d’âge reste affichée', () => {
+    const p = plan(cdiff({ 'cdiff.ipp': '' }, (d) => {
+      d.patient.age = 65;
+      delete d.details!['cdiff.ipp'];
+    }));
+    expect(p.situation.id).toBe('cdiff-1er-episode-risque-a-preciser');
+    expect(p.urgence.alertes.some((a) => /Seuil d'âge du haut risque de récidive divergent/.test(a.texte))).toBe(true);
+  });
+
+  test('contexte inconnu : hospitalisation « non » suffit ; « oui » renvoie au contexte (même ligne que les données générales)', () => {
+    const sansHospit = contribution(cdiff({ 'cdiff.hospitalisation': 'non' }, (d) => (d.patient.contexte = 'inconnu')));
+    expect(sansHospit.donneesManquantes!.some((m) => /contexte|hospitalisation/.test(m.champ))).toBe(false);
+    const avecHospit = contribution(cdiff({ 'cdiff.hospitalisation': 'oui' }, (d) => (d.patient.contexte = 'inconnu')));
+    expect(avecHospit.donneesManquantes!.find((m) => /contexte/.test(m.champ))).toMatchObject({ champ: 'contexte communautaire ou associé aux soins', cible: 'patient.contexte' });
+  });
+
+  test('voie orale non renseignée : donnée manquante', () => {
+    const d = cdiff();
+    delete d.details!['cdiff.voie_orale'];
+    expect(plan(d).donneesManquantes.find((m) => /voie orale/.test(m.champ))?.cible).toBe('details.cdiff.voie_orale');
+  });
+});
+
+describe('v7 — terrain, allergies, interactions, molécules', () => {
+  test('femme de 30 ans, grossesse non renseignée : donnée bloquante vers le champ grossesse', () => {
+    const p = plan(cdiff({}, (d) => {
+      d.patient.sexe = 'femme';
+      d.patient.age = 30;
+      d.patient.grossesse = 'inconnu';
+    }));
+    const g = p.donneesManquantes.find((m) => m.champ === 'grossesse')!;
+    expect(g.impact).toBe('bloque_decision');
+    expect(g.cible).toBe('patient.grossesse');
+    expect(p.sortie.traitement).not.toBe('complet');
+  });
+
+  test('grossesse : fortes doses et schémas pulsés « déconseillés » (pas « écartés ») ; récidives multiples : centre de TMF', () => {
+    const p = plan(cdiff({ 'cdiff.episode': 'recidives_multiples', 'cdiff.traitement_precedent': 'vancomycine' }, (d) => {
+      d.patient.sexe = 'femme';
+      d.patient.age = 30;
+      d.patient.grossesse = 'oui';
+    }));
+    expect(p.sortie.ecartees.some((e) => /forte dose/.test(e.libelle))).toBe(false);
+    expect(p.urgence.alertes.some((a) => /déconseillés/.test(a.texte) && /should be discouraged/.test(a.texte))).toBe(true);
+    expect(p.avisSpecialise.some((a) => /centre de transplantation de microbiote fécal/.test(a.texte))).toBe(true);
+  });
+
+  test('allergie à la fidaxomicine, 1re récidive : vancomycine en 1re ligne (2e intention si fidaxomicine non accessible), pas de motif « contraintes »', () => {
+    const p = plan(cdiff({ 'cdiff.episode': 'premiere_recidive', 'cdiff.traitement_precedent': 'vancomycine' }, (d) => {
+      d.patient.statutAllergie = 'presentes';
+      d.patient.allergies = [{ molecule: 'fidaxomicine', reaction: 'immediate', gravite: 'severe' }];
+    }));
+    expect(molecules(p, 'premiere_ligne')).toEqual(['vancomycine_orale']);
+    expect(p.sortie.motifs.some((m) => m.type === 'contraintes')).toBe(false);
+  });
+
+  test('allergie à la fidaxomicine, haut risque : vancomycine conditionnelle en brouillon, conduite non tranchée', () => {
+    const p = plan(cdiff({}, (d) => {
+      d.patient.age = 72;
+      d.patient.statutAllergie = 'presentes';
+      d.patient.allergies = [{ molecule: 'fidaxomicine', reaction: 'immediate', gravite: 'severe' }];
+    }));
+    const v = option(p, 'cdiff-1er-vanco');
+    expect(v.rang).toBe('conditionnelle');
+    expect(v.statut).toBe('brouillon');
+    expect(v.condition).toMatch(/allergie déclarée/);
+  });
+
+  test('allergie aux macrolides : fidaxomicine maintenue, avec la prudence du RCP dite explicitement', () => {
+    const p = plan(cdiff({}, (d) => {
+      d.patient.statutAllergie = 'presentes';
+      d.patient.allergies = [{ molecule: 'clarithromycine', reaction: 'immediate', gravite: 'legere' }];
+    }));
+    expect(molecules(p, 'premiere_ligne')).toContain('fidaxomicine');
+    expect(p.urgence.alertes.some((a) => /exclusion des macrolides ne s'applique pas à la fidaxomicine/.test(a.texte))).toBe(true);
+  });
+
+  test('interactions P-gp : amiodarone/dronédarone via le traitement allongeant le QT, question dédiée, tacrolimus non cité', () => {
+    const p = plan(cdiff({}, (d) => (d.patient.traitementsAssocies = ['qt_allongeant', 'immunosuppresseur_calcineurine'])));
+    const fx = option(p, 'cdiff-1er-fidaxo').prescriptions[0];
+    expect(fx.avertissements.join(' ')).toMatch(/amiodarone ou la dronédarone/);
+    expect(fx.avertissements.join(' ')).toMatch(/tacrolimus n'est pas cité/);
+    expect(p.donneesManquantes.find((m) => /P-gp/.test(m.champ))?.cible).toBe('details.cdiff.pgp');
+    const oui = plan(cdiff({ 'cdiff.pgp': 'oui' }));
+    expect(oui.urgence.alertes.some((a) => /P-gp déclaré/.test(a.texte))).toBe(true);
+  });
+
+  test('fidaxomicine : prescription hospitalière et SMR dans les modalités', () => {
+    const fx = option(plan(cdiff()), 'cdiff-1er-fidaxo').prescriptions[0];
+    expect(fx.modalites).toMatch(/prescription hospitalière/);
+    expect(fx.modalites).toMatch(/SMR jugé insuffisant/);
+  });
+
+  test('voie orale impossible : régime intraluminal propre (pas la solution buvable PO)', () => {
+    const vo = option(plan(cdiff({ 'cdiff.voie_orale': 'non' })), 'cdiff-intraluminal-vanco').prescriptions[0];
+    expect(vo.regimenId).toBe('vanco-intraluminal-125x4');
+    expect(vo.voie).toBe('intraluminale');
+  });
+
+  test('hémodialyse : vancomycine orale sans « dose de référence » ni « avis requis » ; fidaxomicine : ce que dit le RCP', () => {
+    const p = plan(cdiff({ 'cdiff.gravite': 'oui' }, (d) => (d.patient.renal = { ...d.patient.renal, dialyse: 'hemodialyse_intermittente' })));
+    const vo = option(p, 'cdiff-1er-vanco').prescriptions[0];
+    expect(vo.doseAffichee).not.toMatch(/Dose de référence/);
+    expect(vo.adaptations.join(' ')).toMatch(/ni à la dialyse/);
+    expect(vo.adaptations.join(' ')).not.toMatch(/avis pharmacologique/);
+    const fx = option(p, 'cdiff-1er-fidaxo').prescriptions[0];
+    expect(fx.adaptations.join(' ')).toMatch(/aucune consigne propre à la dialyse/);
+    expect(fx.adaptations.join(' ')).not.toMatch(/non renseignée dans la base/);
+  });
+});
+
+describe('v7 — cibles, sources, bactériémie concomitante', () => {
+  test('toute donnée manquante produite par R-CDIFF a une cible, et chaque cible « details » est une question du foyer', () => {
+    const ids = new Set(QUESTIONS_CDIFF.map((q) => `details.${q.id}`));
+    const vider = (...cles: string[]) => (d: Dossier) => {
+      for (const c of cles) delete d.details![c];
+    };
+    const cas: Dossier[] = [
+      cdiff({}, vider('cdiff.diarrhee')),
+      cdiff({ 'cdiff.test': 'en_attente' }, vider('cdiff.compliquee')),
+      cdiff({}, vider('cdiff.test')),
+      cdiff({ 'cdiff.test': 'discordant' }, vider('cdiff.compliquee')),
+      cdiff({}, vider('cdiff.episode', 'cdiff.gravite', 'cdiff.voie_orale', 'cdiff.compliquee')),
+      cdiff({}, (d) => {
+        vider('cdiff.antecedent', 'cdiff.atb', 'cdiff.ipp', 'cdiff.hospitalisation')(d);
+        d.patient.age = undefined;
+        d.patient.contexte = 'inconnu';
+      }),
+      cdiff({ 'cdiff.episode': 'premiere_recidive' }),
+      cdiff({}, (d) => {
+        d.patient.sexe = 'femme';
+        d.patient.age = 30;
+        d.patient.grossesse = 'inconnu';
+        d.patient.traitementsAssocies = ['qt_allongeant'];
+      }),
+      cdiff({ 'cdiff.episode': '' }, (d) => {
+        delete d.details!['cdiff.episode'];
+        d.patient.sexe = 'femme';
+        d.patient.age = 30;
+        d.patient.grossesse = 'oui';
+      }),
+    ];
+    let n = 0;
+    for (const d of cas) {
+      // Cible portée par la donnée elle-même, ou (données des molécules, ex. « grossesse ») rattachée par le moteur.
+      const p = plan(structuredClone(d));
+      for (const m of contribution(d).donneesManquantes ?? []) {
+        n++;
+        const cible = m.cible ?? p.donneesManquantes.find((x) => x.champ === m.champ)?.cible;
+        expect(cible, m.champ).toBeDefined();
+        if (cible!.startsWith('details.')) expect(ids.has(cible!), cible).toBe(true);
+        else expect(cible).toMatch(/^patient\./);
+      }
+    }
+    expect(n).toBeGreaterThan(10);
+  });
+
+  test('extraits non verbatim retirés (« 2ème choix », « s’établit ici aussi », « Informer le patient sortant »)', () => {
+    const cas = [cdiff(), cdiff({ 'cdiff.episode': 'premiere_recidive' }), cdiff({}, (d) => delete d.details!['cdiff.episode'])];
+    for (const d of cas) {
+      const p = plan(d);
+      const extraits = [...p.sources, ...p.reevaluation.flatMap((r) => r.sources), ...p.options.flatMap((o) => o.sources)].map((s) => s.extrait ?? '');
+      expect(extraits.some((e) => /2ème choix|s'établit ici aussi|Informer le patient sortant/.test(e))).toBe(false);
+    }
+  });
+
+  test('syndrome C. difficile choisi + hémoculture d’un autre foyer : R-CDIFF s’applique et ses questions sont conservées', () => {
+    const d = cdiff();
+    const h = nouveauPrelevement('hemoculture');
+    h.organisme = 'escherichia_coli';
+    h.foyer = 'urinaire';
+    h.foyerStatut = 'suspecte';
+    d.prelevements = [h];
+    nettoyerDossier(d);
+    expect(d.details!['cdiff.test']).toBe('toxine_positive');
+    expect(questionsPour('clostridioides_difficile', d).some((q) => q.id === 'cdiff.diarrhee')).toBe(true);
+    const p = decider(d, { maintenant: MAINTENANT });
+    expect(p.regles.some((r) => r.id === 'R-CDIFF')).toBe(true);
+    expect(p.options.some((o) => o.prescriptions.some((x) => x.moleculeId === 'fidaxomicine'))).toBe(true);
   });
 });
