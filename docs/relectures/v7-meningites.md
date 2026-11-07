@@ -55,4 +55,6 @@ Référence documentaire : `docs/sources/recherche-meningites.md`.
 ## Vérifications
 
 - `npx tsc --noEmit` : réussi.
-- `npx vitest run` : voir le compte rendu de l'agent (résultat complet ci-dessous).
+- `npx vitest run` : 406 tests réussis (23 fichiers), dont 45 pour les méningites.
+- Les tests des méningites ont aussi été lancés sur le code du commit de base 5bdba0b : 39 échouent, 6 passent. Les 6 qui passent couvrent des comportements déjà corrects ou corrigés dans le moteur : immunodépression, anaphylaxie, pneumocoque CMI ≤ 0,5, hémoculture à pneumocoque, ECBU + sepsis, hémoculture au foyer inconnu.
+- Fichiers partagés modifiés : `src/clinical/sources/registre.json` (2 entrées), `docs/PERIMETRE.md` ; régimes méningés dans `betalactamines.ts`, `aminosides-glycopeptides.ts` et `divers.ts`, dont le nouveau régime `ceftriaxone-prophylaxie-iim-250`.
