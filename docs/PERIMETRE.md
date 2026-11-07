@@ -59,14 +59,11 @@ Population : **adulte uniquement**. Toute saisie d'un âge inférieur à 18 ans 
 - Pédiatrie.
 - Neutropénie fébrile (ECIL-4 : avis immédiat).
 - Entérobactéries productrices de carbapénémase, ERV.
-- Foyers pulmonaires, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte) ; pancréatite infectée.
-- Foyers pulmonaires, digestifs, ostéoarticulaires sans matériel (hors bactériémie couverte) ; infections cutanées hors des formes modélisées (site opératoire, cathéter, plaie chronique hors pied diabétique).
-- Foyers digestifs, cutanés, ostéoarticulaires sans matériel (hors bactériémie couverte).
+- Infections ostéoarticulaires sans matériel (hors bactériémie couverte) ; pancréatite infectée ; infections cutanées hors des formes modélisées (site opératoire, cathéter, plaie chronique hors pied diabétique).
 - Endocardites à BGN, champignons, germes intracellulaires.
 - Méningite post-neurochirurgicale ou sur matériel (dérivation, drain ; question dédiée) : avis spécialisé, urgence et purpura fulminans conservés, absence de recommandation expliquée (IDSA 2017 en recoupement seulement).
 - Candidémies.
-- Prélèvements respiratoires.
-- Prélèvements respiratoires (traitement documenté de la pneumonie non modélisé : désescalade signalée) ; infection cutanée cliniquement avérée (indication posée, molécule non modélisée).
+- Prélèvements respiratoires : traitement documenté de la pneumonie non modélisé (désescalade signalée).
 - Transplanté rénal de moins d'un mois avec bactériurie (aucune recommandation, IDSA 2019) ; ce terrain n'est pas saisi dans l'application.
 
 ## Limites connues
