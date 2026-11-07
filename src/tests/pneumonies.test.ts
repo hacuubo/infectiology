@@ -8,6 +8,7 @@ import { dossierParDefaut, nettoyerDossier, nouveauPrelevement, type Dossier } f
 import type { OrganismeId, Plan, Prelevement } from '../clinical/types';
 import { SOURCES_PAR_ID } from '../clinical/sources';
 import { questionsPour } from '../clinical/syndromes/questions';
+import { MOLECULES_PAR_ID } from '../clinical/molecules';
 
 const MAINTENANT = new Date('2026-11-06T10:00:00Z');
 
@@ -254,6 +255,8 @@ describe('Interactions et questions du foyer', () => {
     expect(p.regles.some((r) => r.id === 'R-PNEUMONIE')).toBe(true);
     expect(p.situation.id).toBe('bacteriemie-s-aureus');
     expect(p.options.some((o) => o.id.startsWith('pac-'))).toBe(false);
+    // Relecture v7 (point 20) : la règle de bactériémie propose bien des options (le test passait aussi sans aucune option).
+    expect(p.options.some((o) => o.id.startsWith('proba-sab-'))).toBe(true);
   });
 
   test('réponses du foyer pulmonaire effacées si le foyer change', () => {
@@ -547,8 +550,11 @@ describe('Relecture v7 — molécules, interactions, terrain', () => {
       d.patient.allergies = [{ molecule: 'ceftriaxone', reaction: 'immediate', gravite: 'severe' }];
     }));
     const levo = option(p, 'pac-grave-levo').prescriptions[0];
-    expect(levo.doseAffichee).toMatch(/500 à 1 000 mg\/j/);
+    expect(levo.doseAffichee).toMatch(/500 à 1 000 mg\/j.*non tranchée/);
     expect(levo.doseCalculee).toBeUndefined();
+    expect(MOLECULES_PAR_ID.levofloxacine.regimens.find((x) => x.id === 'levo-pac-soins-critiques')!.dose.frequenceParJour).toBeUndefined();
+    // Point 17 : plus de régime de céfotaxime inutilisé.
+    expect(MOLECULES_PAR_ID.cefotaxime.regimens.some((x) => x.id === 'cefotaxime-pac-1g8h')).toBe(false);
   });
 
   test('point 23 : inhalation grave sans facteur de P. aeruginosa — schéma de la PAC grave en 1re ligne, amoxicilline-acide clavulanique conditionnelle, durée non fixée', () => {
