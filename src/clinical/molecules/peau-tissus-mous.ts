@@ -27,7 +27,7 @@ export const pristinamycine: Molecule = {
       modalites: 'à prendre au moment des repas ; contre-indiquée avec la colchicine',
       statut: 'verifiee_ia',
       sources: [
-        S(PYO, '§4.2 (tableau)', 'infections de la peau et des tissus mous : « 1 g x 2/jour à 1 g x 3/jour », « 8 à 14 jours »', 'posologie'),
+        S(PYO, '§4.2 (tableau)', '1 g x 2/jour à 1 g x 3/jour', 'posologie'),
         S('HAS-2021-DHBNN-adulte', 'allergie à la pénicilline', 'pristinamycine : 1 g 3 fois par jour pendant 7 jours', 'posologie'),
       ],
       remarques: 'Durée du RCP (8 à 14 jours) différente des recommandations (5 jours abcès et furoncle, 7 jours DHBNN, furonculose et impétigo) : la durée affichée est celle de la recommandation. Pas de forme IV.',
@@ -62,14 +62,18 @@ export const pristinamycine: Molecule = {
       sources: [S(PYO, '§4.4', 'parfois même seulement quelques heures après l\'introduction', 'surveillance'), S(PYO, '§4.3', 'Allergie au blé (autre que la maladie coeliaque)', 'surveillance')],
     },
   ],
+  // Statut « non vérifié » : le RCP ne conclut pas (« données animales et cliniques insuffisantes ») et la fiche CRAT
+  // n'a pas été trouvée ; la règle peau affiche ce texte en alerte quand la pristinamycine est proposée et qu'une
+  // grossesse est possible (le moteur n'avertit que pour « éviter » et « contre-indiqué »).
   grossesse: {
-    statut: 'utilisable',
-    texte: 'Peut être envisagée au cours de la grossesse si besoin, malgré des données animales et cliniques insuffisantes (RCP) ; fiche CRAT non trouvée.',
+    statut: 'non_verifie',
+    texte: 'Données animales et cliniques insuffisantes : le RCP indique qu\'elle « peut être envisagée au cours de la grossesse si besoin » ; fiche CRAT non trouvée. Allaitement (RCP) : possible seulement en l\'absence d\'alternative, chez un nouveau-né à terme sans facteur de risque digestif.',
     sources: [S(PYO, '§4.6', 'l\'utilisation de la pristinamycine peut être envisagée au cours de la grossesse si besoin, malgré des données animales et cliniques insuffisantes', 'autre')],
   },
   interactionsPertinentes: [
+    { avec: 'colchicine', texte: 'Contre-indiquée : association pristinamycine-colchicine (RCP § 4.3 et § 4.5, conséquences potentiellement fatales).', sources: [S(PYO, '§4.3 ; §4.5', 'Administration concomitante de pristinamycine et de colchicine', 'surveillance')] },
     { avec: 'avk', texte: 'Contrôle plus fréquent de l\'INR.', sources: [S(PYO, '§4.5', 'Contrôle plus fréquent de l\'INR', 'surveillance')] },
-    { avec: 'immunosuppresseur_calcineurine', texte: 'Augmentation des concentrations de l\'immunosuppresseur : dosages et contrôle de la fonction rénale.', sources: [S(PYO, '§4.5', 'immunosuppresseurs : augmentation des concentrations, dosages et contrôle rénal', 'surveillance')] },
+    { avec: 'immunosuppresseur_calcineurine', texte: 'Augmentation des concentrations de l\'immunosuppresseur : dosages et contrôle de la fonction rénale.', sources: [S(PYO, '§4.5', undefined, 'surveillance')] },
   ],
 };
 
@@ -146,7 +150,7 @@ export const clindamycine: Molecule = {
       quand: { ancre: 'quotidien', texte: 'Pendant tout le traitement et après son arrêt', repetition: 'à chaque évaluation' },
       pourquoi: 'Colites associées aux antibiotiques, dont les colites à C. difficile.',
       statut: 'verifiee_ia',
-      sources: [S(DAL_PO, '§4.4', 'colites associées aux antibiotiques / C. difficile → arrêt immédiat', 'surveillance')],
+      sources: [S(DAL_PO, '§4.4', undefined, 'surveillance')],
     },
     {
       id: 'clindamycine-hypersensibilite',
@@ -156,7 +160,17 @@ export const clindamycine: Molecule = {
       quand: { ancre: 'debut_traitement', texte: 'Pendant tout le traitement' },
       pourquoi: 'Hypersensibilité grave possible.',
       statut: 'verifiee_ia',
-      sources: [S(DAL_PO, '§4.4', 'PEAG contre-indique toute réadministration', 'surveillance')],
+      sources: [S(DAL_PO, '§4.4', undefined, 'surveillance')],
+    },
+    {
+      id: 'clindamycine-interactions-rcp',
+      type: 'interaction',
+      categorie: 'systematique',
+      quoi: 'Vérifier les traitements associés sans catégorie de saisie : inducteurs du CYP3A4 (rifampicine) — surveiller une perte d\'efficacité ; forme IV : curares (potentialisation)',
+      quand: { ancre: 'avant_traitement', texte: 'Avant la première dose' },
+      pourquoi: 'Précautions d\'emploi du RCP (§ 4.5) que la saisie ne permet pas de détecter.',
+      statut: 'verifiee_ia',
+      sources: [S(DAL_PO, '§4.5', undefined, 'surveillance'), S(DAL_IV, '§4.5', undefined, 'surveillance')],
     },
   ],
   grossesse: {
@@ -166,6 +180,6 @@ export const clindamycine: Molecule = {
   },
   interactionsPertinentes: [
     { avec: 'avk', texte: 'Contrôle plus fréquent de l\'INR.', sources: [S(DAL_PO, '§4.5', 'Contrôle plus fréquent de l\'INR', 'surveillance')] },
-    { avec: 'immunosuppresseur_calcineurine', texte: 'Ciclosporine, tacrolimus : baisse des concentrations de l\'immunosuppresseur (précaution d\'emploi).', sources: [S(DAL_PO, '§4.5', 'ciclosporine, tacrolimus (baisse des concentrations)', 'surveillance')] },
+    { avec: 'immunosuppresseur_calcineurine', texte: 'Ciclosporine, tacrolimus : baisse des concentrations de l\'immunosuppresseur (précaution d\'emploi).', sources: [S(DAL_PO, '§4.5', undefined, 'surveillance')] },
   ],
 };

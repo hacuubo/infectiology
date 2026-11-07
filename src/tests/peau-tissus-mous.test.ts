@@ -251,15 +251,49 @@ describe('Sources', () => {
 describe('Articulation avec R-PRELEVEMENT-SUPERFICIEL et les bactériémies', () => {
   const superficiel = (): Prelevement => ({ ...nouveauPrelevement('superficiel'), organisme: 'staphylococcus_aureus' });
 
-  test('plaie colonisée sans signe d’infection : ne pas traiter, même si une forme est renseignée', () => {
+  // Relecture v7 (n° 11) : un abcès est du pus par définition ; « pas de signe d'infection » est une incohérence de saisie,
+  // pas une colonisation (le test précédent entérinait l'inverse).
+  test('abcès déclaré avec écouvillon et « pas de signe d’infection » : forme retenue, incohérence signalée, pas de « ne pas traiter »', () => {
     const d = peau({ 'peau.forme': 'abces' }, (x) => {
       x.prelevements = [superficiel()];
       x.clinique.signesInfectionLocale = 'non';
     });
     const p = plan(d);
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(p.situation.id).toBe('abces-cutane');
+    expect(p.donneesManquantes.some((m) => /contredite par la forme/.test(m.champ) && m.impact === 'bloque_decision')).toBe(true);
+    expect(p.sortie.traitement).toBe('partiel');
+  });
+
+  test('plaie sans forme renseignée, écouvillon positif, pas de signe d’infection : colonisation, ne pas traiter', () => {
+    const d = peau({}, (x) => {
+      x.prelevements = [superficiel()];
+      x.clinique.signesInfectionLocale = 'non';
+    });
+    const p = plan(d);
     expect(p.indication?.decision).toBe('ne_pas_traiter');
-    expect(p.options).toHaveLength(0);
     expect(p.regles.some((r) => r.id === 'R-PEAU-TISSUS-MOUS')).toBe(false);
+  });
+
+  test('même plaie colonisée en sepsis : jamais « pas d’antibiotique »', () => {
+    const d = peau({}, (x) => {
+      x.prelevements = [superficiel()];
+      x.clinique.signesInfectionLocale = 'non';
+      x.patient.gravite = 'sepsis';
+    });
+    const p = plan(d);
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(p.sortie.urgence).toBe(true);
+  });
+
+  test('DHBNN avec écouvillon et signes locaux « inconnu » : le plan cutané s’applique sans question redondante', () => {
+    const d = peau(DHBNN, (x) => {
+      x.prelevements = [superficiel()];
+      x.clinique.signesInfectionLocale = 'inconnu';
+    });
+    const p = plan(d);
+    expect(p.situation.id).toBe('dhbnn');
+    expect(molecules(p, 'premiere_ligne')).toEqual(['amoxicilline']);
   });
 
   test('infection clinique avec forme connue : le schéma de la forme s’applique (plus de situation « non couverte »)', () => {
@@ -289,5 +323,336 @@ describe('Articulation avec R-PRELEVEMENT-SUPERFICIEL et les bactériémies', ()
     expect(p.options.some((o) => o.id.startsWith('abces-'))).toBe(false);
     expect(p.gestes.some((g) => /drainage/.test(g.texte))).toBe(true);
     expect(p.situation.id).not.toBe('abces-cutane');
+    // Relecture v7 (n° 12-13) : pas de donnée manquante propre aux options cutanées effacées.
+    expect(p.donneesManquantes.some((m) => /ancienneté|critère d'hospitalisation/.test(m.champ))).toBe(false);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Relecture v7 (2026-11-07) : un test par constat testable             */
+/* ------------------------------------------------------------------ */
+
+const hemoc = (modif: (h: Prelevement) => void): Prelevement => {
+  const h = nouveauPrelevement('hemoculture');
+  h.foyer = 'cutane';
+  h.foyerStatut = 'confirme';
+  modif(h);
+  return h;
+};
+const ecouvillon = (organisme: Prelevement['organisme'], atb: Prelevement['antibiogramme'] = []): Prelevement => ({ ...nouveauPrelevement('superficiel'), organisme, stade: atb.length ? 'antibiogramme' : 'identification', antibiogrammePour: organisme, antibiogramme: atb });
+
+describe('Nécrose déclarée : urgence médico-chirurgicale quels que soient l’écouvillon et le grade', () => {
+  for (const signes of ['inconnu', 'non'] as const)
+    test(`nécrose + écouvillon à S. aureus, signes locaux « ${signes} » : DHBN-FN, urgence immédiate`, () => {
+      const p = plan(peau({ 'peau.necrose': 'oui', 'peau.forme': 'dhbnn' }, (x) => {
+        x.prelevements = [ecouvillon('staphylococcus_aureus')];
+        x.clinique.signesInfectionLocale = signes;
+      }));
+      expect(p.situation.id).toBe('dhbn-fn');
+      expect(p.urgence.niveau).toBe('immediate');
+      expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    });
+
+  test('pied diabétique, nécrose, grade non renseigné : avis chirurgical urgent', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.necrose': 'oui' }));
+    expect(p.avisSpecialise.some((a) => a.urgent && /chirurgical/.test(a.texte))).toBe(true);
+    expect(p.urgence.alertes.some((a) => a.niveau === 'urgence' && /nécrose/.test(a.texte))).toBe(true);
+  });
+
+  test('pied diabétique, nécrose, grade 1 : pas de « ni prélèvement ni antibiotique », grade contredit', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.necrose': 'oui', 'peau.pied_grade': '1' }));
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(p.avisSpecialise.some((a) => a.urgent && /chirurgical/.test(a.texte))).toBe(true);
+    expect(p.situation.id).toBe('pied-grade-incoherent');
+    expect(p.donneesManquantes.some((m) => m.cible === 'details.peau.pied_grade' && m.impact === 'bloque_decision')).toBe(true);
+  });
+});
+
+describe('Hémoculture positive (règle commune de bactériémie concomitante)', () => {
+  test('SCN dans une seule série + DHBNN : l’érysipèle reste traité (amoxicilline), la conclusion SCN reste secondaire', () => {
+    const p = plan(peau(DHBNN, (x) => {
+      x.prelevements = [hemoc((h) => {
+        h.organisme = 'staphylococcus_epidermidis';
+        h.hemoc = { origine: 'peripherique', persistance: 'inconnu', nbSeriesPrelevees: 2, nbSeriesPositives: 1 };
+      })];
+    }));
+    expect(molecules(p, 'premiere_ligne')).toEqual(['amoxicilline']);
+    expect(p.situation.id).toBe('dhbnn');
+    expect((p.indicationsSecondaires ?? []).some((i) => i.regleId === 'R-BACTERIEMIE-SCN')).toBe(true);
+  });
+
+  test('pied grade 4 en choc, BGN à l’examen direct : schéma du pied proposé (plus de « situation non couverte »)', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '4' }, (x) => {
+      x.patient.gravite = 'choc_septique';
+      x.prelevements = [hemoc((h) => {
+        h.stade = 'examen_direct';
+        h.examenDirect = 'bgn';
+      })];
+    }));
+    expect(option(p, 'pied-g4-sepsis')?.prescriptions.map((x) => x.moleculeId)).toEqual(['piperacilline_tazobactam', 'vancomycine', 'amikacine']);
+    expect(p.sortie.motifs.some((m) => m.type === 'non_couverte')).toBe(false);
+  });
+
+  test('pied grade 4 en choc, E. coli sans antibiogramme : schéma du pied ; E. coli R à la pipéracilline-tazobactam : option écartée', () => {
+    const ident = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '4' }, (x) => {
+      x.patient.gravite = 'choc_septique';
+      x.prelevements = [hemoc((h) => (h.organisme = 'escherichia_coli'))];
+    }));
+    expect(option(ident, 'pied-g4-sepsis')).toBeDefined();
+    const r = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '4' }, (x) => {
+      x.patient.gravite = 'choc_septique';
+      x.prelevements = [hemoc((h) => {
+        h.organisme = 'escherichia_coli';
+        h.stade = 'antibiogramme';
+        h.antibiogrammePour = 'escherichia_coli';
+        h.antibiogramme = [{ dci: 'piperacilline_tazobactam', categorie: 'R' }];
+      })];
+    }));
+    expect(option(r, 'pied-g4-sepsis')).toBeUndefined();
+    expect(r.sortie.ecartees.some((e) => e.type === 'resistance' && /hémoculture/.test(e.raison))).toBe(true);
+  });
+
+  test('DHBNN + bactériémie à E. coli : schéma anti-streptococcique seulement conditionnel, absence expliquée', () => {
+    const p = plan(peau(DHBNN, (x) => {
+      x.prelevements = [hemoc((h) => (h.organisme = 'escherichia_coli'))];
+    }));
+    expect(option(p, 'dhbnn-amoxicilline')?.rang).toBe('conditionnelle');
+    expect(p.absencesRecommandation.some((a) => /BGN/.test(a.sujet))).toBe(true);
+  });
+
+  test('fasciite nécrosante + bactériémie à S. pyogenes : schémas avec clindamycine conservés, situation DHBN-FN', () => {
+    const p = plan(peau({ 'peau.necrose': 'oui', 'peau.forme': 'dhbnn' }, (x) => {
+      x.prelevements = [hemoc((h) => (h.organisme = 'streptococcus_pyogenes'))];
+    }));
+    expect(p.situation.id).toBe('dhbn-fn');
+    expect(option(p, 'fn-ptz-vanco-clinda')).toBeDefined();
+    expect(p.urgence.alertes.some((a) => /Streptocoque A/.test(a.texte))).toBe(true);
+  });
+
+  test('furoncle « non compliqué » + bactériémie à S. aureus : pas de conclusion « pas d’antibiotique »', () => {
+    const p = plan(peau({ 'peau.forme': 'furoncle', 'peau.furoncle_complique': 'non' }, (x) => {
+      x.prelevements = [hemoc((h) => (h.organisme = 'staphylococcus_aureus'))];
+    }));
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(p.regles.some((r) => r.id === 'R-BACTERIEMIE-S-AUREUS')).toBe(true);
+  });
+});
+
+describe('Sepsis et choc : pas de schéma ambulatoire en 1re ligne, jamais « pas d’antibiotique »', () => {
+  test('DHBNN en choc septique : amoxicilline per os seulement conditionnelle, sortie au mieux partielle, avis', () => {
+    const p = plan(peau(DHBNN, (x) => (x.patient.gravite = 'choc_septique')));
+    expect(option(p, 'dhbnn-amoxicilline')?.rang).toBe('conditionnelle');
+    expect(option(p, 'dhbnn-amoxicilline')?.condition).toMatch(/voie orale/);
+    expect(p.sortie.traitement).not.toBe('complet');
+    expect(p.absencesRecommandation.some((a) => /hospitalisée ou avec sepsis/.test(a.sujet))).toBe(true);
+  });
+
+  test('DHBNN hospitalisée sans gravité : schéma oral sous réserve, sortie non « complète » (absence affichée)', () => {
+    const p = plan(peau({ ...DHBNN, 'peau.hospitalisation': 'oui' }));
+    expect(option(p, 'dhbnn-amoxicilline')?.rang).toBe('conditionnelle');
+    expect(p.sortie.traitement).not.toBe('complet');
+  });
+
+  test('furoncle « non compliqué » avec sepsis : forme compliquée retenue, incohérence signalée, schéma oral sous réserve', () => {
+    const sepsis = plan(peau({ 'peau.forme': 'furoncle', 'peau.furoncle_complique': 'non' }, (x) => (x.patient.gravite = 'sepsis')));
+    expect(sepsis.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(sepsis.situation.id).toBe('furoncle-complique');
+    expect(sepsis.urgence.alertes.some((a) => /contredite par : sepsis/.test(a.texte))).toBe(true);
+    expect(molecules(sepsis, 'conditionnelle').sort()).toEqual(['clindamycine', 'pristinamycine']);
+    expect(sepsis.absencesRecommandation.some((a) => /Furoncle compliqué avec sepsis/.test(a.sujet))).toBe(true);
+  });
+
+  test('pied grade 1 avec sepsis : pas de « ni antibiotique », grade contredit, schéma du grade 4 conditionnel', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '1' }, (x) => (x.patient.gravite = 'sepsis')));
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+    expect(option(p, 'pied-g4-sepsis')?.rang).toBe('conditionnelle');
+    expect(p.donneesManquantes.some((m) => m.cible === 'details.peau.pied_grade')).toBe(true);
+  });
+
+  test('impétigo « peu étendu » avec sepsis : pas de conclusion « traitement local seul »', () => {
+    const p = plan(peau({ 'peau.forme': 'impetigo', 'peau.impetigo_grave': 'non' }, (x) => (x.patient.gravite = 'sepsis')));
+    expect(p.indication?.decision).not.toBe('ne_pas_traiter');
+  });
+});
+
+describe('Réponses inconnues et morsure non profonde : indication explicite', () => {
+  test('furoncle à complication inconnue, impétigo à gravité inconnue, morsure à profondeur inconnue : informations insuffisantes', () => {
+    for (const d of <Record<string, string>[]>[
+      { 'peau.forme': 'furoncle', 'peau.furoncle_complique': 'inconnu' },
+      { 'peau.forme': 'impetigo', 'peau.impetigo_grave': 'inconnu' },
+      { 'peau.forme': 'morsure', 'peau.morsure_origine': 'animale', 'peau.morsure_infectee': 'non', 'peau.morsure_profonde': 'inconnu' },
+    ]) {
+      const p = plan(peau(d));
+      expect(p.indication?.decision).toBe('informations_insuffisantes');
+      expect(p.indication?.titre).not.toBe('Indication de traitement retenue');
+    }
+  });
+
+  test('morsure non profonde, non infectée, sans situation à risque : pas d’antibiotique, « reconsidérer si » la liste IDSA', () => {
+    const p = plan(peau({ 'peau.forme': 'morsure', 'peau.morsure_origine': 'animale', 'peau.morsure_infectee': 'non', 'peau.morsure_profonde': 'non', 'peau.morsure_facteurs': 'non' }));
+    expect(p.indication?.decision).toBe('ne_pas_traiter');
+    expect(p.indication?.reconsiderer.join(' ')).toMatch(/asplénie/);
+    expect(p.options).toHaveLength(0);
+  });
+
+  test('morsure non profonde chez un immunodéprimé : préemptif IDSA conditionnel, brouillon ; plaie profonde : brouillon aussi', () => {
+    const p = plan(peau({ 'peau.forme': 'morsure', 'peau.morsure_origine': 'animale', 'peau.morsure_infectee': 'non', 'peau.morsure_profonde': 'non' }, (x) => (x.patient.immunodepression = 'oui')));
+    const o = option(p, 'morsure-preemptif-amoxclav')!;
+    expect(o.rang).toBe('conditionnelle');
+    expect(o.statut).toBe('brouillon');
+    expect(o.prescriptions[0].regimenId).toBe('amoxclav-po-1g8h-peau');
+    const prof = plan(peau({ 'peau.forme': 'morsure', 'peau.morsure_origine': 'animale', 'peau.morsure_infectee': 'non', 'peau.morsure_profonde': 'oui' }));
+    expect(option(prof, 'morsure-preemptif-amoxclav')?.statut).toBe('brouillon');
+  });
+
+  test('morsure infectée à 120 kg : divergence de dose SFMU affichée, plafond d’acide clavulanique signalé', () => {
+    const p = plan(peau({ 'peau.forme': 'morsure', 'peau.morsure_origine': 'animale', 'peau.morsure_infectee': 'oui' }, (x) => (x.patient.poidsKg = 120)));
+    expect(option(p, 'morsure-infectee-amoxclav')?.commentaire).toMatch(/SFMU 2017 1 g trois fois par jour/);
+    expect(p.urgence.alertes.some((a) => /375 mg\/j/.test(a.texte))).toBe(true);
+  });
+});
+
+describe('Antibiogramme, interactions, grossesse, allaitement', () => {
+  test('DHBNN, écouvillon de porte d’entrée à E. coli résistant à l’amoxicilline : amoxicilline maintenue (cible streptocoque)', () => {
+    const p = plan(peau(DHBNN, (x) => {
+      x.prelevements = [ecouvillon('escherichia_coli', [{ dci: 'amoxicilline', categorie: 'R' }])];
+      x.clinique.signesInfectionLocale = 'oui';
+    }));
+    expect(molecules(p, 'premiere_ligne')).toEqual(['amoxicilline']);
+    expect(p.urgence.alertes.some((a) => /porte d'entrée/.test(a.texte))).toBe(true);
+  });
+
+  test('colchicine : pristinamycine écartée (contre-indication) ; impétigo grave sans autre option : contraintes expliquées', () => {
+    const dh = plan(peau(DHBNN, (x) => {
+      allergiePeni(x);
+      x.patient.traitementsAssocies = ['colchicine'];
+    }));
+    expect(molecules(dh)).not.toContain('pristinamycine');
+    expect(dh.sortie.ecartees.some((e) => e.type === 'contre_indication' && /colchicine/.test(e.raison))).toBe(true);
+    expect(molecules(dh, 'premiere_ligne')).toEqual(['clindamycine']);
+    const imp = plan(peau({ 'peau.forme': 'impetigo', 'peau.impetigo_grave': 'oui' }, (x) => (x.patient.traitementsAssocies = ['colchicine'])));
+    expect(imp.options).toHaveLength(0);
+    expect(imp.sortie.motifs.some((m) => m.type === 'contraintes')).toBe(true);
+  });
+
+  test('grossesse possible : la pristinamycine porte une alerte (données insuffisantes, RCP), comme la clindamycine', () => {
+    const p = plan(peau(DHBNN, (x) => {
+      allergiePeni(x);
+      x.patient.sexe = 'femme';
+      x.patient.age = 30;
+      x.patient.grossesse = 'oui';
+    }));
+    expect(p.urgence.alertes.some((a) => /pristinamycine — données animales et cliniques insuffisantes/.test(a.texte))).toBe(true);
+    expect(option(p, 'dhbnn-clindamycine')!.prescriptions[0].avertissements.join(' ')).toMatch(/Grossesse/);
+  });
+
+  test('allaitement : clindamycine en alternative derrière la pristinamycine ; alerte seulement si la clindamycine est proposée', () => {
+    const p = plan(peau(DHBNN, (x) => {
+      allergiePeni(x);
+      x.patient.sexe = 'femme';
+      x.patient.grossesse = 'non';
+      x.patient.allaitement = 'oui';
+    }));
+    expect(option(p, 'dhbnn-clindamycine')?.rang).toBe('alternative');
+    expect(option(p, 'dhbnn-pristinamycine')?.rang).toBe('premiere_ligne');
+    // Clindamycine rendue R sur le pus d'un abcès : pas d'alerte d'allaitement propre à la clindamycine.
+    const d = peau({ 'peau.forme': 'abces' }, (x) => {
+      x.patient.sexe = 'femme';
+      x.patient.grossesse = 'non';
+      x.patient.allaitement = 'oui';
+      x.patient.poidsKg = undefined;
+    });
+    d.prelevements = [{ ...nouveauPrelevement('profond'), organisme: 'staphylococcus_aureus', stade: 'antibiogramme', antibiogrammePour: 'staphylococcus_aureus', antibiogramme: [{ dci: 'clindamycine', categorie: 'R' }] }];
+    const ab = plan(d);
+    expect(molecules(ab)).not.toContain('clindamycine');
+    expect(ab.urgence.alertes.some((a) => /la clindamycine est contre-indiquée/.test(a.texte))).toBe(false);
+    expect(ab.donneesManquantes.some((m) => m.champ === 'poids' && /clindamycine/.test(m.pourquoi))).toBe(false);
+  });
+
+  test('hémodialyse : la clindamycine signale qu’elle n’est pas dialysée ; la pristinamycine sans adaptation rénale', () => {
+    const p = plan(peau({ 'peau.forme': 'abces' }, (x) => (x.patient.renal = { ...x.patient.renal, dialyse: 'hemodialyse_intermittente' })));
+    expect(option(p, 'abces-clindamycine')!.prescriptions[0].adaptations.join(' ')).toMatch(/hémodialyse/i);
+    expect(option(p, 'abces-pristinamycine')).toBeDefined();
+  });
+});
+
+const pied3 = () => plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '3' }));
+
+describe('Posologies, durées et régimes propres à la peau', () => {
+  test('cloxacilline de l’abcès à 130 kg : dose calculée et plafonnée à 12 g/j', () => {
+    const p = plan(peau({ 'peau.forme': 'abces' }, (x) => (x.patient.poidsKg = 130)));
+    const c = option(p, 'abces-cloxacilline')!.prescriptions[0];
+    expect(c.doseAffichee).toMatch(/plafonné/);
+    expect(c.doseCalculee?.frequenceParJour).toBe(6);
+    expect(c.doseCalculee!.valeurParAdministration * 6).toBeLessThanOrEqual(12000);
+  });
+
+  test('pied grade 3 : durée comptée après excision de la nécrose ; régimes amoxicilline-acide clavulanique propres à la peau', () => {
+    const p = pied3();
+    const o = option(p, 'pied-g23-amoxclav-po')!;
+    expect(o.prescriptions[0].duree.pointDeDepart).toMatch(/excision/);
+    expect(o.prescriptions[0].regimenId).toBe('amoxclav-po-1g8h-peau');
+    expect(option(p, 'pied-g23-amoxclav-iv')!.prescriptions[0].regimenId).toBe('amoxclav-iv-1g8h-peau');
+  });
+
+  test('pied grade 4 avec sepsis et risque de BLSE : alerte « pas de carbapénème sauf suspicion de BLSE »', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '4' }, (x) => {
+      x.patient.gravite = 'sepsis';
+      x.patient.antecedentsMicro = [{ organisme: 'escherichia_coli', resistance: 'BLSE', date: '2026-09-01' }];
+    }));
+    expect(p.urgence.alertes.some((a) => /suspicion de BLSE/.test(a.texte))).toBe(true);
+  });
+
+  test('pied grade 4 avec sepsis et allergie : libellé d’absence « allergie à la pénicilline »', () => {
+    const p = plan(peau({ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'non', 'peau.pied_grade': '4' }, (x) => {
+      x.patient.gravite = 'sepsis';
+      allergiePeni(x);
+    }));
+    expect(p.absencesRecommandation.some((a) => /allergie à la pénicilline/.test(a.sujet))).toBe(true);
+  });
+
+  test('fasciite nécrosante : deux schémas larges au même rang, libellés attribués à leur source', () => {
+    const p = plan(peau({ 'peau.necrose': 'oui', 'peau.forme': 'dhbnn' }));
+    expect(option(p, 'fn-ptz-vanco')?.libelle).not.toMatch(/WSES/);
+    expect(option(p, 'fn-ptz-vanco')?.rang).toBe(option(p, 'fn-ptz-vanco-clinda')?.rang);
+    expect(option(p, 'fn-ptz-vanco')?.commentaire).toMatch(/patient stable/);
+  });
+
+  test('face et périnée : extrapolation dite explicitement', () => {
+    const face = plan(peau({ ...DHBNN, 'peau.dhbnn_particularite': 'face' }));
+    expect(face.situation.description).toMatch(/Extrapolation/);
+    const per = plan(peau({ ...DHBNN, 'peau.dhbnn_particularite': 'perinee' }));
+    expect(per.urgence.alertes.some((a) => /Extrapolation/.test(a.texte))).toBe(true);
+  });
+});
+
+describe('Boutons « Compléter » et nettoyage des réponses', () => {
+  test('chaque donnée manquante du foyer cible sa question details.peau.*', () => {
+    const cas: [Record<string, string>, string][] = [
+      [{ 'peau.necrose': 'inconnu' }, 'details.peau.forme'],
+      [{ 'peau.forme': 'furoncle', 'peau.furoncle_complique': 'inconnu' }, 'details.peau.furoncle_complique'],
+      [{ 'peau.forme': 'impetigo', 'peau.impetigo_grave': 'inconnu' }, 'details.peau.impetigo_grave'],
+      [{ 'peau.forme': 'morsure', 'peau.morsure_infectee': 'inconnu' }, 'details.peau.morsure_infectee'],
+      [{ 'peau.forme': 'pied_diabetique', 'peau.pied_osteite': 'inconnu' }, 'details.peau.pied_grade'],
+      [{ 'peau.forme': 'pied_diabetique', 'peau.pied_grade': '2' }, 'details.peau.pied_anciennete'],
+      [{ ...DHBNN, 'peau.dhbnn_particularite': 'inconnu', 'peau.hospitalisation': 'inconnu' }, 'details.peau.dhbnn_particularite'],
+      [{ ...DHBNN, 'peau.necrose': 'inconnu' }, 'details.peau.necrose'],
+    ];
+    for (const [details, cible] of cas) {
+      const d = peau({}, (x) => (x.details = details));
+      const p = plan(d);
+      expect(p.donneesManquantes.map((m) => m.cible)).toContain(cible);
+      expect(p.sortie.motifs.flatMap((m) => m.aCompleter).some((e) => e.cible === cible)).toBe(true);
+    }
+    const hosp = plan(peau({ ...DHBNN, 'peau.hospitalisation': 'inconnu' }));
+    expect(hosp.donneesManquantes.find((m) => /hospitalisation/.test(m.champ))?.cible).toBe('details.peau.hospitalisation');
+  });
+
+  test('furoncle → abcès : la réponse « furoncle compliqué » est effacée', () => {
+    const d = peau({ 'peau.forme': 'furoncle', 'peau.furoncle_complique': 'oui' });
+    nettoyerDossier(d);
+    d.details = { ...d.details, 'peau.forme': 'abces' };
+    nettoyerDossier(d);
+    expect(d.details?.['peau.furoncle_complique']).toBeUndefined();
   });
 });
