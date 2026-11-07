@@ -364,7 +364,8 @@ export interface Regimen {
   indication: string;
   dose: DoseSpec;
   chargeInitiale?: DoseSpec & { libelle: string };
-  voie: 'IV' | 'PO' | 'IV ou PO' | 'IM ou IV';
+  /** « intraluminale » : sonde gastroduodénale ou voie colique (ex. vancomycine dans l'ICD, voie orale impossible). */
+  voie: 'IV' | 'PO' | 'IV ou PO' | 'IM ou IV' | 'intraluminale';
   modalites: string; // ex. "perfusion de 30 min"
   statut: StatutValidation;
   sources: SourceRef[];

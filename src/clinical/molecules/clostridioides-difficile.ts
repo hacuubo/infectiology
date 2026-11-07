@@ -19,6 +19,15 @@ import { S } from './base';
 
 const RCP_F = 'RCP-fidaxomicine';
 const RCP_VO = 'RCP-vancomycine-orale';
+const BDPM_F = 'BDPM-dificlir-fiche';
+
+/** Conditions de délivrance et SMR de DIFICLIR (fiche BDPM, note §15.2 et §16.1). */
+const MODALITES_DELIVRANCE_FIDAXO = 'prescription hospitalière, liste de rétrocession ; SMR jugé insuffisant dans les infections où C. difficile n\'est pas objectivé (BDPM)';
+const SRC_DELIVRANCE_FIDAXO = [
+  S(BDPM_F, 'conditions de délivrance', 'prescription hospitalière', 'autre'),
+  S(BDPM_F, 'SMR', 'insuffisant dans les infections où Clostridium difficile n\'est pas objectivé', 'autre'),
+];
+const P_GP = 'la ciclosporine, le kétoconazole, l\'érythromycine, la clarithromycine, le vérapamil, la dronédarone et l\'amiodarone';
 
 export const fidaxomicine: Molecule = {
   id: 'fidaxomicine',
@@ -32,13 +41,14 @@ export const fidaxomicine: Molecule = {
       indication: 'Infection à C. difficile : 1er épisode (1re intention), forme grave, 1re récidive, récidives multiples avant TMF.',
       dose: { type: 'fixe', valeur: 200, unite: 'mg', frequenceParJour: 2 },
       voie: 'PO',
-      modalites: 'comprimé avalé entier avec de l\'eau, au cours ou en dehors des repas (granulés pour suspension buvable si difficulté à avaler) ; association déconseillée avec les inhibiteurs puissants de la P-gp (ciclosporine, kétoconazole, érythromycine, clarithromycine, vérapamil, dronédarone, amiodarone)',
+      modalites: `comprimé avalé entier avec de l'eau, au cours ou en dehors des repas (granulés pour suspension buvable si difficulté à avaler) ; association déconseillée avec les inhibiteurs puissants de la P-gp (ciclosporine, kétoconazole, érythromycine, clarithromycine, vérapamil, dronédarone, amiodarone) ; ${MODALITES_DELIVRANCE_FIDAXO}`,
       statut: 'verifiee_ia',
       sources: [
         S(RCP_F, '§4.2', 'La dose recommandée est de 200 mg (un comprimé) deux fois par jour (une fois toutes les 12 heures) pendant 10 jours', 'posologie'),
         S('ESCMID-2021-ICD-traitement', 'p. 13', 'For the initial episode of CDI we recommend fidaxomicin 200 mg twice daily for 10 days.', 'posologie'),
         S('SPILF-2026-ICD-JNI', 'tableau « Définitions »', '200 mg/12 h qsp 10j', 'posologie'),
-        S(RCP_F, '§4.5', 'la ciclosporine, le kétoconazole, l\'érythromycine, la clarithromycine, le vérapamil, la dronédarone et l\'amiodarone', 'surveillance'),
+        S(RCP_F, '§4.5', P_GP, 'surveillance'),
+        ...SRC_DELIVRANCE_FIDAXO,
       ],
     },
     {
@@ -47,11 +57,13 @@ export const fidaxomicine: Molecule = {
       indication: '1er épisode à haut risque de récidive, 1re récidive (alternative au schéma standard, SPILF 2026).',
       dose: { type: 'fixe', valeur: 200, unite: 'mg', texte: '200 mg × 2/24 h de J1 à J5 (pas de prise le jour 6), puis 200 mg une fois tous les deux jours de J7 à J25' },
       voie: 'PO',
-      modalites: 'comprimé avalé entier avec de l\'eau, au cours ou en dehors des repas ; inhibiteurs puissants de la P-gp déconseillés (RCP §4.5)',
+      modalites: `comprimé avalé entier avec de l'eau, au cours ou en dehors des repas ; inhibiteurs puissants de la P-gp déconseillés (RCP §4.5 : ciclosporine, kétoconazole, érythromycine, clarithromycine, vérapamil, dronédarone, amiodarone) ; ${MODALITES_DELIVRANCE_FIDAXO}`,
       statut: 'verifiee_ia',
       sources: [
         S(RCP_F, '§4.2 (schéma prolongé-pulsé)', 'deux fois par jour du jour 1 au jour 5 (pas de prise de comprimé le jour 6) puis une fois tous les deux jours du jour 7 au jour 25', 'posologie'),
         S('SPILF-2026-ICD-JNI', 'tableau « Définitions »', '200 mg/12 h qsp de J1 à J5, puis 200 mg toutes les 48h de J7 à J25', 'posologie'),
+        S(RCP_F, '§4.5', P_GP, 'surveillance'),
+        ...SRC_DELIVRANCE_FIDAXO,
       ],
       remarques: 'ESCMID 2021 (p. 15) qualifiait ce schéma de « off-label » ; il figure désormais dans le RCP DIFICLIR (§4.2).',
     },
@@ -66,6 +78,16 @@ export const fidaxomicine: Molecule = {
         sources: [S(RCP_F, '§4.2', 'Aucune adaptation posologique n\'est jugée nécessaire.', 'adaptation_renale'), S(RCP_F, '§4.2', 'insuffisance rénale sévère', 'adaptation_renale')],
       },
     ],
+    // Absorption systémique : la note de recherche (§16.1) ne cite aucun extrait du RCP sur ce point ; la molécule
+    // n'est donc pas déclarée « non absorbée ». En dialyse, on affiche ce que dit (et ne dit pas) le RCP.
+    hemodialyse: {
+      texte: 'le RCP ne donne aucune consigne propre à la dialyse ; il ne juge aucune adaptation posologique nécessaire en insuffisance rénale (prudence si sévère, données limitées).',
+      sources: [S(RCP_F, '§4.2', 'Aucune adaptation posologique n\'est jugée nécessaire.', 'adaptation_renale'), S(RCP_F, '§4.2', 'insuffisance rénale sévère', 'adaptation_renale')],
+    },
+    eerContinue: {
+      texte: 'le RCP ne donne aucune consigne propre à l\'épuration extrarénale ; il ne juge aucune adaptation posologique nécessaire en insuffisance rénale (prudence si sévère, données limitées).',
+      sources: [S(RCP_F, '§4.2', 'Aucune adaptation posologique n\'est jugée nécessaire.', 'adaptation_renale')],
+    },
   },
   surveillance: [
     {
@@ -88,7 +110,8 @@ export const fidaxomicine: Molecule = {
     ],
   },
   interactionsPertinentes: [
-    { avec: 'immunosuppresseur_calcineurine', texte: 'Ciclosporine (inhibiteur puissant de la P-gp) : association déconseillée.', sources: [S(RCP_F, '§4.5', 'la ciclosporine, le kétoconazole, l\'érythromycine, la clarithromycine, le vérapamil, la dronédarone et l\'amiodarone', 'surveillance')] },
+    { avec: 'immunosuppresseur_calcineurine', texte: 'Si l\'inhibiteur de la calcineurine est la ciclosporine (inhibiteur puissant de la P-gp) : association déconseillée. Le tacrolimus n\'est pas cité par le RCP.', sources: [S(RCP_F, '§4.5', P_GP, 'surveillance')] },
+    { avec: 'qt_allongeant', texte: 'Si le traitement allongeant le QT est l\'amiodarone ou la dronédarone (inhibiteurs puissants de la P-gp) : association déconseillée. Le RCP ne mentionne pas le QT lui-même.', sources: [S(RCP_F, '§4.5', P_GP, 'surveillance')] },
     { avec: 'aod', texte: 'Dabigatran étexilate : un effet de la fidaxomicine (inhibiteur faible à modéré de la P-gp intestinale) ne peut pas être exclu.', sources: [S(RCP_F, '§4.5', 'dabigatran etexilate, ne peut pas être exclu', 'surveillance')] },
   ],
 };
@@ -117,11 +140,11 @@ export const vancomycineOrale: Molecule = {
     },
     {
       id: 'vanco-po-500x4',
-      libelle: '500 mg toutes les 6 h per os ou par sonde (forte dose : RCP « ICD sévère ou compliquée », IDSA forme fulminante)',
+      libelle: '500 mg toutes les 6 h per os (forte dose : RCP « ICD sévère ou compliquée », IDSA forme fulminante)',
       indication: 'Forme fulminante selon IDSA/SHEA 2017 ; non recommandée par ESCMID 2021 (divergence).',
       dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 4, doseMaxParJour: { valeur: 2, unite: 'g' } },
       voie: 'PO',
-      modalites: 'solution buvable (500 mg dans 10 mL d\'eau potable) per os ou par sonde gastrique ; dose maximale journalière 2 g (RCP)',
+      modalites: 'solution buvable (500 mg dans 10 mL d\'eau potable) ; dose maximale journalière 2 g (RCP)',
       statut: 'brouillon',
       sources: [
         S(RCP_VO, '§4.2', 'Cette dose peut être augmentée à 500 mg toutes les 6 heures pendant 10 jours en cas d\'ICD sévère ou compliquée. La dose maximale journalière ne devrait pas dépasser 2 g.', 'posologie'),
@@ -144,16 +167,41 @@ export const vancomycineOrale: Molecule = {
       ],
       remarques: 'Le schéma itératif du RCP (« 125-500 mg/jour tous les 2-3 jours pendant au moins 3 semaines ») diffère du schéma SPILF/ESCMID retenu ici.',
     },
+    {
+      id: 'vanco-intraluminal-125x4',
+      libelle: '125 mg toutes les 6 h par voie intraluminale (sonde gastroduodénale ou voie colique)',
+      indication: 'Voie orale impossible : administration intraluminale aux doses orales standard (ESCMID 2021, extrapolation).',
+      dose: { type: 'fixe', valeur: 125, unite: 'mg', frequenceParJour: 4 },
+      voie: 'intraluminale',
+      modalites: 'par sonde gastroduodénale ou par voie colique (coloscopie) ; solution préparée comme pour la voie orale (RCP §4.2/6.6) ; dose extrapolée des doses orales standard (ESCMID 2021 : « It seems reasonable » ; doses publiées de 250 mg/j à 1 g × 4/j) ; modalités pratiques non précisées par les sources lues : avec l\'avis spécialisé',
+      statut: 'brouillon',
+      sources: [
+        S('ESCMID-2021-ICD-traitement', 'p. 19-20', 'attempt intraluminal (gastroduodenal or coloscopic) delivery of vancomycin or fidaxomicin', 'posologie'),
+        S('ESCMID-2021-ICD-traitement', 'p. 20', 'It seems reasonable use standard oral dosages for intraluminal delivery.', 'posologie'),
+        S('ESCMID-2021-ICD-traitement', 'p. 20', 'dosages range from 250 mg once daily to 1 g QID', 'posologie'),
+        S('SPILF-2022-ICD-diapo', 'diapo 8', 'Vancomycine ou fidaxomicine. Voie orale impossible: administration locale +/- métronidazole IV ou tigécycline', 'posologie'),
+        S(RCP_VO, '§4.2/6.6', 'Dissoudre le contenu d\'un flacon de 500 mg avec 10 mL d\'eau potable', 'posologie'),
+      ],
+      remarques: 'Aucune posologie intraluminale dans le RCP ; voie rectale (500 mg dans environ 100 mL de sérum physiologique toutes les 6 h) seulement chez IDSA 2017, non modélisée.',
+    },
   ],
+  absorptionSystemiqueNegligeable: {
+    texte: 'vancomycine orale pratiquement pas absorbée par voie digestive (CRAT). L\'absorption peut toutefois être augmentée en cas de colite pseudomembraneuse ou de maladie inflammatoire de l\'intestin, avec un risque d\'effets indésirables surtout en cas d\'insuffisance rénale (RCP §4.4) : voir la surveillance (dosage sérique).',
+    sources: [
+      S('CRAT-vancomycine-grossesse', 'pharmacocinétique (citée par la note §15.4 I)', 'pratiquement pas absorbée par voie digestive', 'adaptation_renale'),
+      S(RCP_VO, '§4.4', 'L\'absorption peut être augmentée chez les patients atteints de maladies inflammatoires de la muqueuse intestinale ou de colite pseudomembraneuse due à Clostridium difficile', 'adaptation_renale'),
+    ],
+  },
   adaptationRenale: {
     methode: 'non_precisee',
     statut: 'verifiee_ia',
     texteGeneral: 'Voie orale : les paliers de clairance du RCP concernent la voie IV ; rien de spécifique à la voie orale en hémodialyse.',
     paliers: [
       {
-        texte: 'Voie orale : pas d\'adaptation posologique prévue (les paliers de clairance du RCP concernent la voie IV) ; absorption possible si colite sévère ou maladie inflammatoire de l\'intestin, effets indésirables surtout en cas d\'insuffisance rénale.',
+        // Non utilisé par le moteur (molécule déclarée non absorbée) ; conservé pour la traçabilité.
+        texte: 'Voie orale : pas d\'adaptation posologique (lecture du RCP par la note de recherche §16.2 : les paliers de clairance concernent la voie IV) ; absorption possible en cas de colite pseudomembraneuse ou de maladie inflammatoire de l\'intestin, effets indésirables surtout en cas d\'insuffisance rénale.',
         sources: [
-          S(RCP_VO, 'fonction rénale (voie orale), d\'après la note de recherche §16.2', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)', 'adaptation_renale'),
+          S(RCP_VO, '§4.2 (paliers de la voie IV ; lecture de la note de recherche §16.2, pas un extrait)', undefined, 'adaptation_renale'),
           S(RCP_VO, '§4.4', 'L\'absorption peut être augmentée chez les patients atteints de maladies inflammatoires de la muqueuse intestinale ou de colite pseudomembraneuse due à Clostridium difficile', 'adaptation_renale'),
         ],
       },
@@ -167,7 +215,7 @@ export const vancomycineOrale: Molecule = {
       quoi: 'Concentration sérique de vancomycine (absorption digestive possible)',
       quand: { ancre: 'non_determine', texte: 'Aucun calendrier chiffré dans les sources lues pour la voie orale' },
       pourquoi: 'Absorption augmentée en cas de maladie inflammatoire de la muqueuse intestinale ou de colite pseudomembraneuse ; IDSA 2017 : résiduelle à envisager en cas de forte dose, d\'exposition prolongée, d\'insuffisance rénale ou de muqueuse lésée.',
-      conditionTexte: 'si maladie inflammatoire de la muqueuse intestinale, colite sévère, forte dose, traitement prolongé ou insuffisance rénale',
+      conditionTexte: 'si maladie inflammatoire de la muqueuse intestinale, colite pseudomembraneuse, forte dose, traitement prolongé ou insuffisance rénale',
       statut: 'verifiee_ia',
       sources: [
         S(RCP_VO, '§4.2/4.4', 'L\'absorption peut être augmentée chez les patients atteints de maladies inflammatoires de la muqueuse intestinale ou de colite pseudomembraneuse due à Clostridium difficile', 'surveillance'),
