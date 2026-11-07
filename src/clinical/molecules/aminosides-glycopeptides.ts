@@ -228,6 +228,22 @@ export const gentamicine: Molecule = {
         S('SPILF-2018-meningites', 'p. 28-29, §14.1.3', '[reformulation] gentamicine 5 mg/kg/j en une perfusion de 30 min les 5 premiers jours', 'duree'),
       ],
     },
+    // Pneumonie associée aux soins de réanimation (docs/sources/recherche-pneumonies.md §8) : dose du protocole SFAR,
+    // affichée sans calcul (avis d'experts, correspondance molécule/posologie reconstituée, nombre d'injections non précisé).
+    {
+      id: 'gentamicine-pavm',
+      libelle: '8 mg/kg/j (protocole SFAR/SRLF 2017, pneumonie de réanimation avec choc) — avis d\'experts',
+      indication: 'Pneumonie associée aux soins de réanimation, précoce, avec choc, sans facteur de risque de BMR : bêta-lactamine + aminoside (SFAR/SRLF 2017, protocole n° 4).',
+      dose: { type: 'ponderale', valeur: 8, unite: 'mg/kg', poidsReference: 'ajuste', seuilObesiteRatio: 1.25, texte: '8 mg/kg/j (SFAR/SRLF 2017, protocole n° 4, « à titre indicatif ») — nombre d\'administrations non précisé, dose non calculée ; ANSM 2011 : 3 à 8 mg/kg/j ; SPILF/SFPT/CA-SFM 2026 : 6 à 7 mg/kg' },
+      voie: 'IV',
+      modalites: 'IV ; modalités non précisées par le protocole SFAR (posologies « à titre indicatif »)',
+      statut: 'brouillon',
+      sources: [
+        S('SFAR-SRLF-2017-PAS-rea', 'protocole n° 4, p. 23', 'Posologies données à titre indicatif pour un patient avec fonction rénale normale et poids standard', 'posologie'),
+        S('ANSM-2011-aminosides', 'p. 6', 'gentamicine, tobramycine : 3 à 8 mg/kg/jour', 'posologie'),
+      ],
+      remarques: 'Correspondance molécule/posologie du protocole n° 4 reconstituée (note de recherche §8, confiance moyenne).',
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -403,6 +419,21 @@ export const vancomycine: Molecule = {
         hemodialyse: { texte: 'Hémodialyse intermittente : non traitée par les sources lues pour la dose méningée ; dosages (cible résiduelle 15 à 20 mg/L, SPILF 2018) et avis pharmacologique.', sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')] },
         eerContinue: { texte: 'Épuration extrarénale continue : non traitée par les sources lues pour la dose méningée ; dosages (cible résiduelle 15 à 20 mg/L, SPILF 2018) et avis pharmacologique.', sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] résiduelle 15–20 mg/L', 'adaptation_renale')] },
       },
+    },
+    // Pneumonie associée aux soins de réanimation avec facteur de risque de SARM (docs/sources/recherche-pneumonies.md §8).
+    {
+      id: 'vancomycine-pavm',
+      libelle: '15 mg/kg puis 30 à 40 mg/kg/j (protocole SFAR/SRLF 2017, facteur de risque de SARM) — avis d\'experts',
+      indication: 'Pneumonie associée aux soins de réanimation avec facteur de risque de SARM (SFAR/SRLF 2017, R3.3 et protocole n° 4).',
+      dose: { type: 'ponderale', valeur: 30, unite: 'mg/kg', poidsReference: 'total', texte: '15 mg/kg puis 30 à 40 mg/kg/j (SFAR/SRLF 2017, protocole n° 4, « à titre indicatif ») — mode d\'administration non précisé, dose non calculée ; adaptation sur les concentrations' },
+      voie: 'IV',
+      modalites: 'IV ; mode d\'administration (continu ou discontinu) non précisé par le protocole SFAR',
+      statut: 'brouillon',
+      sources: [
+        S('SFAR-SRLF-2017-PAS-rea', 'protocole n° 4, p. 23', '15 mg/kg puis 30 à 40 mg/kg/j', 'posologie'),
+        S('SFAR-SRLF-2017-PAS-rea', 'protocole n° 4, p. 23', 'Posologies données à titre indicatif pour un patient avec fonction rénale normale et poids standard', 'posologie'),
+      ],
+      remarques: 'Correspondance molécule/posologie du protocole n° 4 reconstituée (note de recherche §8, confiance moyenne).',
     },
   ],
   adaptationRenale: {
