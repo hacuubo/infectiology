@@ -431,6 +431,8 @@ export type ConditionId =
   | 'serotoninergique_associe'
   | 'qt_allongeant_associe'
   | 'anticoagulant_associe'
+  | 'avk_associe'
+  | 'ciprofloxacine_associee'
   | 'perfusion_continue'
   | 'perfusion_intermittente'
   | 'instabilite_renale'

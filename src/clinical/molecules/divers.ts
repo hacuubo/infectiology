@@ -137,6 +137,17 @@ export const levofloxacine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 29', 'lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'posologie')],
     },
+    // Infections intra-abdominales (docs/sources/recherche-intra-abdominal.md §1, Annexe 1) : voie IV.
+    {
+      id: 'levo-iv-iia',
+      libelle: '500 mg toutes les 12 à 24 h IV (infection intra-abdominale, allergie, posologie usuelle)',
+      indication: 'Infection intra-abdominale communautaire avec allergie interdisant céphalosporines et carbapénèmes, avec le métronidazole (SFAR 2026 R1.2.11, Annexe 1, colonne « usuelles »).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 2, texte: '500 mg toutes les 12 à 24 h' },
+      voie: 'IV',
+      modalites: 'perfusion IV toutes les 12 à 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '500 mg/12-24h IV', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
     // Pneumonies (docs/sources/recherche-pneumonies.md).
     {
       id: 'levo-pac-500',

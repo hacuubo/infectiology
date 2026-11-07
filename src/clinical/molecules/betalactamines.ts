@@ -1,5 +1,25 @@
-import type { Molecule } from '../types';
+import type { AdaptationRenale, Molecule, SourceRef } from '../types';
 import { S, SRC_DOSES_2026, encephalopathieBetaLactamine, stpBetaLactamineReanimation } from './base';
+
+/**
+ * Régimes intra-abdominaux de SFAR 2026 en perfusion continue ou prolongée : les paliers du RCP visent
+ * l'administration intermittente et ne se convertissent pas ; SFAR 2026 (Annexe 1) renvoie l'insuffisance rénale au GPR
+ * (céfépime : concentrations sériques). Au-dessus du seuil du RCP, pas d'adaptation.
+ */
+function adaptationRenaleIIA(seuil: number, sansAdaptation: SourceRef, cefepime = false): AdaptationRenale {
+  const avis = `adaptation de ce schéma (perfusion continue ou prolongée) non tabulée par les sources lues : SFAR 2026 renvoie au Guide Prescription Rein${cefepime ? ' et adapte le céfépime selon les concentrations sériques' : ''} — avis pharmacologique, dosage plasmatique.`;
+  const src = [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74', 'GPR (Guide Prescription Rein) via accès Vidal®', 'adaptation_renale'), ...(cefepime ? [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (céfépime, usuelles)', 'paraphrase : si IR et/ou dose ≥ 6 g/j, adaptation par les concentrations sériques', 'adaptation_renale')] : [])];
+  return {
+    methode: 'Cockcroft',
+    statut: 'verifiee_ia',
+    paliers: [
+      { clcrMin: seuil, texte: `ClCr ≥ ${seuil} mL/min : pas d'adaptation (seuil du RCP).`, sources: [sansAdaptation] },
+      { clcrMax: seuil, texte: `ClCr < ${seuil} mL/min : ${avis}`, sources: src },
+    ],
+    hemodialyse: { texte: `Hémodialyse : ${avis}`, sources: src },
+    eerContinue: { texte: `Épuration extrarénale continue : ${avis}`, sources: src },
+  };
+}
 
 const CRAT_PENI = S('CRAT-penicillines-grossesse', 'En pratique', "L'utilisation des pénicillines suivantes est possible quel que soit le terme de la grossesse", 'autre');
 const CRAT_CEPH = S('CRAT-cephalosporines-grossesse', 'En pratique', 'céfotaxime, ceftriaxone, ceftazidime utilisables « quel que soit le terme de la grossesse, en raison de leur intérêt thérapeutique »', 'autre');
@@ -181,6 +201,17 @@ export const ceftriaxone: Molecule = {
       modalites: 'perfusion de 30 min ou IV directe, 1 fois par 24 h',
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '1-2 g/j IV', 'posologie'), S('RCP-ceftriaxone', '§4.2 (infections intra-abdominales)', '1‑2 g Une fois par jour', 'posologie')],
+    },
+    {
+      id: 'ceftriaxone-iia-rea',
+      libelle: '2 g toutes les 12 h (infection intra-abdominale, réanimation, patient grave)',
+      indication: 'Infection intra-abdominale du patient grave (SFAR 2026, Annexe 1, colonne « réanimation, patient grave »).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 2 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min toutes les 12 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '2 g/12h IV en perfusion de 30 min', 'posologie')],
+      remarques: 'Au-delà de la ligne « infections intra-abdominales » du RCP (1-2 g une fois par jour).',
     },
     // Pneumonies (docs/sources/recherche-pneumonies.md).
     {
@@ -459,6 +490,16 @@ export const amoxicillineClavulanate: Molecule = {
       sources: [S('SPILF-2026-IUM', 'diapo 23-24', 'Amoxicilline-acide clavulanique 1 gx3/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'amox-clav 1 g ×3/j 10 j', 'posologie')],
     },
     {
+      id: 'amoxclav-po-diverticulite',
+      libelle: '1 g 3 fois par jour per os (diverticulite non compliquée sans réponse au traitement symptomatique)',
+      indication: 'Diverticulite non compliquée sans réponse au traitement symptomatique (HAS 2021).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'PO',
+      modalites: 'per os toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('HAS-2021-diverticulite', 'fiche mémo', 'amoxicilline-acide clavulanique : 1 g 3 fois par jour pendant 7 jours', 'posologie')],
+    },
+    {
       id: 'amoxclav-po-50mgkg-morsure',
       libelle: '50 mg/kg/j d\'amoxicilline per os en 3 prises (maximum 6 g/j ; acide clavulanique ≤ 375 mg/j) — DHBNN après morsure',
       indication: 'Dermohypodermite après morsure (traitement curatif) : HAS 2019 § 1.8.2, fiche HAS 2021.',
@@ -562,6 +603,7 @@ export const piperacillineTazobactam: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '(16 g + 2000 mg)/j', 'posologie'), S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '(4g+500 mg) IV en 30min', 'posologie')],
       remarques: 'SFAR 2026, colonne « usuelles » : dose de charge puis « (200 mg+25 mg)/kg/j » en continu ou en perfusions prolongées de 4 h toutes les 6-8 h ; hyperclairance (ClCr mesurée > 130 mL/min) : « (20 g+ 2500 mg)/j ».',
+      adaptationRenale: adaptationRenaleIIA(40, S('RCP-piperacilline-tazobactam', '§4.2', 'ClCr > 40 : « Pas d\'ajustement de dose nécessaire »', 'adaptation_renale')),
     },
     // Pneumonie d'inhalation (docs/sources/recherche-pneumonies.md §6).
     {
@@ -729,6 +771,7 @@ export const cefepime: Molecule = {
       modalites: 'perfusion prolongée de 4 à 8 h toutes les 8 h ; si insuffisance rénale et/ou dose ≥ 6 g/j : adaptation par les concentrations sériques',
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '2 g/8h IV en perfusion de 4-8 h', 'posologie'), S('RCP-cefepime', '§4.2', '1 g ×2/j à 2 g ×3/j (Pseudomonas sévère : 2 g ×3)', 'posologie')],
+      adaptationRenale: adaptationRenaleIIA(50, S('RCP-cefepime', '§4.4', 'adaptation pour des clairances de créatinine inférieures ou égales à 50 ml/min', 'adaptation_renale'), true),
     },
     {
       id: 'cefepime-iia-rea',
@@ -741,6 +784,7 @@ export const cefepime: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '3 g à 4 g/j en perfusion continue', 'posologie'), S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', 'entre la 24è et la 36è heures', 'surveillance')],
       remarques: 'Hyperclairance (ClCr mesurée > 130 mL/min) : dose de charge 2 g puis « 6 g/j en perfusion continue » (SFAR 2026, Annexe 1).',
+      adaptationRenale: adaptationRenaleIIA(50, S('RCP-cefepime', '§4.4', 'adaptation pour des clairances de créatinine inférieures ou égales à 50 ml/min', 'adaptation_renale'), true),
     },
     {
       id: 'cefepime-biliaire-2g12h',
@@ -831,6 +875,7 @@ export const meropeneme: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '3 g/j en perfusion continue', 'posologie')],
       remarques: 'Hyperclairance (ClCr mesurée > 130 mL/min) : « 6 g/j en perfusion continue » (SFAR 2026, Annexe 1).',
+      adaptationRenale: adaptationRenaleIIA(51, S('RCP-meropeneme', '§4.2 (tableau 2)', 'ajustement « lorsque la clairance de la créatinine est inférieure à 51 mL/min »', 'adaptation_renale')),
     },
   ],
   adaptationRenale: {
