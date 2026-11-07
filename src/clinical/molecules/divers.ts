@@ -152,7 +152,8 @@ export const levofloxacine: Molecule = {
       id: 'levo-pac-soins-critiques',
       libelle: '500 à 1 000 mg/j IV (pneumonie grave, soins critiques)',
       indication: 'PAC grave avec allergie à la C3G ou au macrolide (monothérapie) ; légionellose grave ou du patient immunodéprimé (1re intention, SPILF 2026).',
-      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 2, texte: '500 à 1 000 mg/j IV (500 mg une ou deux fois par jour)' },
+      // Fourchette de la source (500 à 1 000 mg/j) : pas de fréquence stockée, aucune des deux valeurs n'est retenue en silence.
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', texte: '500 à 1 000 mg/j IV (500 mg une ou deux fois par jour) — fourchette de la SPILF, non tranchée par l\'application' },
       voie: 'IV',
       modalites: 'perfusion de 60 min, une ou deux fois par 24 h ; relais oral dès la stabilité clinique',
       statut: 'verifiee_ia',
@@ -218,6 +219,7 @@ export const cotrimoxazole: Molecule = {
       modalites: 'per os ou IV toutes les 8 h',
       statut: 'verifiee_ia',
       sources: [S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '>30ml/min : 800mg de sulfamethoxazole toutes les 8h', 'posologie')],
+      remarques: 'Indication dans la pneumonie d\'inhalation non rapprochée du RCP dans la note de recherche (à vérifier).',
     },
   ],
   adaptationRenale: {

@@ -69,17 +69,8 @@ export const cefotaxime: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '1-2 g/8h IV en perfusion de 30 min - 4h', 'posologie'), S('RCP-cefotaxime', '§4.2', '3 g/jour en moyenne pouvant être portée jusqu\'à 12 g', 'posologie')],
     },
-    // Pneumonies (docs/sources/recherche-pneumonies.md).
-    {
-      id: 'cefotaxime-pac-1g8h',
-      libelle: '1 g toutes les 8 h IV ou IM (pneumonie hors soins critiques)',
-      indication: 'PAC ambulatoire avec comorbidité et allergie non grave aux pénicillines (HAS 2025) ; PAC hospitalisée non grave (SPILF 2025).',
-      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
-      voie: 'IM ou IV',
-      modalites: 'IV ou IM toutes les 8 h',
-      statut: 'verifiee_ia',
-      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Céfotaxime « 1 g x 3/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'comorbidités, allergie aux pénicillines', 'cefotaxime : 1g 3 fois par jour par voie IM ou IV', 'posologie')],
-    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md). Le céfotaxime 1 g × 3/j hors soins critiques n'est cité qu'en
+    // commentaire des options de ceftriaxone : pas de régime inutilisé.
     {
       id: 'cefotaxime-pac-soins-critiques',
       libelle: 'Soins critiques : 80 à 100 mg/kg/j (article) ou 100 mg/kg/j (diaporama) — divergence non tranchée',
@@ -189,7 +180,7 @@ export const ceftriaxone: Molecule = {
       indication: 'PAC ambulatoire avec comorbidité et allergie non grave aux pénicillines (HAS 2025) ; PAC hospitalisée non grave (SPILF 2025) ; pneumonie d\'inhalation (SPILF/SFGG 2025).',
       dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 1 },
       voie: 'IM ou IV',
-      modalites: 'IV, IM ou SC, 1 fois par 24 h (voie SC citée par la HAS et la SPILF/SFGG)',
+      modalites: 'IV ou IM, 1 fois par 24 h. Voie SC citée par la HAS 2025 et la SPILF/SFGG 2025 : non rapprochée du RCP dans la note de recherche (à vérifier)',
       statut: 'verifiee_ia',
       sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Ceftriaxone « 1 g x 1/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'comorbidités, allergie aux pénicillines', 'ceftriaxone : 1g 1 fois par jour par voie IM, IV ou SC', 'posologie'), S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', 'Pas d\'adaptation : 1g/24h, IV ou SC', 'posologie')],
     },
@@ -410,6 +401,16 @@ export const amoxicilline: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Amoxicilline « 1 g x 3/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', '1re intention sans comorbidité', 'amoxicilline 1g 3 fois par jour', 'posologie')],
     },
+    {
+      id: 'amoxicilline-pac-soins-critiques',
+      libelle: '2 g toutes les 8 h (pneumonie en soins critiques)',
+      indication: 'Pneumonie communautaire prise en charge en soins critiques (SPILF 2025, tableau 10, colonne « en soins critiques »).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV ou PO',
+      modalites: 'toutes les 8 h ; voie non précisée par le tableau 10',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '2 g x 3/j', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'non_precisee',
@@ -493,6 +494,16 @@ export const amoxicillineClavulanate: Molecule = {
       modalites: 'per os (1 g/125 mg) ou IV toutes les 8 h',
       statut: 'verifiee_ia',
       sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Amoxicilline-acide clavulanique « 1 g x 3/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'comorbidités ou exposition aux antibiotiques', 'amoxicilline/acide clavulanique : 1g/125 mg 3 fois par jour', 'posologie'), S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '> 30 ml/min : 1g d\'amoxicilline toutes les 8h', 'posologie')],
+    },
+    {
+      id: 'amoxclav-pac-soins-critiques',
+      libelle: 'Soins critiques : 1 ou 2 g toutes les 8 h (article) ou 2 g toutes les 8 h (diaporama) — divergence non tranchée',
+      indication: 'Pneumonie en soins critiques (SPILF 2025, tableau 10, colonne « en soins critiques ») : la posologie diffère entre l\'article et le diaporama SPILF.',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3, texte: '1 ou 2 g × 3/j selon l\'article SPILF/SPLF 2025 (tableau 10) ; 2 g × 3/j selon le diaporama SPILF 2025 (diapo 15) — divergence non tranchée' },
+      voie: 'IV',
+      modalites: 'IV toutes les 8 h',
+      statut: 'brouillon',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '1 ou 2 g x 3/j', 'posologie'), S('SPILF-2025-PAC-diapo', 'diapo 15', 'Amoxicilline-acide clavulanique soins critiques « 2 g x3/j »', 'posologie')],
     },
   ],
   adaptationRenale: {

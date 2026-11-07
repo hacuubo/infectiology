@@ -4,12 +4,27 @@
  * Hors AMM signalés par la note : clarithromycine IV (AMM limitée aux mycobactéries atypiques), azithromycine dans
  * la pneumonie (absente des indications du RCP ZITHROMAX 250 mg) ; azithromycine IV non disponible en France.
  */
-import type { Molecule } from '../types';
+import type { Molecule, Regimen } from '../types';
 import { S } from './base';
 
 const SP = 'SPILF-SPLF-2025-PAC';
 const HAS = 'HAS-2025-PAC-adulte-ambulatoire';
 const LEG = 'SPILF-2026-legionellose-diapo';
+
+/**
+ * Spiramycine IV + médicament donnant des torsades de pointes : contre-indiquée au §4.3 du RCP de la forme IV (le moteur
+ * écarte alors l'option) ; le §4.5 du même RCP cite les fluoroquinolones en précautions d'emploi (incohérence interne,
+ * note §10.9 point 8) : l'application retient la contre-indication et le dit.
+ */
+const INTERACTION_QT_IV: NonNullable<Regimen['interactionsPertinentes']>[number] = {
+  avec: 'qt_allongeant',
+  texte: 'Contre-indiquée (forme IV, RCP §4.3) : association aux médicaments donnant des torsades de pointes (dont lévofloxacine, moxifloxacine, citalopram, dompéridone, amiodarone, sotalol) et sujets à risque de QT long. Le §4.5 du même RCP cite la lévofloxacine en précaution d\'emploi : incohérence interne du RCP, l\'application retient la contre-indication.',
+  sources: [
+    S('RCP-spiramycine-IV', '§4.3', 'En association avec les médicaments donnant des torsades de pointes', 'surveillance'),
+    S('RCP-spiramycine-IV', '§4.3', 'Chez les sujets à risque de « QT long »', 'surveillance'),
+    S('RCP-spiramycine-IV', '§4.5', 'Ciprofloxacine, levofloxacine, norfloxacine', 'surveillance'),
+  ],
+};
 
 /* ------------------------------------------------------------------ */
 export const spiramycine: Molecule = {
@@ -44,6 +59,7 @@ export const spiramycine: Molecule = {
         S('RCP-spiramycine-IV', '§4.2', '1,5 M U.I. toutes les 8 heures (soit 4,5 M U.I. par jour) en perfusion lente', 'posologie'),
         S(SP, 'tableau 10, p. 8', '1,5 MUI à 3 MUI x 3/j', 'posologie'),
       ],
+      interactionsPertinentes: [INTERACTION_QT_IV],
     },
     {
       id: 'spiramycine-iv-3mui-x3',
@@ -58,6 +74,7 @@ export const spiramycine: Molecule = {
         S(LEG, 'diapo 9 (soins critiques)', '3 MUI x 3/j', 'posologie'),
         S('RCP-spiramycine-IV', '§4.2', 'En cas d\'infection sévère, la posologie peut être doublée', 'posologie'),
       ],
+      interactionsPertinentes: [INTERACTION_QT_IV],
     },
   ],
   adaptationRenale: {
@@ -90,6 +107,17 @@ export const spiramycine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('RCP-spiramycine', '§4.4', 'De très rares cas d\'anémie hémolytique […] déficit en Glucose-6-Phosphate-Déshydrogénase, l\'utilisation de la spiramycine dans cette population de patients n\'est pas recommandée', 'surveillance')],
     },
+    {
+      id: 'spiramycine-levodopa',
+      type: 'interaction',
+      categorie: 'conditionnelle',
+      quoi: 'Lévodopa/carbidopa associée : interaction signalée par le RCP (§4.5), à vérifier avec le pharmacien',
+      quand: { ancre: 'avant_traitement', texte: 'Avant la première dose' },
+      pourquoi: 'Interaction listée au §4.5 du RCP (note de recherche §12.1).',
+      conditionTexte: 'si lévodopa/carbidopa associée',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-spiramycine', '§4.5', undefined, 'surveillance')],
+    },
   ],
   grossesse: {
     statut: 'utilisable',
@@ -97,7 +125,8 @@ export const spiramycine: Molecule = {
     sources: [S('CRAT-spiramycine-grossesse', 'En pratique', 'L\'utilisation de la spiramycine est possible quel que soit le terme de la grossesse.', 'autre'), S('RCP-spiramycine', '§4.6', 'L\'utilisation de la spiramycine peut être envisagée au cours de la grossesse si besoin', 'autre')],
   },
   interactionsPertinentes: [
-    { avec: 'qt_allongeant', texte: 'Forme IV : association contre-indiquée avec les médicaments donnant des torsades de pointes (dont lévofloxacine, moxifloxacine, citalopram, dompéridone, amiodarone, sotalol) ; forme orale : précaution d\'emploi.', sources: [S('RCP-spiramycine-IV', '§4.3', 'En association avec les médicaments donnant des torsades de pointes', 'surveillance')] },
+    // Forme orale (la forme IV porte sa propre interaction, contre-indiquée : voir ses régimes).
+    { avec: 'qt_allongeant', texte: 'Forme orale : précaution d\'emploi avec les médicaments donnant des torsades de pointes, dont la lévofloxacine (RCP §4.5) ; ECG si facteur de risque de QT long.', sources: [S('RCP-spiramycine', '§4.5', 'précautions d\'emploi', 'surveillance')] },
     { avec: 'avk', texte: 'Augmentation de l\'effet des anticoagulants oraux : contrôle de l\'INR.', sources: [S('RCP-spiramycine', '§4.5', 'De nombreux cas d\'augmentation de l\'activité des anticoagulants oraux ont été rapportés', 'surveillance')] },
   ],
 };
@@ -182,6 +211,17 @@ export const clarithromycine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('RCP-clarithromycine', '§4.4', 'Des cas d\'insuffisance hépatique fatale ont été rapportés', 'surveillance')],
     },
+    {
+      id: 'clarithromycine-rifampicine',
+      type: 'interaction',
+      categorie: 'conditionnelle',
+      quoi: 'Rifampicine (inducteur) associée : risque de diminution des concentrations de clarithromycine',
+      quand: { ancre: 'avant_traitement', texte: 'Avant la première dose' },
+      pourquoi: 'Baisse des concentrations plasmatiques de clarithromycine (RCP §4.4-4.5).',
+      conditionTexte: 'si rifampicine associée',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-clarithromycine', '§4.5', 'Risque de diminution des concentrations plasmatiques de clarithromycine', 'surveillance')],
+    },
   ],
   grossesse: {
     statut: 'eviter',
@@ -194,10 +234,14 @@ export const clarithromycine: Molecule = {
   interactionsPertinentes: [
     { avec: 'statine', texte: 'Simvastatine contre-indiquée ; atorvastatine à éviter dans la mesure du possible.', sources: [S('RCP-clarithromycine', '§4.3', 'la simvastatine', 'surveillance'), S('RCP-clarithromycine', '§4.4', 'atorvastatine « doit être évitée dans la mesure du possible »', 'surveillance')] },
     { avec: 'avk', texte: 'Augmentation de l\'effet des AVK : contrôle plus fréquent de l\'INR.', sources: [S('RCP-clarithromycine', '§4.4', 'L\'INR et le taux de prothrombine doivent être surveillés fréquemment', 'surveillance')] },
-    { avec: 'aod', texte: 'Rivaroxaban : association déconseillée ; autres AOD : précautions.', sources: [S('RCP-clarithromycine', '§4.5', '« + Rivaroxaban » (déconseillée)', 'surveillance')] },
+    { avec: 'aod', texte: 'Rivaroxaban : association déconseillée ; autres AOD : précautions.', sources: [S('RCP-clarithromycine', '§4.5', '+ Rivaroxaban', 'surveillance')] },
     { avec: 'qt_allongeant', texte: 'Allongement du QT : contre-indication en cas de QT long ; prudence avec les médicaments allongeant le QT.', sources: [S('RCP-clarithromycine', '§4.3', 'Allongement congénital ou acquis de l\'intervalle QT', 'surveillance')] },
   ],
 };
+
+/** RCP ZITHROMAX §4.4 « Risque de résistance » (note §12.3) : rappelé partout où l'azithromycine est proposée. */
+export const TEXTE_AZI_RESISTANCE = 'RCP (§4.4, risque de résistance) : à utiliser uniquement lorsque les schémas thérapeutiques de première intention ne sont pas indiqués.';
+export const SRC_AZI_RESISTANCE = S('RCP-azithromycine', '§4.4 (Risque de résistance)', 'uniquement lorsque les schémas thérapeutiques de première intention ne sont pas indiqués', 'choix');
 
 /* ------------------------------------------------------------------ */
 export const azithromycine: Molecule = {
@@ -213,13 +257,15 @@ export const azithromycine: Molecule = {
       dose: { type: 'fixe', valeur: 250, unite: 'mg', frequenceParJour: 1, texte: '500 mg en une prise à J1, puis 250 mg/j' },
       voie: 'PO',
       modalites: 'une prise par jour',
-      statut: 'verifiee_ia',
+      // Hors AMM : la pneumonie ne figure pas dans les indications du RCP ZITHROMAX 250 mg (note §12.3) → brouillon.
+      statut: 'brouillon',
       sources: [
         S(HAS, 'atypique ou échec à 72 h', 'azithromycine : 500 mg par jour en une prise à J1 puis 250 mg par jour', 'posologie'),
         S(SP, 'tableau 10, p. 8', '500 mg/j (J1) puis 250 mg/j', 'posologie'),
         S('RCP-azithromycine', '§4.2', '500 mg le jour 1, puis 250 mg/jour du jour 2 au jour 5', 'posologie'),
+        SRC_AZI_RESISTANCE,
       ],
-      remarques: 'Hors AMM dans la pneumonie (RCP ZITHROMAX 250 mg) ; azithromycine IV non disponible en France.',
+      remarques: `Hors AMM dans la pneumonie (RCP ZITHROMAX 250 mg) ; azithromycine IV non disponible en France. ${TEXTE_AZI_RESISTANCE}`,
     },
     {
       id: 'azithromycine-po-500',
@@ -228,9 +274,10 @@ export const azithromycine: Molecule = {
       dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 1 },
       voie: 'PO',
       modalites: 'une prise par jour',
-      statut: 'verifiee_ia',
-      sources: [S(LEG, 'diapo 9 (hors soins critiques)', '500 mg/j', 'posologie'), S('RCP-azithromycine', '§4.2', '500 mg/jour pendant 3 jours', 'posologie')],
-      remarques: 'Hors AMM dans la légionellose (la pneumonie ne figure pas dans les indications du RCP ZITHROMAX 250 mg).',
+      // Hors AMM (note §12.3) → brouillon.
+      statut: 'brouillon',
+      sources: [S(LEG, 'diapo 9 (hors soins critiques)', '500 mg/j', 'posologie'), S('RCP-azithromycine', '§4.2', '500 mg/jour pendant 3 jours', 'posologie'), SRC_AZI_RESISTANCE],
+      remarques: `Hors AMM dans la légionellose (la pneumonie ne figure pas dans les indications du RCP ZITHROMAX 250 mg). ${TEXTE_AZI_RESISTANCE}`,
     },
   ],
   adaptationRenale: {
@@ -252,6 +299,17 @@ export const azithromycine: Molecule = {
       pourquoi: 'Allongement du QT ; hépatite fulminante rapportée ; myasthénie.',
       statut: 'verifiee_ia',
       sources: [S('RCP-azithromycine', '§4.4', 'hépatite fulminante', 'surveillance')],
+    },
+    {
+      id: 'azithromycine-pgp',
+      type: 'interaction',
+      categorie: 'conditionnelle',
+      quoi: 'Substrats de la P-gp associés : colchicine (surveillance clinique), digoxine, dabigatran (risque accru d\'hémorragie)',
+      quand: { ancre: 'avant_traitement', texte: 'Avant la première dose' },
+      pourquoi: 'Interactions par la glycoprotéine P listées au §4.5 du RCP.',
+      conditionTexte: 'si colchicine, digoxine ou dabigatran associés',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-azithromycine', '§4.5', 'surveillance clinique', 'surveillance'), S('RCP-azithromycine', '§4.5', 'risque accru d\'hémorragie', 'surveillance')],
     },
   ],
   grossesse: {
@@ -332,7 +390,18 @@ export const linezolide: Molecule = {
       conditionId: 'sujet_age',
       conditionTexte: 'natrémie chez le sujet âgé',
       statut: 'verifiee_ia',
-      sources: [S('RCP-linezolide', '§4.4', 'hyponatrémie/SIADH (natrémie chez le sujet âgé)', 'surveillance')],
+      // Contenu résumé par la note (§12.4), pas un verbatim du RCP : pas d'extrait cité.
+      sources: [S('RCP-linezolide', '§4.4', undefined, 'surveillance')],
+    },
+    {
+      id: 'linezolide-autres-mises-en-garde',
+      type: 'clinique',
+      categorie: 'systematique',
+      quoi: 'Convulsions ; éviter les aliments riches en tyramine ; bactériémie sur cathéter avec bactérie à Gram négatif associée : excès de mortalité rapporté (linézolide inactif sur les Gram négatif)',
+      quand: { ancre: 'quotidien', texte: 'Pendant le traitement' },
+      pourquoi: 'Mises en garde du RCP (§4.4) résumées par la note de recherche (§12.4).',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-linezolide', '§4.4', undefined, 'surveillance'), S('RCP-linezolide', '§4.1', 'Le linézolide n\'est pas actif dans le traitement des infections dues à des germes à Gram négatif', 'surveillance')],
     },
   ],
   grossesse: {
@@ -341,6 +410,6 @@ export const linezolide: Molecule = {
     sources: [S('RCP-linezolide', '§4.6', 'Le linézolide ne doit pas être administré lors de la grossesse sauf si cela est absolument nécessaire', 'autre')],
   },
   interactionsPertinentes: [
-    { avec: 'serotoninergique', texte: 'ISRS, tricycliques, triptans : contre-indiqués sauf surveillance étroite (syndrome sérotoninergique, pression artérielle) ; IMAO contre-indiqués.', sources: [S('RCP-linezolide', '§4.3', 'ISRS, tricycliques, triptans', 'surveillance')] },
+    { avec: 'serotoninergique', texte: 'ISRS, tricycliques, triptans : contre-indiqués sauf surveillance étroite (syndrome sérotoninergique, pression artérielle) ; IMAO contre-indiqués.', sources: [S('RCP-linezolide', '§4.3', undefined, 'surveillance')] },
   ],
 };

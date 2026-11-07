@@ -374,6 +374,11 @@ export interface Regimen {
    * standard du RCP). Prioritaire sur celle de la molécule.
    */
   adaptationRenale?: AdaptationRenale;
+  /**
+   * Interactions propres à ce régime (ex. forme IV contre-indiquée, forme orale en précaution d'emploi). Elles
+   * remplacent celles de la molécule pour le même traitement associé.
+   */
+  interactionsPertinentes?: { avec: TraitementAssocie; texte: string; sources: SourceRef[] }[];
 }
 
 export interface PalierRenal {

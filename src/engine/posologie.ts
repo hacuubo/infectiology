@@ -371,7 +371,10 @@ export function calculerPrescription(args: {
   for (const res of ctx.allergie.reserves) if (res.moleculeId === m.id) avert.push(res.texte);
 
   // --- Interactions
-  for (const inter of m.interactionsPertinentes ?? []) {
+  // Une interaction déclarée par le régime remplace celle de la molécule pour le même traitement associé.
+  const interRegime = r.interactionsPertinentes ?? [];
+  const interactions = [...interRegime, ...(m.interactionsPertinentes ?? []).filter((i) => !interRegime.some((x) => x.avec === i.avec))];
+  for (const inter of interactions) {
     if (p.traitementsAssocies.includes(inter.avec)) {
       avert.push(`Interaction (${inter.avec}) : ${inter.texte}`);
       sources.push(...inter.sources);
