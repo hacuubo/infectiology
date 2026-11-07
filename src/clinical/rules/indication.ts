@@ -132,16 +132,25 @@ export const R_PRELEVEMENT_SUPERFICIEL: Regle = {
       S('IWGDF-IDSA-2023-pied-diabetique', 'rec. 11 (best practice), pied diabétique', 'Do not treat clinically uninfected foot ulcers with systemic or local antibiotic therapy when the goal is to reduce the risk of new infection, or to promote ulcer healing.', 'choix'),
     ];
     const base = { exceptions: [] as string[], surveillance: [] as string[], questions: [] as string[], sources: src, statut: 'verifiee_ia' as const, regleId: 'R-PRELEVEMENT-SUPERFICIEL' };
+    const grave = ctx.dossier.patient.gravite === 'sepsis' || ctx.dossier.patient.gravite === 'choc_septique';
+    if (formePeau(ctx) !== undefined) {
+      // Foyer « Peau et tissus mous » avec une forme renseignée (ou une nécrose) : l'indication, la situation et le traitement
+      // suivent la forme clinique (R-PEAU-TISSUS-MOUS), y compris les formes sans antibiotique (furoncle isolé, impétigo peu
+      // étendu, pied diabétique grade 1) et les incohérences entre la forme et les signes locaux.
+      f.alerte('info', 'Prélèvement superficiel : la culture ne décide pas seule ; la prise en charge suit la forme clinique renseignée (foyer « Peau et tissus mous »).', src);
+      return f.fin();
+    }
+    if (c.signesInfectionLocale === 'non' && grave) {
+      // Une conclusion « colonisation, pas d'antibiotique » ne s'applique jamais en cas de sepsis ou de choc.
+      f.situation('plaie-colonisee-sepsis', 'Sepsis avec une plaie sans signe clinique d\'infection', 'non_couverte', 'La culture superficielle ne désigne pas le foyer du sepsis : rechercher la source ; antibiothérapie du sepsis selon le foyer suspecté, avec la réanimation et le SMIT.');
+      f.alerte('attention', 'Plaie déclarée sans signe d\'infection chez un patient en sepsis ou en choc : la culture superficielle (colonisation probable) ne désigne pas le foyer ; rechercher la source du sepsis.', src);
+      f.avis('Sepsis sans foyer cutané établi : avis réanimation / SMIT pour le choix probabiliste.', true, src);
+      return f.fin();
+    }
     if (c.signesInfectionLocale === 'non') {
       f.c.indication = { ...base, decision: 'ne_pas_traiter', qualification: 'colonisation', titre: 'Pas d\'antibiothérapie indiquée dans la situation renseignée', raison: 'Une plaie est toujours colonisée : sans signe clinique d\'infection, la culture positive ne justifie pas d\'antibiotique.', conditions: ['prélèvement superficiel positif', 'pas de signe clinique d\'infection locale', 'pas de bactériémie'], actions: ['Ne pas prescrire d\'antibiotique', 'Soins locaux ; ne pas multiplier les prélèvements superficiels'], reconsiderer: ['Dermohypodermite, abcès, pus, aggravation de la plaie, signes généraux'] };
       f.situation('plaie-colonisee', 'Plaie colonisée sans infection clinique', 'couverte', f.c.indication.raison);
     } else if (c.signesInfectionLocale === 'oui') {
-      if (formePeau(ctx) !== undefined) {
-        // Foyer « Peau et tissus mous » : l'indication, la situation et le traitement suivent la forme clinique (R-PEAU-TISSUS-MOUS),
-        // y compris les formes sans antibiotique (furoncle isolé, impétigo peu étendu, pied diabétique grade 1).
-        f.alerte('info', 'Infection locale clinique : la culture du prélèvement superficiel ne décide pas seule ; la prise en charge suit la forme clinique renseignée (foyer « Peau et tissus mous »).', src);
-        return f.fin();
-      }
       f.c.indication = { ...base, decision: 'traiter', qualification: 'infection_probable', titre: 'Infection locale clinique', raison: 'Le diagnostic d\'infection de plaie est clinique. Le choix thérapeutique dépend de la forme clinique : choisir le foyer « Peau et tissus mous » et préciser la forme.', conditions: ['signes cliniques d\'infection locale'], actions: ['Prélèvement de pus ou tissulaire (pas d\'écouvillonnage superficiel) avant antibiothérapie', 'Préciser le foyer « Peau et tissus mous » et la forme clinique', 'Sinon : avis spécialisé'], reconsiderer: [] };
       f.situation('infection-cutanee', 'Infection cutanée ou de plaie', 'non_couverte', 'Foyer et forme clinique non précisés : choisir le foyer « Peau et tissus mous » et la forme, ou avis spécialisé.');
       f.avis('Infection cutanée ou de plaie : préciser le foyer et la forme clinique, sinon avis spécialisé pour le choix thérapeutique.', false, src);

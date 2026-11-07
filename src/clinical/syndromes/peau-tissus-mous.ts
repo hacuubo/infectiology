@@ -26,7 +26,7 @@ export const QUESTIONS_PEAU: QuestionSyndrome[] = [
     id: 'peau.necrose',
     foyers: ['cutane'],
     libelle: 'Signes locaux de gravité évoquant une forme nécrosante (DHBN / fasciite nécrosante) ?',
-    aide: 'Douleur intense discordante avec les signes locaux, lividités, taches cyaniques, crépitation sous-cutanée, hypo- ou anesthésie, induration dépassant l\'érythème, nécrose, extension rapide en quelques heures, aggravation 24 à 48 h après le début d\'un antibiotique (HAS 2019).',
+    aide: 'Douleur intense discordante avec les signes locaux, lividités, taches cyaniques, crépitation sous-cutanée, hypo- ou anesthésie, induration dépassant l\'érythème, nécrose, extension rapide en quelques heures, aggravation 24 à 48 h après le début d\'un antibiotique (HAS 2019). Pied diabétique : abcès profond, nécrose extensive, gangrène, gaz sous-cutané, syndrome de loge — chirurgie en urgence (SPILF 2023).',
     options: ouiNon,
   },
   {
@@ -105,6 +105,14 @@ export const QUESTIONS_PEAU: QuestionSyndrome[] = [
     aide: 'SFMU 2017 : antibiothérapie systématique pour toute plaie profonde de morsure.',
     options: ouiNon,
     pertinente: (r) => r('peau.forme') === 'morsure' && r('peau.necrose') !== 'oui' && r('peau.morsure_infectee') !== 'oui',
+  },
+  {
+    id: 'peau.morsure_facteurs',
+    foyers: ['cutane'],
+    libelle: 'Situation à risque selon l\'IDSA 2014 ?',
+    aide: 'Asplénie, hépatopathie avancée, œdème de la zone mordue, lésion modérée à sévère (notamment de la main ou de la face), atteinte possible du périoste ou de l\'articulation. L\'immunodépression se renseigne avec le patient.',
+    options: ouiNon,
+    pertinente: (r) => r('peau.forme') === 'morsure' && r('peau.necrose') !== 'oui' && r('peau.morsure_infectee') === 'non' && r('peau.morsure_profonde') === 'non',
   },
   {
     id: 'peau.pied_grade',

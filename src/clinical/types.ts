@@ -510,6 +510,7 @@ export type TraitementAssocie =
   | 'contraceptif_oral'
   | 'antiepileptique'
   | 'antiretroviral'
+  | 'colchicine'
   | 'autre';
 
 /* ------------------------------------------------------------------ */

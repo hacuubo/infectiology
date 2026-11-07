@@ -253,11 +253,12 @@ export const cloxacilline: Molecule = {
     },
     {
       id: 'cloxacilline-100mgkg-abces',
-      libelle: '100 mg/kg/j IV en 4 à 6 administrations — abcès cutané',
+      libelle: '100 mg/kg/j IV (maximum 12 g/j) — abcès cutané',
       indication: 'Abcès cutané, en complément du drainage, si la voie IV est nécessaire (HAS 2021 ; SPILF 2023 pour le pied diabétique).',
-      dose: { type: 'ponderale', valeur: 100, unite: 'mg/kg', poidsReference: 'total', doseMaxParJour: { valeur: 12, unite: 'g' }, texte: '100 mg/kg/j IV, répartis en 4 à 6 administrations (HAS 2021) ; 6 à 12 g/j selon le tableau 1 de HAS 2019' },
+      // Fréquence : les sources donnent 4 à 6 administrations par jour ; l'application affiche 6 (choix dans la fourchette).
+      dose: { type: 'ponderale', valeur: 100 / 6, unite: 'mg/kg', frequenceParJour: 6, poidsReference: 'total', doseMaxParJour: { valeur: 12, unite: 'g' } },
       voie: 'IV',
-      modalites: 'perfusion IV, 4 à 6 fois par jour ; pas de voie orale (mauvaise biodisponibilité)',
+      modalites: '100 mg/kg/j (HAS 2021) affichés en 6 administrations ; les sources donnent 4 à 6 administrations par jour (tableau 1 de HAS 2019, RCP) ; sans dépasser 12 g/j (HAS 2019 : 6 à 12 g/j ; RCP : 8 à 12 g/j) ; pas de voie orale (mauvaise biodisponibilité)',
       statut: 'verifiee_ia',
       sources: [S('HAS-2021-abces-cutanes', 'antibiothérapie', 'oxacilline ou cloxacilline IV : 100 mg/kg/j', 'posologie'), S('HAS-2019-infections-cutanees', 'annexe 1, tableau 1, p. 29', '6 à 12 g/jour', 'posologie'), S('RCP-cloxacilline', '§4.2', '8 à 12 g/jour, répartis en 4 à 6 administrations journalières', 'posologie')],
       remarques: 'Unités divergentes entre sources (g/j dans HAS 2019, mg/kg/j dans la fiche HAS 2021 et SPILF 2023) : les deux sont affichées.',
@@ -472,6 +473,27 @@ export const amoxicillineClavulanate: Molecule = {
         S('HAS-2019-infections-cutanees', 'annexe 1, tableau 1, p. 29', '50 mg/kg/jour d\'amoxicilline sans dépasser 250mg/jour d\'acide clavulanique', 'posologie'),
       ],
       remarques: 'Plafond d\'acide clavulanique divergent dans HAS 2019 (375 mg/j au § 1.8.2, 250 mg/j au tableau 1) ; la fiche HAS 2021 (mise à jour 2024) retient 375 mg/j. Le plafond d\'acide clavulanique dépend de la présentation choisie : il n\'est pas calculé par l\'application.',
+    },
+    // Peau et tissus mous (docs/sources/recherche-peau-tissus-mous.md § 5, § 8, § 13.3) : régimes propres, sources propres.
+    {
+      id: 'amoxclav-po-1g8h-peau',
+      libelle: '1 g toutes les 8 h per os — morsure (préemptif) ; pied diabétique',
+      indication: 'Plaie de morsure sans signe d\'infection, traitement préemptif (SFMU 2017) ; infection de plaie du pied diabétique, grade 2 sur plaie chronique à grade 4 sans sepsis (SPILF 2023).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'PO',
+      modalites: 'per os toutes les 8 h ; posologies SPILF 2023 « validées pour des patients dont l\'IMC est < 30 kg/m2 »',
+      statut: 'verifiee_ia',
+      sources: [S('SFMU-2017-plaies', 'p. 10', 'amoxicilline et acide clavulanique à la posologie de 1 g trois fois par jour', 'posologie'), S('SPILF-2023-pied-diabetique', 'diapo 26', 'PO : 1 g/8h', 'posologie')],
+    },
+    {
+      id: 'amoxclav-iv-1g8h-peau',
+      libelle: '1 g toutes les 8 h IV — pied diabétique',
+      indication: 'Infection de plaie du pied diabétique, grades 2 à 4 sans sepsis, si la voie IV est nécessaire (SPILF 2023 : 1 à 2 g/8 h).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 à 60 min toutes les 8 h ; SPILF 2023 : 1 à 2 g/8 h (bas de la fourchette affiché) ; posologies « validées pour des patients dont l\'IMC est < 30 kg/m2 »',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-2023-pied-diabetique', 'diapo 26', 'IV : 1-2 g/8h', 'posologie'), S('RCP-amoxicilline-clavulanate', '§4.2', '1 g/200 mg toutes les 8 heures', 'posologie')],
     },
     {
       id: 'amoxclav-iv-1g8h',

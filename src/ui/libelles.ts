@@ -41,6 +41,7 @@ export const LIBELLE_TRAITEMENT: Record<TraitementAssocie, string> = {
   contraceptif_oral: 'Contraceptif oral',
   antiepileptique: 'Antiépileptique',
   antiretroviral: 'Antirétroviral',
+  colchicine: 'Colchicine',
   autre: 'Autre traitement à vérifier',
 };
 
