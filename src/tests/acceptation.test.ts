@@ -33,15 +33,25 @@ const dcis = (p: Plan) => premiere(p).flatMap((o) => o.prescriptions.map((x) => 
 const manque = (p: Plan, motif: RegExp) => p.donneesManquantes.some((m) => motif.test(m.champ));
 
 describe('90 ans, fièvre, insuffisance rénale, bactériémie à BGN', () => {
-  test('données incomplètes : questions nécessaires et options conditionnelles, pas de prescription définitive', () => {
+  test('données incomplètes, foyer inconnu : questions nécessaires, pas de schéma extrapolé, absence de recommandation expliquée', () => {
     const p = plan(CAS_BGN_90);
     expect(premiere(p)).toHaveLength(0);
-    expect(p.options.length).toBeGreaterThan(0);
-    expect(p.options.every((o) => o.rang === 'conditionnelle')).toBe(true);
+    // Aucune recommandation dédiée au probabiliste des BGN sans foyer : expliqué, pas comblé (2026-11-06).
+    expect(p.options).toHaveLength(0);
     for (const m of [/gravité/, /foyer/, /contexte/, /allergies/, /matériel/]) expect(manque(p, m)).toBe(true);
-    // Aucune recommandation dédiée au probabiliste des BGN sans foyer : options en brouillon
-    expect(p.options.every((o) => o.statut === 'brouillon')).toBe(true);
+    const absence = p.sortie.motifs.find((m) => m.statut.startsWith('Aucune recommandation dédiée'))!;
+    expect(absence.motif).toMatch(/BGN sans foyer identifié/);
+    expect(absence.limite).toMatch(/Cela ne signifie pas qu'aucun traitement n'est indiqué/);
+    expect(absence.prochaineAction).toMatch(/Rechercher le foyer/);
     expect(p.situation.couverture).toBe('partielle');
+  });
+
+  test('BGN avec foyer connu hors urinaire : les options conditionnelles restent proposées', () => {
+    const d = structuredClone(CAS_BGN_90);
+    d.prelevements[0].foyer = 'catheter';
+    const p = plan(d);
+    expect(p.options.length).toBeGreaterThan(0);
+    expect(p.sortie.motifs.some((m) => m.statut.startsWith('Aucune recommandation dédiée'))).toBe(false);
   });
 
   test('foyer urinaire + antibiogramme + sepsis : C3G documentée, pas de carbapénème, relais oraux, uroscanner, sans hémoculture de contrôle systématique', () => {

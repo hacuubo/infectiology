@@ -1,8 +1,113 @@
-import type { Molecule } from '../types';
+import type { AdaptationRenale, Molecule, SourceRef } from '../types';
 import { S, SRC_DOSES_2026, encephalopathieBetaLactamine, stpBetaLactamineReanimation } from './base';
+
+/**
+ * Régimes intra-abdominaux de SFAR 2026 en perfusion continue ou prolongée : les paliers du RCP visent
+ * l'administration intermittente et ne se convertissent pas ; SFAR 2026 (Annexe 1) renvoie l'insuffisance rénale au GPR
+ * (céfépime : concentrations sériques). Au-dessus du seuil du RCP, pas d'adaptation.
+ */
+function adaptationRenaleIIA(seuil: number, sansAdaptation: SourceRef, cefepime = false): AdaptationRenale {
+  const avis = `adaptation de ce schéma (perfusion continue ou prolongée) non tabulée par les sources lues : SFAR 2026 renvoie au Guide Prescription Rein${cefepime ? ' et adapte le céfépime selon les concentrations sériques' : ''} — avis pharmacologique, dosage plasmatique.`;
+  const src = [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74', 'GPR (Guide Prescription Rein) via accès Vidal®', 'adaptation_renale'), ...(cefepime ? [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (céfépime, usuelles)', 'paraphrase : si IR et/ou dose ≥ 6 g/j, adaptation par les concentrations sériques', 'adaptation_renale')] : [])];
+  return {
+    methode: 'Cockcroft',
+    statut: 'verifiee_ia',
+    paliers: [
+      { clcrMin: seuil, texte: `ClCr ≥ ${seuil} mL/min : pas d'adaptation (seuil du RCP).`, sources: [sansAdaptation] },
+      { clcrMax: seuil, texte: `ClCr < ${seuil} mL/min : ${avis}`, sources: src },
+    ],
+    hemodialyse: { texte: `Hémodialyse : ${avis}`, sources: src },
+    eerContinue: { texte: `Épuration extrarénale continue : ${avis}`, sources: src },
+  };
+}
 
 const CRAT_PENI = S('CRAT-penicillines-grossesse', 'En pratique', "L'utilisation des pénicillines suivantes est possible quel que soit le terme de la grossesse", 'autre');
 const CRAT_CEPH = S('CRAT-cephalosporines-grossesse', 'En pratique', 'céfotaxime, ceftriaxone, ceftazidime utilisables « quel que soit le terme de la grossesse, en raison de leur intérêt thérapeutique »', 'autre');
+
+/* ------------------------------------------------------------------ */
+/* Doses méningées : adaptation rénale propre au régime (SPILF 2018)    */
+/* ------------------------------------------------------------------ */
+// docs/sources/recherche-meningites.md §1 (Tableau 8, §12.8.2.4), §2 (dia 11), §9.3. Les paliers des RCP visent la
+// posologie standard : ils ne s'appliquent jamais sous une dose méningée (relecture v7, constat bloquant 1).
+const SP_MEN = 'SPILF-2018-meningites';
+const DIA_MEN = 'SPILF-2018-meningites-diapo';
+const SRC_24H = S(DIA_MEN, 'dia 11', '[reformulation] pas d\'adaptation les 24 premières heures quel que soit le DFG', 'adaptation_renale');
+const SRC_DOSAGE_LCS = S(SP_MEN, '§12.8.2.4 p. 23', '[reformulation] Doser plasma et LCS pour vérifier des concentrations dans le LCS ≥ 10 fois la CMI', 'adaptation_renale');
+const SRC_HEMOFILTRATION = S(DIA_MEN, 'dia 11', '[reformulation] doses habituelles sous hémofiltration continue', 'adaptation_renale');
+const HD_MENINGE = (molecule: string) => ({
+  texte: `Hémodialyse intermittente : non traitée par les sources lues pour la dose méningée de ${molecule}. Pleine dose les 24 premières heures (SPILF 2018 : quel que soit le DFG), puis avis pharmacologique et dosages plasmatiques (et dans le LCS). Le palier « hémodialyse » du RCP vise la posologie standard : il ne s'applique pas à la dose méningée.`,
+  sources: [SRC_24H, SRC_DOSAGE_LCS],
+});
+
+/** Céfotaxime méningé : pleine dose 24 h puis −25 / −50 / −75 % selon le DFG (SPILF 2018, Tableau 8 ; diaporama 11). */
+function renalCefotaximeMeninge(dose: 300 | 200): AdaptationRenale {
+  const red = (pc: number) => (dose * (100 - pc)) / 100;
+  const calc = dose === 300 ? '(valeur du diaporama SPILF)' : '(pourcentage SPILF appliqué par l\'application à 200 mg/kg/j)';
+  const src = S(SP_MEN, 'Tableau 8 p. 22 ; §12.8.2.4 p. 23', '[reformulation] céfotaxime — même dose les 24 premières heures, puis réduction de 25 % (DFG 30–60), 50 % (DFG 15–30), 75 % (DFG < 15) ; pas d\'adaptation sous hémofiltration continue', 'adaptation_renale');
+  const dia = S(DIA_MEN, 'dia 11', '[reformulation] céfotaxime 225 mg/kg/j (30 < DFG ≤ 60), 150 mg/kg/j (15 < DFG ≤ 30), 75 mg/kg/j (DFG ≤ 15)', 'adaptation_renale');
+  const palier = (bornes: string, pc: number) =>
+    `${bornes} : pleine dose (${dose} mg/kg/j) les 24 premières heures, puis réduction de ${pc} % : ${red(pc)} mg/kg/j ${calc}. Seuils SPILF exprimés en DFG sans formule précisée (non tranché). Doser plasma et LCS.`;
+  return {
+    methode: 'non_precisee',
+    statut: 'brouillon',
+    texteGeneral: 'Dose méningée (SPILF 2018) : pas d\'adaptation les 24 premières heures quel que soit le DFG ; les paliers du RCP (posologie standard) ne s\'appliquent pas.',
+    paliers: [
+      { clcrMin: 60.01, texte: 'DFG > 60 mL/min : pas d\'adaptation de la dose méningée (SPILF 2018).', sources: [src] },
+      { clcrMin: 30.01, clcrMax: 60.01, texte: palier('DFG 31-60 mL/min (SPILF : 30 < DFG ≤ 60)', 25), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+      { clcrMin: 15.01, clcrMax: 30.01, texte: palier('DFG 16-30 mL/min (SPILF : 15 < DFG ≤ 30)', 50), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+      { clcrMax: 15.01, texte: palier('DFG ≤ 15 mL/min', 75), sources: [src, dia, SRC_24H, SRC_DOSAGE_LCS] },
+    ],
+    hemodialyse: HD_MENINGE('céfotaxime'),
+    eerContinue: { texte: 'Hémofiltration continue : doses habituelles, pas d\'adaptation (SPILF 2018). Doser plasma et LCS.', sources: [src, SRC_HEMOFILTRATION, SRC_DOSAGE_LCS] },
+  };
+}
+
+/** Ceftriaxone méningée : pas d'adaptation si ClCr ≥ 30 ; sinon pleine dose 24 h (2 injections) puis −50 % en 1 injection (SPILF 2018). */
+function renalCeftriaxoneMeninge(dose: 100 | 75): AdaptationRenale {
+  const calc = dose === 100 ? '50 mg/kg/j (valeur du diaporama SPILF)' : '37,5 mg/kg/j (pourcentage SPILF appliqué par l\'application à 75 mg/kg/j)';
+  const src = S(SP_MEN, 'Tableau 8 p. 22', '[reformulation] Ceftriaxone — si ClCr < 30 : même dose 24 h (en 2 injections) puis −50 % en 1 injection', 'adaptation_renale');
+  const info = S('SPILF-2019-info-antibio-90', 'tableau', 'Si DFG <30mL/min: même dose pdt 24h (en 2 perfusions), puis, baisse de 50% en 1 perfusion', 'adaptation_renale');
+  return {
+    methode: 'non_precisee',
+    statut: 'brouillon',
+    texteGeneral: 'Dose méningée (SPILF 2018) : pas d\'adaptation si ClCr ≥ 30 mL/min ; les paliers du RCP (posologie standard, plafond de 2 g/j) ne s\'appliquent pas.',
+    paliers: [
+      { clcrMin: 30, texte: 'ClCr ≥ 30 mL/min : pas d\'adaptation de la dose méningée (SPILF 2018).', sources: [src] },
+      {
+        clcrMax: 30,
+        texte: `ClCr < 30 mL/min : pleine dose (${dose} mg/kg/j, en 2 injections) les 24 premières heures, puis réduction de 50 % en 1 injection : ${calc}. Seuil < 30 (texte long, Info-antibio ; « ≤ 30 » lu dans le diaporama) ; grandeur rénale non tranchée (clairance ou DFG). Doser plasma et LCS.`,
+        sources: [src, info, S(DIA_MEN, 'dia 11', '[reformulation] ceftriaxone 100 mg/kg/j en 2 fois/j puis 50 mg/kg/j en 1 fois/j', 'adaptation_renale'), SRC_DOSAGE_LCS],
+      },
+    ],
+    hemodialyse: HD_MENINGE('ceftriaxone'),
+    eerContinue: { texte: 'Hémofiltration continue : doses habituelles, pas d\'adaptation (SPILF 2018, diaporama 11). Doser plasma et LCS.', sources: [SRC_HEMOFILTRATION, SRC_DOSAGE_LCS] },
+  };
+}
+
+/**
+ * Amoxicilline méningée (200 mg/kg/j) : aucune adaptation rénale de cette dose dans les sources lues (la SPILF ne
+ * détaille que les C3G ; les paliers du RCP visent sa posologie, au plus 12 g/j). Seuil de 30 mL/min du RCP conservé
+ * pour signaler où commence l'adaptation, sans en reprendre les doses.
+ */
+const RENAL_AMOXICILLINE_MENINGE: AdaptationRenale = {
+  methode: 'non_precisee',
+  statut: 'brouillon',
+  texteGeneral: 'Dose méningée : aucune adaptation rénale chiffrée dans les sources lues ; les paliers du RCP (posologie standard, au plus 12 g/j) ne s\'appliquent pas.',
+  paliers: [
+    {
+      clcrMin: 30.01,
+      texte: 'DFG > 30 mL/min : pas d\'adaptation selon le RCP (seuil établi pour la posologie du RCP, au plus 12 g/j) ; la SPILF 2018 ne traite pas l\'adaptation rénale de l\'amoxicilline à dose méningée.',
+      sources: [S('RCP-amoxicilline', '§4.2 (tableau)', '> 30 : pas d\'adaptation', 'adaptation_renale')],
+    },
+    {
+      clcrMax: 30.01,
+      texte: 'DFG ≤ 30 mL/min : aucune adaptation de la dose méningée dans les sources lues (SPILF 2018 : paliers des seules C3G ; paliers du RCP établis pour la posologie standard, inapplicables à 200 mg/kg/j). Pleine dose les 24 premières heures (principe SPILF énoncé avant les paliers des C3G, extension à l\'amoxicilline non explicite), puis avis pharmacologique et dosages plasmatiques (et dans le LCS) ; surveiller l\'apparition de convulsions (RCP).',
+      sources: [SRC_24H, SRC_DOSAGE_LCS, S('RCP-amoxicilline', '§4.4', 'Des convulsions peuvent apparaitre chez les patients insuffisant rénaux ou recevant des doses élevées', 'surveillance')],
+    },
+  ],
+  hemodialyse: HD_MENINGE('l\'amoxicilline'),
+  eerContinue: { texte: 'Épuration extrarénale continue : non traitée par les sources lues pour l\'amoxicilline à dose méningée : avis pharmacologique et dosages plasmatiques (et dans le LCS).', sources: [SRC_DOSAGE_LCS] },
+};
 
 /* ------------------------------------------------------------------ */
 export const cefotaxime: Molecule = {
@@ -31,6 +136,59 @@ export const cefotaxime: Molecule = {
       modalites: 'perfusion de 30 min toutes les 8 h (ou perfusion prolongée de 4 h : SPILF/SFPT/CA-SFM)',
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 15, 22', 'Céfotaxime IV 6 g/jour OU ceftriaxone IV 2 g/jour ET amikacine IV 30 mg/kg, dose unique', 'posologie'), S('SPILF-2015-IU', 'annexe 1, p. 41', 'PNA grave : céfotaxime 2 g x 3/jour', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (céfotaxime)', '2 g toutes les 8 h en perfusions de 30 min', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 8', 'Cefotaxime 1 g x 3 iv [standard] ; 2 g x 3 iv [high]', 'posologie')],
+    },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §10.2) : dose concordante avec le RCP (200 à 300 mg/kg/j),
+    // sans données du RCP au-delà de 24 g/j ; brouillon tant que la révision SPILF n'est pas publiée (note §9).
+    {
+      id: 'cefotaxime-meninge-300',
+      libelle: '300 mg/kg/j IV — méningite (cocci à Gram positif, pneumocoque, examen direct négatif)',
+      indication: 'Méningite bactérienne : examen direct à cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 75, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '75 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg sur 1 h (SPILF 2018). Pas de dose maximale consensuelle chez l\'adulte (SPILF) ; RCP : pas de données au-delà de 24 g/j (dépassé au-delà de 80 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', '[reformulation] céfotaxime 300 mg/kg/j IV, en continu (dose de charge 50 mg/kg sur 1 h) ou ≥ 4 perfusions (75 mg/kg/6 h)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1', 'some studies report doses of 24 g/day of cefotaxime', 'posologie'),
+        S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour, on ne dispose pas d\'éléments d\'efficacité ou de tolérance au-delà de 24 g/ jour', 'posologie'),
+      ],
+      adaptationRenale: renalCefotaximeMeninge(300),
+    },
+    {
+      id: 'cefotaxime-meninge-200',
+      libelle: '200 mg/kg/j IV — méningite (méningocoque, H. influenzae, E. coli ; pneumocoque de CMI amoxicilline > 0,5 mg/L)',
+      indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI C3G ≤ 0,5 et CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 50, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '50 mg/kg toutes les 6 h, ou perfusion continue après une dose de charge de 50 mg/kg (SPILF 2018). RCP : pas de données au-delà de 24 g/j (dépassé au-delà de 120 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', '[reformulation] céfotaxime 200 mg/kg/j (50 mg/kg/6 h ou continu avec charge 50 mg/kg)', 'posologie'),
+        S('RCP-cefotaxime', '§4.2', 'Méningites: 200 à 300 mg/kg/jour', 'posologie'),
+      ],
+      adaptationRenale: renalCefotaximeMeninge(200),
+    },
+    {
+      id: 'cefotaxime-iia',
+      libelle: '1 à 2 g toutes les 8 h (infection intra-abdominale, posologie usuelle)',
+      indication: 'Infection intra-abdominale communautaire sans sepsis ni choc, avec le métronidazole (SFAR 2026, Annexe 1, colonne « usuelles »).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3, texte: '1 à 2 g toutes les 8 h' },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min à 4 h toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '1-2 g/8h IV en perfusion de 30 min - 4h', 'posologie'), S('RCP-cefotaxime', '§4.2', '3 g/jour en moyenne pouvant être portée jusqu\'à 12 g', 'posologie')],
+    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md). Le céfotaxime 1 g × 3/j hors soins critiques n'est cité qu'en
+    // commentaire des options de ceftriaxone : pas de régime inutilisé.
+    {
+      id: 'cefotaxime-pac-soins-critiques',
+      libelle: 'Soins critiques : 80 à 100 mg/kg/j (article) ou 100 mg/kg/j (diaporama) — divergence non tranchée',
+      indication: 'PAC grave en soins critiques (C3G associée à un macrolide, SPILF 2025) : la posologie diffère entre l\'article et le diaporama SPILF.',
+      dose: { type: 'ponderale', valeur: 100, unite: 'mg/kg', texte: '80 à 100 mg/kg/j selon l\'article SPILF/SPLF 2025 (tableau 10) ; 100 mg/kg/j selon le diaporama SPILF 2025 (diapo 15) — divergence non tranchée, nombre d\'administrations non précisé' },
+      voie: 'IV',
+      modalites: 'IV ; répartition journalière non précisée par les sources lues',
+      statut: 'brouillon',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '80-100 mg/kg/j', 'posologie'), S('SPILF-2025-PAC-diapo', 'diapo 15', 'Céfotaxime soins critiques « 100 mg/kg/j »', 'posologie')],
     },
   ],
   adaptationRenale: {
@@ -85,6 +243,94 @@ export const ceftriaxone: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 9 (EHJ p. 3982)', 'Ceftriaxone 4 g/day i.v. in 2 doses', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 11', 'Ceftriaxone : 2 g/12h', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (ceftriaxone)', 'forte posologie : 2 g toutes les 12 h', 'posologie')],
     },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §9.8 point 1, §10.2) : doses SPILF au-dessus du RCP.
+    {
+      id: 'ceftriaxone-meninge-100',
+      libelle: '100 mg/kg/j IV en 1 ou 2 perfusions — méningite (pneumocoque, examen direct négatif) — au-dessus du RCP',
+      indication: 'Méningite bactérienne : cocci à Gram positif ou pneumocoque, examen direct négatif, pneumocoque de CMI C3G > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 50, unite: 'mg/kg', frequenceParJour: 2, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018), affichée en 2 perfusions (RCP : 2 administrations par jour envisageables au-delà de 2 g/j) ; une prise unique n\'est pas imposée. Hors RCP : le RCP prévoit 2 à 4 g par jour pour la méningite ; 100 mg/kg/j dépasse 4 g/j dès 40 kg. Pas de dose maximale consensuelle (SPILF). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.1 ; Tableau 8 p. 22', '[reformulation] ceftriaxone 100 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : dose recommandée SPILF supérieure au maximum du RCP.',
+      adaptationRenale: renalCeftriaxoneMeninge(100),
+    },
+    {
+      id: 'ceftriaxone-meninge-75',
+      libelle: '75 mg/kg/j IV en 1 ou 2 perfusions — méningite (méningocoque, H. influenzae, E. coli) — au-dessus du RCP',
+      indication: 'Méningite bactérienne : cocci à Gram négatif ou méningocoque, bacille à Gram négatif, H. influenzae, E. coli ; pneumocoque de CMI amoxicilline > 0,5 mg/L (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 37.5, unite: 'mg/kg', frequenceParJour: 2, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Dose journalière en 1 ou 2 perfusions (SPILF 2018), affichée en 2 perfusions (RCP : 2 administrations par jour envisageables au-delà de 2 g/j) ; une prise unique n\'est pas imposée. Hors RCP : le RCP prévoit 2 à 4 g par jour pour la méningite ; 75 mg/kg/j dépasse 4 g/j au-delà de 53 kg. Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.2', '[reformulation] ceftriaxone 75 mg/kg/j en 1 ou 2 perfusions', 'posologie'),
+        S('RCP-ceftriaxone', '§4.2', 'méningite bactérienne « 2-4 g » « Une fois par jour »', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
+      adaptationRenale: renalCeftriaxoneMeninge(75),
+    },
+    // Prophylaxie du portage de méningocoque (docs/sources/recherche-meningites.md §5, §9.8 point 11) : dose absente du RCP.
+    {
+      id: 'ceftriaxone-prophylaxie-iim-250',
+      libelle: '250 mg en injection unique — prophylaxie des infections invasives à méningocoque (hors RCP)',
+      indication: 'Prophylaxie du portage de méningocoque (instruction DGS 2018 : en cas de contre-indication, de résistance ou d\'infections répétées ; DGS-Urgent 2025_06 relayé par l\'AP-HP : si la souche est résistante à la ciprofloxacine ou non documentée).',
+      dose: { type: 'fixe', valeur: 250, unite: 'mg', frequenceParJour: 1, texte: '250 mg en injection unique' },
+      voie: 'IM ou IV',
+      modalites: 'Injection unique. Posologie absente du RCP (pas d\'indication de prophylaxie des IIM) : usage recommandé par la DGS, hors RCP.',
+      statut: 'brouillon',
+      sources: [
+        S('DGS-2018-IIM', 'p. 18, fiche 8-2', 'Ceftriaxone par voie injectable, en dose unique : Adulte : injection unique de 250 mg', 'posologie'),
+        S('SPILF-2018-IIM-diapo', 'dia 6', 'ceftriaxone IV dose unique (250 mg chez l\'adulte', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 11).',
+    },
+    {
+      id: 'ceftriaxone-iia',
+      libelle: '1 à 2 g toutes les 24 h (infection intra-abdominale, posologie usuelle)',
+      indication: 'Infection intra-abdominale communautaire sans sepsis ni choc, avec le métronidazole (SFAR 2026, Annexe 1, colonne « usuelles » ; RCP : infections intra-abdominales).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 1, texte: '1 à 2 g toutes les 24 h' },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min ou IV directe, 1 fois par 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '1-2 g/j IV', 'posologie'), S('RCP-ceftriaxone', '§4.2 (infections intra-abdominales)', '1‑2 g Une fois par jour', 'posologie')],
+    },
+    {
+      id: 'ceftriaxone-iia-rea',
+      libelle: '2 g toutes les 12 h (infection intra-abdominale, réanimation, patient grave)',
+      indication: 'Infection intra-abdominale du patient grave (SFAR 2026, Annexe 1, colonne « réanimation, patient grave »).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 2 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min toutes les 12 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '2 g/12h IV en perfusion de 30 min', 'posologie')],
+      remarques: 'Au-delà de la ligne « infections intra-abdominales » du RCP (1-2 g une fois par jour).',
+    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md).
+    {
+      id: 'ceftriaxone-pac-1g',
+      libelle: '1 g toutes les 24 h IV, IM ou SC (pneumonie hors soins critiques)',
+      indication: 'PAC ambulatoire avec comorbidité et allergie non grave aux pénicillines (HAS 2025) ; PAC hospitalisée non grave (SPILF 2025) ; pneumonie d\'inhalation (SPILF/SFGG 2025).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 1 },
+      voie: 'IM ou IV',
+      modalites: 'IV ou IM, 1 fois par 24 h. Voie SC citée par la HAS 2025 et la SPILF/SFGG 2025 : non rapprochée du RCP dans la note de recherche (à vérifier)',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Ceftriaxone « 1 g x 1/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'comorbidités, allergie aux pénicillines', 'ceftriaxone : 1g 1 fois par jour par voie IM, IV ou SC', 'posologie'), S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', 'Pas d\'adaptation : 1g/24h, IV ou SC', 'posologie')],
+    },
+    {
+      id: 'ceftriaxone-pac-2g',
+      libelle: '2 g toutes les 24 h IV (PAC grave, soins critiques)',
+      indication: 'PAC grave : C3G associée à un macrolide (SPILF 2025, tableau 10, colonne soins critiques).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 1 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min, 1 fois par 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '2 g x 1/j', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'non_precisee',
@@ -133,6 +379,18 @@ export const cloxacilline: Molecule = {
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 8 (EHJ p. 3980)', '(Flu)cloxacillin 12 g/day i.v. in 4-6 doses', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (cloxacilline)', 'Cloxacilline 100 à 200 mg/kg/jour en 6 administrations', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 16', '(Cl)oxacilline : 150 à 200 mg/kg/j en perf continue après dose de charge de 2g… ou en 6 inj', 'posologie'), S('RCP-cloxacilline', '§4.2', '8 à 12 g/jour, répartis en 4 à 6 administrations journalières', 'posologie')],
       remarques: 'Pour un poids < 60 kg, 12 g/j dépasse 200 mg/kg/j : ajuster à 150-200 mg/kg/j.',
     },
+    {
+      id: 'cloxacilline-100mgkg-abces',
+      libelle: '100 mg/kg/j IV (maximum 12 g/j) — abcès cutané',
+      indication: 'Abcès cutané, en complément du drainage, si la voie IV est nécessaire (HAS 2021 ; SPILF 2023 pour le pied diabétique).',
+      // Fréquence : les sources donnent 4 à 6 administrations par jour ; l'application affiche 6 (choix dans la fourchette).
+      dose: { type: 'ponderale', valeur: 100 / 6, unite: 'mg/kg', frequenceParJour: 6, poidsReference: 'total', doseMaxParJour: { valeur: 12, unite: 'g' } },
+      voie: 'IV',
+      modalites: '100 mg/kg/j (HAS 2021) affichés en 6 administrations ; les sources donnent 4 à 6 administrations par jour (tableau 1 de HAS 2019, RCP) ; sans dépasser 12 g/j (HAS 2019 : 6 à 12 g/j ; RCP : 8 à 12 g/j) ; pas de voie orale (mauvaise biodisponibilité)',
+      statut: 'verifiee_ia',
+      sources: [S('HAS-2021-abces-cutanes', 'antibiothérapie', 'oxacilline ou cloxacilline IV : 100 mg/kg/j', 'posologie'), S('HAS-2019-infections-cutanees', 'annexe 1, tableau 1, p. 29', '6 à 12 g/jour', 'posologie'), S('RCP-cloxacilline', '§4.2', '8 à 12 g/jour, répartis en 4 à 6 administrations journalières', 'posologie')],
+      remarques: 'Unités divergentes entre sources (g/j dans HAS 2019, mg/kg/j dans la fiche HAS 2021 et SPILF 2023) : les deux sont affichées.',
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -180,6 +438,17 @@ export const cefazoline: Molecule = {
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 8 (EHJ p. 3980)', 'Cefazolin 6 g/day i.v. in 3 doses', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (céfazoline)', 'Céfazoline … 2 g toutes les 8 h ou 80 à 100 mg/kg/jour en 3 administrations', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 13, 16', 'Céfazoline Ou (Cl)oxacilline ; Céfazoline : 100mg/kg/j IV en 3 inj', 'choix'), S('SPILF-2025-DESC-SAB-Tattevin', 'messages clés', 'Péni M (anti-staph) ou céfazoline > autres Beta-lactamines si SAMS', 'choix')],
       remarques: 'ESC 2023 (Recommendation Table 8, note e) : « Cefazolin can replace cloxacillin only in patients with non-immediate-type hypersensitivity reactions to penicillin » — en cas d\'allergie à la pénicilline, la céfazoline ne remplace la cloxacilline que si la réaction n\'était pas immédiate. Divergence : SPILF 2026 (d\'après ESCMID 2026) admet une céphalosporine à chaînes latérales différentes en cas de réaction immédiate non grave. Rang 1 de la céfazoline = choix de l\'application (sources : céfazoline OU cloxacilline, à égalité).',
     },
+    {
+      id: 'cefazoline-80mgkg-abces',
+      libelle: '80 mg/kg/j IV en 3 administrations — abcès cutané',
+      indication: 'Abcès cutané, en complément du drainage, si la voie IV est nécessaire (HAS 2021).',
+      dose: { type: 'ponderale', valeur: 80 / 3, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total', doseMaxParJour: { valeur: 6, unite: 'g' } },
+      voie: 'IV',
+      modalites: 'perfusion IV toutes les 8 h ; sans dépasser 6 g/j (tableau 1 de HAS 2019 : 3 à 6 g/j)',
+      statut: 'verifiee_ia',
+      sources: [S('HAS-2021-abces-cutanes', 'antibiothérapie', 'céfazoline IV : 80 mg/kg/j', 'posologie'), S('HAS-2019-infections-cutanees', 'annexe 1, tableau 1, p. 29', '3 à 6 g/jour', 'posologie')],
+      remarques: 'SPILF 2023 (pied diabétique) : 80-100 mg/kg/j. Unités divergentes entre sources (g/j dans HAS 2019, mg/kg/j dans la fiche HAS 2021).',
+    },
   ],
   adaptationRenale: {
     methode: 'non_precisee',
@@ -215,6 +484,16 @@ export const amoxicilline: Molecule = {
       sources: [S('SPILF-2026-IUM', 'diapo 23-24', 'Amoxicilline 1 gx3/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'amoxicilline 1 g ×3/j 10 j', 'posologie'), S('SPILF-2015-IU', 'p. 19 ; annexe 1', 'amoxicilline (à privilégier sur souche sensible)', 'choix')],
     },
     {
+      id: 'amoxicilline-po-50mgkg',
+      libelle: '50 mg/kg/j per os en 3 prises (maximum 6 g/j) — DHBNN',
+      indication: 'Dermohypodermite bactérienne non nécrosante (érysipèle) de l\'adulte (HAS 2019, fiche HAS 2021).',
+      dose: { type: 'ponderale', valeur: 50 / 3, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total', doseMaxParJour: { valeur: 6, unite: 'g' } },
+      voie: 'PO',
+      modalites: 'per os en 3 prises par jour, sans dépasser 6 g/j ; obésité : adapter les doses (HAS 2019)',
+      statut: 'verifiee_ia',
+      sources: [S('HAS-2021-DHBNN-adulte', 'traitement', 'amoxicilline : 50 mg/kg/j en 3 prises (sans dépasser 6 g/j) pendant 7 jours', 'posologie'), S('HAS-2019-infections-cutanees', '§ 1.8.2, p. 13 (AE)', 'amoxicilline : 50 mg/kg/jour en trois prises avec un maximum de 6 g/jour', 'posologie')],
+    },
+    {
       id: 'amoxicilline-iv-std',
       libelle: '1 g toutes les 6 h IV (posologie standard, ~50-100 mg/kg/j)',
       indication: 'Bactériémie à entérocoque ou streptocoque sensible sans endocardite (posologie standard du tableau SPILF/SFPT/CA-SFM).',
@@ -233,6 +512,43 @@ export const amoxicilline: Molecule = {
       modalites: 'perfusion de 30 à 60 min toutes les 4 h (200 mg/kg/j), sans dépasser 12 g/j ; ou perfusion continue après dose de charge de 2 g',
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 7 et 9', 'Amoxicillin 100-200 mg/kg/day i.v. in 4-6 doses ; Amoxicillin 200 mg/kg/day i.v. in 4-6 doses', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 11', 'Amoxicilline : 200 mg/kg/j en 6 inj/j… sans dépasser 12g/j', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (amoxicilline)', '100 à 200 mg/kg/jour en 6 administrations (toutes les 4 h)', 'posologie')],
+    },
+    // Méningite bactérienne (docs/sources/recherche-meningites.md §1, §9.8 point 1, §10.2) : pas de plafond SPILF ; au-dessus du maximum du RCP.
+    {
+      id: 'amoxicilline-meninge-200',
+      libelle: '200 mg/kg/j IV — méningite (Listeria, S. agalactiae, pneumocoque sensible) — sans plafond, au-dessus du RCP',
+      indication: 'Méningite bactérienne : bacille à Gram positif ou Listeria (avec gentamicine), examen direct négatif avec arguments pour une listériose, pneumocoque de CMI C3G et amoxicilline ≤ 0,5 mg/L, S. agalactiae (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 33.3, unite: 'mg/kg', frequenceParJour: 6, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: '200 mg/kg/j en 4 à 6 perfusions ou en perfusion continue (SPILF 2018), affichés ici en 6 perfusions. Hors RCP : le RCP prévoit pour la méningite 1 à 2 g toutes les 4 à 6 h, au maximum 12 g/j (dépassé au-delà de 60 kg). Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'p. 21, §12.8.1.3', '[reformulation] amoxicilline 200 mg/kg/j IV en 4 à 6 perfusions', 'posologie'),
+        S('RCP-amoxicilline', '§4.2', 'Méningite bactérienne 1 g à 2 g toutes les 4 à 6 heures, au maximum 12 g/jour', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1) : pas de plafond à 12 g/j dans la recommandation SPILF.',
+      adaptationRenale: RENAL_AMOXICILLINE_MENINGE,
+    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md).
+    {
+      id: 'amoxicilline-pac-1g8h',
+      libelle: '1 g toutes les 8 h per os ou IV (pneumonie hors soins critiques)',
+      indication: 'PAC ambulatoire sans comorbidité (SPILF 2025 B-1, HAS 2025) ; PAC hospitalisée non grave sans comorbidité, per os ou IV (SPILF 2025 A-1).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV ou PO',
+      modalites: 'per os (ambulatoire) ou IV toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Amoxicilline « 1 g x 3/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', '1re intention sans comorbidité', 'amoxicilline 1g 3 fois par jour', 'posologie')],
+    },
+    {
+      id: 'amoxicilline-pac-soins-critiques',
+      libelle: '2 g toutes les 8 h (pneumonie en soins critiques)',
+      indication: 'Pneumonie communautaire prise en charge en soins critiques (SPILF 2025, tableau 10, colonne « en soins critiques »).',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV ou PO',
+      modalites: 'toutes les 8 h ; voie non précisée par le tableau 10',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '2 g x 3/j', 'posologie')],
     },
   ],
   adaptationRenale: {
@@ -283,6 +599,52 @@ export const amoxicillineClavulanate: Molecule = {
       sources: [S('SPILF-2026-IUM', 'diapo 23-24', 'Amoxicilline-acide clavulanique 1 gx3/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'amox-clav 1 g ×3/j 10 j', 'posologie')],
     },
     {
+      id: 'amoxclav-po-diverticulite',
+      libelle: '1 g 3 fois par jour per os (diverticulite non compliquée sans réponse au traitement symptomatique)',
+      indication: 'Diverticulite non compliquée sans réponse au traitement symptomatique (HAS 2021).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'PO',
+      modalites: 'per os toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('HAS-2021-diverticulite', 'fiche mémo', 'amoxicilline-acide clavulanique : 1 g 3 fois par jour pendant 7 jours', 'posologie')],
+    },
+    {
+      id: 'amoxclav-po-50mgkg-morsure',
+      libelle: '50 mg/kg/j d\'amoxicilline per os en 3 prises (maximum 6 g/j ; acide clavulanique ≤ 375 mg/j) — DHBNN après morsure',
+      indication: 'Dermohypodermite après morsure (traitement curatif) : HAS 2019 § 1.8.2, fiche HAS 2021.',
+      dose: { type: 'ponderale', valeur: 50 / 3, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total', doseMaxParJour: { valeur: 6, unite: 'g' } },
+      voie: 'PO',
+      modalites: 'per os en 3 prises par jour ; dose exprimée en amoxicilline, sans dépasser 6 g/j d\'amoxicilline ni 375 mg/j d\'acide clavulanique (le tableau 1 de HAS 2019 indique 250 mg/j : incohérence de la source signalée)',
+      statut: 'verifiee_ia',
+      sources: [
+        S('HAS-2021-DHBNN-adulte', 'morsure animale', 'sans dépasser 375 mg par jour d\'acide clavulanique, pendant 7 jours', 'posologie'),
+        S('HAS-2019-infections-cutanees', '§ 1.8.2, p. 13 (AE)', '50 mg/kg/jour d\'amoxicilline sans dépasser 6 g/jour, et sans dépasser 375 mg/jour d\'acide clavulanique', 'posologie'),
+        S('HAS-2019-infections-cutanees', 'annexe 1, tableau 1, p. 29', '50 mg/kg/jour d\'amoxicilline sans dépasser 250mg/jour d\'acide clavulanique', 'posologie'),
+      ],
+      remarques: 'Plafond d\'acide clavulanique divergent dans HAS 2019 (375 mg/j au § 1.8.2, 250 mg/j au tableau 1) ; la fiche HAS 2021 (mise à jour 2024) retient 375 mg/j. Le plafond d\'acide clavulanique dépend de la présentation choisie : il n\'est pas calculé par l\'application.',
+    },
+    // Peau et tissus mous (docs/sources/recherche-peau-tissus-mous.md § 5, § 8, § 13.3) : régimes propres, sources propres.
+    {
+      id: 'amoxclav-po-1g8h-peau',
+      libelle: '1 g toutes les 8 h per os — morsure (préemptif) ; pied diabétique',
+      indication: 'Plaie de morsure sans signe d\'infection, traitement préemptif (SFMU 2017) ; infection de plaie du pied diabétique, grade 2 sur plaie chronique à grade 4 sans sepsis (SPILF 2023).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'PO',
+      modalites: 'per os toutes les 8 h ; posologies SPILF 2023 « validées pour des patients dont l\'IMC est < 30 kg/m2 »',
+      statut: 'verifiee_ia',
+      sources: [S('SFMU-2017-plaies', 'p. 10', 'amoxicilline et acide clavulanique à la posologie de 1 g trois fois par jour', 'posologie'), S('SPILF-2023-pied-diabetique', 'diapo 26', 'PO : 1 g/8h', 'posologie')],
+    },
+    {
+      id: 'amoxclav-iv-1g8h-peau',
+      libelle: '1 g toutes les 8 h IV — pied diabétique',
+      indication: 'Infection de plaie du pied diabétique, grades 2 à 4 sans sepsis, si la voie IV est nécessaire (SPILF 2023 : 1 à 2 g/8 h).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 à 60 min toutes les 8 h ; SPILF 2023 : 1 à 2 g/8 h (bas de la fourchette affiché) ; posologies « validées pour des patients dont l\'IMC est < 30 kg/m2 »',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-2023-pied-diabetique', 'diapo 26', 'IV : 1-2 g/8h', 'posologie'), S('RCP-amoxicilline-clavulanate', '§4.2', '1 g/200 mg toutes les 8 heures', 'posologie')],
+    },
+    {
       id: 'amoxclav-iv-1g8h',
       libelle: '1 g/200 mg toutes les 8 h IV',
       indication: 'IU associée aux soins avec cocci à Gram positif à l\'examen direct (IUAS 2015 R.45) ; relais IV.',
@@ -291,6 +653,27 @@ export const amoxicillineClavulanate: Molecule = {
       modalites: 'perfusion de 30 à 60 min toutes les 8 h (max 1,2 g d\'acide clavulanique/j)',
       statut: 'verifiee_ia',
       sources: [S('RCP-amoxicilline-clavulanate', '§4.2', '1 g/200 mg toutes les 8 heures', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (amoxicilline-clavulanate)', '1 g + 0,2 g en perfusions de 30-60 min toutes les 8 à 6 h', 'posologie')],
+    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md).
+    {
+      id: 'amoxclav-pac-1g8h',
+      libelle: '1 g toutes les 8 h per os ou IV (pneumonie hors soins critiques)',
+      indication: 'PAC avec comorbidité ou contexte grippal, ambulatoire ou hospitalisée non grave (SPILF 2025, HAS 2025) ; pneumonie d\'inhalation (SPILF/SFGG 2025, 1re intention).',
+      dose: { type: 'fixe', valeur: 1, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV ou PO',
+      modalites: 'per os (1 g/125 mg) ou IV toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Amoxicilline-acide clavulanique « 1 g x 3/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'comorbidités ou exposition aux antibiotiques', 'amoxicilline/acide clavulanique : 1g/125 mg 3 fois par jour', 'posologie'), S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '> 30 ml/min : 1g d\'amoxicilline toutes les 8h', 'posologie')],
+    },
+    {
+      id: 'amoxclav-pac-soins-critiques',
+      libelle: 'Soins critiques : 1 ou 2 g toutes les 8 h (article) ou 2 g toutes les 8 h (diaporama) — divergence non tranchée',
+      indication: 'Pneumonie en soins critiques (SPILF 2025, tableau 10, colonne « en soins critiques ») : la posologie diffère entre l\'article et le diaporama SPILF.',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3, texte: '1 ou 2 g × 3/j selon l\'article SPILF/SPLF 2025 (tableau 10) ; 2 g × 3/j selon le diaporama SPILF 2025 (diapo 15) — divergence non tranchée' },
+      voie: 'IV',
+      modalites: 'IV toutes les 8 h',
+      statut: 'brouillon',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '1 ou 2 g x 3/j', 'posologie'), S('SPILF-2025-PAC-diapo', 'diapo 15', 'Amoxicilline-acide clavulanique soins critiques « 2 g x3/j »', 'posologie')],
     },
   ],
   adaptationRenale: {
@@ -348,6 +731,30 @@ export const piperacillineTazobactam: Molecule = {
       modalites: 'perfusion prolongée de 3 h toutes les 6 h (les perfusions courtes n\'atteignent pas l\'objectif pour les souches SFP)',
       statut: 'verifiee_ia',
       sources: [S(SRC_DOSES_2026, 'Annexe 9 (pipéracilline-tazobactam)', 'forte : prolongée 4 g + 0,5 g toutes les 6 h en 3 h ; perf. courtes : « objectif non atteignable »', 'posologie'), S('EUCAST-2026-dosages-v16.0', 'Dosages, p. 7', '(4 g + 0.5 g) x 4 iv en perfusion de 3 h [high]', 'posologie')],
+    },
+    {
+      id: 'piptazo-iia-rea',
+      libelle: 'Dose de charge 4 g/0,5 g puis 16 g/2 g par 24 h en perfusion continue (infection intra-abdominale, réanimation)',
+      indication: 'Infection intra-abdominale du patient grave (SFAR 2026, Annexe 1, colonne « réanimation, patient grave ») : choc septique communautaire sans facteur de risque de BLSE, IIA associée aux soins.',
+      chargeInitiale: { libelle: 'Dose de charge (4 g/0,5 g en 30 min)', type: 'fixe', valeur: 4, unite: 'g' },
+      dose: { type: 'fixe', valeur: 16, unite: 'g', continue: true },
+      voie: 'IV',
+      modalites: 'dose de charge en 30 min puis perfusion continue sur 24 h (16 g de pipéracilline + 2 g de tazobactam)',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '(16 g + 2000 mg)/j', 'posologie'), S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '(4g+500 mg) IV en 30min', 'posologie')],
+      remarques: 'SFAR 2026, colonne « usuelles » : dose de charge puis « (200 mg+25 mg)/kg/j » en continu ou en perfusions prolongées de 4 h toutes les 6-8 h ; hyperclairance (ClCr mesurée > 130 mL/min) : « (20 g+ 2500 mg)/j ».',
+      adaptationRenale: adaptationRenaleIIA(40, S('RCP-piperacilline-tazobactam', '§4.2', 'ClCr > 40 : « Pas d\'ajustement de dose nécessaire »', 'adaptation_renale')),
+    },
+    // Pneumonie d'inhalation (docs/sources/recherche-pneumonies.md §6).
+    {
+      id: 'piptazo-inhalation',
+      libelle: '4 g de pipéracilline toutes les 6 à 8 h (pneumonie d\'inhalation)',
+      indication: 'Pneumonie d\'inhalation grave avec facteur de risque de P. aeruginosa, ou sans évolution favorable à 72 h (SPILF/SFGG 2025).',
+      dose: { type: 'fixe', valeur: 4, unite: 'g', frequenceParJour: 3, texte: '4 g de pipéracilline (+ 0,5 g de tazobactam) toutes les 6 à 8 h' },
+      voie: 'IV',
+      modalites: 'IV toutes les 6 à 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '>20ml/min : 4g de pipéracilline toutes les 6 à 8h', 'posologie'), S('RCP-piperacilline-tazobactam', '§4.2', 'La dose habituelle est de 4 g de pipéracilline/0,5 g de tazobactam donnée toutes les 8 heures', 'posologie')],
     },
   ],
   adaptationRenale: {
@@ -495,6 +902,40 @@ export const cefepime: Molecule = {
       statut: 'verifiee_ia',
       sources: [S(SRC_DOSES_2026, 'Annexe 9 (céfépime)', 'forte « 2 g toutes les 8 h en perfusions de 30 min » ou « en perfusions de 4 h » ; Pseudomonas : forte posologie « et nécessite un suivi thérapeutique pharmacologique »', 'posologie'), S('SPILF-2023-BGN-MDR-diapo', 'diapo 10', 'Céfépime est le traitement de référence (AmpC)', 'choix'), S('RCP-cefepime', '§4.2', '1 g ×2/j à 2 g ×3/j (Pseudomonas sévère : 2 g ×3)', 'posologie')],
     },
+    {
+      id: 'cefepime-iia',
+      libelle: '2 g toutes les 8 h en perfusion de 4 à 8 h (infection intra-abdominale, posologie usuelle)',
+      indication: 'Infection intra-abdominale associée aux soins, 1er épisode, avec le métronidazole (SFAR 2026 R1.2.6, Annexe 1, colonne « usuelles ») ; usage guidé par les concentrations plasmatiques.',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3 },
+      voie: 'IV',
+      modalites: 'perfusion prolongée de 4 à 8 h toutes les 8 h ; si insuffisance rénale et/ou dose ≥ 6 g/j : adaptation par les concentrations sériques',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '2 g/8h IV en perfusion de 4-8 h', 'posologie'), S('RCP-cefepime', '§4.2', '1 g ×2/j à 2 g ×3/j (Pseudomonas sévère : 2 g ×3)', 'posologie')],
+      adaptationRenale: adaptationRenaleIIA(50, S('RCP-cefepime', '§4.4', 'adaptation pour des clairances de créatinine inférieures ou égales à 50 ml/min', 'adaptation_renale'), true),
+    },
+    {
+      id: 'cefepime-iia-rea',
+      libelle: 'Dose de charge 2 g puis 3 à 4 g par 24 h en perfusion continue (infection intra-abdominale, réanimation)',
+      indication: 'Infection intra-abdominale associée aux soins du patient grave (SFAR 2026, Annexe 1, colonne « réanimation, patient grave ») ; monitorage plasmatique entre la 24e et la 36e heure.',
+      chargeInitiale: { libelle: 'Dose de charge (2 g en 30 min)', type: 'fixe', valeur: 2, unite: 'g' },
+      dose: { type: 'fixe', valeur: 4, unite: 'g', continue: true, texte: '3 à 4 g/24 h en perfusion continue' },
+      voie: 'IV',
+      modalites: 'dose de charge en 30 min puis perfusion continue ; dosage plasmatique entre la 24e et la 36e heure',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '3 g à 4 g/j en perfusion continue', 'posologie'), S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', 'entre la 24è et la 36è heures', 'surveillance')],
+      remarques: 'Hyperclairance (ClCr mesurée > 130 mL/min) : dose de charge 2 g puis « 6 g/j en perfusion continue » (SFAR 2026, Annexe 1).',
+      adaptationRenale: adaptationRenaleIIA(50, S('RCP-cefepime', '§4.4', 'adaptation pour des clairances de créatinine inférieures ou égales à 50 ml/min', 'adaptation_renale'), true),
+    },
+    {
+      id: 'cefepime-biliaire-2g12h',
+      libelle: '2 g toutes les 12 h (infections biliaires, RCP)',
+      indication: 'Infections biliaires : ligne du RCP (2 g IV 2 fois par jour) ; les Tokyo Guidelines 2018 ne donnent pas de posologie.',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 2 },
+      voie: 'IV',
+      modalites: 'perfusion de 30 min toutes les 12 h',
+      statut: 'verifiee_ia',
+      sources: [S('RCP-cefepime', '§4.2 (infections biliaires)', '« infections biliaires » : 2 g IV 2 fois/j', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -541,6 +982,40 @@ export const meropeneme: Molecule = {
       modalites: 'perfusion prolongée de 3 à 8 h toutes les 8 h (2 g/8 h en 30 min n\'atteint pas les objectifs pour les souches SFP)',
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 15, 22', 'Imipénème IV 3 g/jour OU méropénème IV 6 g/jour ET amikacine IV 30 mg/kg, dose unique', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (méropénème)', 'forte « 2 g toutes les 8 h en perfusions de 3 à 8 h »', 'posologie')],
+    },
+    // Méningite à E. coli BLSE suspectée (docs/sources/recherche-meningites.md §1, §10.2 : RCP non relu pour la méningite).
+    {
+      id: 'meropeneme-meninge-40',
+      libelle: '40 mg/kg toutes les 8 h en perfusion lente — méningite à E. coli BLSE suspectée (avis d\'expert)',
+      indication: 'Méningite à bacille à Gram négatif ou E. coli avec suspicion de BLSE (colonisation ou prélèvement d\'un autre site) : méropénème et avis d\'expert (SPILF 2018).',
+      dose: { type: 'ponderale', valeur: 40, unite: 'mg/kg', frequenceParJour: 3, poidsReference: 'total' },
+      voie: 'IV',
+      modalites: 'Perfusion lente toutes les 8 h ; avis d\'expert (SPILF 2018). RCP du méropénème non relu pour la méningite. Poids de référence non précisé par la source (poids réel retenu par l\'application).',
+      statut: 'brouillon',
+      sources: [S('SPILF-2018-meningites', 'p. 22, §12.8.1.5', '[reformulation] méropénème 40 mg/kg × 3/j en perfusion lente + avis d\'expert', 'posologie')],
+    },
+    {
+      id: 'meropeneme-iia',
+      libelle: '1 à 2 g toutes les 8 h en perfusion de 3 à 8 h (infection intra-abdominale, posologie usuelle)',
+      indication: 'Infection intra-abdominale à risque de BLSE ou de BMR (SFAR 2026, Annexe 1, colonne « usuelles ») ; RCP : infections intra-abdominales compliquées.',
+      dose: { type: 'fixe', valeur: 2, unite: 'g', frequenceParJour: 3, texte: '1 à 2 g toutes les 8 h' },
+      voie: 'IV',
+      modalites: 'perfusion prolongée de 3 à 8 h toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '1-2g/8h IV en perfusion de 3 à 8h', 'posologie'), S('RCP-meropeneme', '§4.2 (infections intra-abdominales compliquées)', '« 500 mg ou 1 g » toutes les 8 h', 'posologie')],
+      remarques: 'La dose de 2 g toutes les 8 h dépasse la ligne « infections intra-abdominales compliquées » du RCP (500 mg ou 1 g toutes les 8 h).',
+    },
+    {
+      id: 'meropeneme-iia-rea',
+      libelle: '3 g par 24 h en perfusion continue (infection intra-abdominale, réanimation)',
+      indication: 'Infection intra-abdominale du patient grave à risque de BLSE ou de BMR (SFAR 2026, Annexe 1, colonne « réanimation, patient grave »).',
+      dose: { type: 'fixe', valeur: 3, unite: 'g', continue: true },
+      voie: 'IV',
+      modalites: 'perfusion continue sur 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (réanimation)', '3 g/j en perfusion continue', 'posologie')],
+      remarques: 'Hyperclairance (ClCr mesurée > 130 mL/min) : « 6 g/j en perfusion continue » (SFAR 2026, Annexe 1).',
+      adaptationRenale: adaptationRenaleIIA(51, S('RCP-meropeneme', '§4.2 (tableau 2)', 'ajustement « lorsque la clairance de la créatinine est inférieure à 51 mL/min »', 'adaptation_renale')),
     },
   ],
   adaptationRenale: {

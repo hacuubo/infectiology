@@ -41,9 +41,31 @@ const SARM_STABLE = avec(CAS_SARM_HEMODIALYSE, (x) => {
   x.patient.renal = { creatinine: { valeur: 90, unite: 'umol/L', date: '2026-11-04' }, stabilite: 'stable', insuffisanceRenaleAigue: 'non', dialyse: 'aucune' };
 });
 
+/** Infection à C. difficile, forme grave et compliquée (fulminante) : options toutes conditionnelles. */
+const cdiffFulminante = (details: Record<string, string>, fn?: (x: Dossier) => void): Dossier => {
+  const d = clonerDossier(CAS_ECBU_COLONISATION);
+  d.entree = 'syndrome';
+  d.syndrome = 'clostridioides_difficile';
+  d.prelevements = [];
+  d.patient.age = 50;
+  d.patient.sexe = 'homme';
+  d.patient.gravite = 'stable';
+  d.details = { 'cdiff.diarrhee': 'oui', 'cdiff.test': 'toxine_positive', 'cdiff.compliquee': 'oui', 'cdiff.episode': 'premier', 'cdiff.voie_orale': 'oui', ...details };
+  fn?.(d);
+  return d;
+};
+const CAS_CDIFF_FULMINANTS = [
+  cdiffFulminante({}),
+  cdiffFulminante({ 'cdiff.test': 'discordant' }),
+  cdiffFulminante({ 'cdiff.test': 'negatif' }),
+  cdiffFulminante({ 'cdiff.test': 'en_attente' }),
+  cdiffFulminante({ 'cdiff.test': 'non_preleve', 'cdiff.diarrhee': 'ileus' }),
+  cdiffFulminante({ 'cdiff.test': 'negatif' }, (x) => (x.patient.gravite = 'choc_septique')),
+];
+
 describe('Aucune fiche thérapeutique vide sans explication', () => {
   test('toute fiche sans traitement complet porte au moins un motif structuré, avec statut, motif et prochaine action', () => {
-    for (const d of [CAS_ECBU_COLONISATION, CAS_BLSE_AMIKACINE, CAS_SARM_HEMODIALYSE, CAS_ECBU_C3G_R, avec(CAS_SAB_SASM, (x) => (x.prelevements = []))]) {
+    for (const d of [CAS_ECBU_COLONISATION, CAS_BLSE_AMIKACINE, CAS_SARM_HEMODIALYSE, CAS_ECBU_C3G_R, avec(CAS_SAB_SASM, (x) => (x.prelevements = [])), ...CAS_CDIFF_FULMINANTS]) {
       const p = plan(d);
       if (p.sortie.traitement !== 'complet') {
         expect(p.sortie.motifs.length).toBeGreaterThan(0);
@@ -55,6 +77,16 @@ describe('Aucune fiche thérapeutique vide sans explication', () => {
           expect(m.motif).not.toMatch(/^(données insuffisantes|aucun résultat|aucune proposition)\.?$/i);
         }
       }
+    }
+  });
+
+  test('C. difficile fulminante (tout résultat de test) : jamais « complet », toujours un motif, urgence conservée', () => {
+    for (const d of CAS_CDIFF_FULMINANTS) {
+      const p = plan(d);
+      expect(p.situation.id).toMatch(/^cdiff-/);
+      expect(p.sortie.traitement).not.toBe('complet');
+      expect(p.sortie.motifs.length).toBeGreaterThan(0);
+      expect(p.sortie.urgence).toBe(true);
     }
   });
 
@@ -88,11 +120,11 @@ describe('Aucune fiche thérapeutique vide sans explication', () => {
     expect(duree?.impact).toBe('bloque_duree');
   });
 
-  test('C. identification en attente : résultat manquant nommé, traitement probabiliste sourcé déjà proposable', () => {
+  test('C. identification en attente : résultat manquant nommé ; sans foyer, aucun probabiliste sourcé n’est inventé', () => {
     const p = plan(CAS_BGN_90);
     const m = p.sortie.motifs.find((x) => x.type === 'microbiologie_insuffisante')!;
     expect(m.aCompleter.map((x) => x.texte).join(' ')).toMatch(/identification du germe \(examen direct seul : BGN\)/);
-    expect(m.dejaPropose.join(' ')).toMatch(/Traitement probabiliste sourcé/);
+    expect(m.dejaPropose.join(' ')).toMatch(/Aucun traitement probabiliste sourcé/);
     // Le foyer suspecté est une donnée clinique, pas microbiologique.
     expect(p.sortie.motifs.find((x) => x.type === 'informations_manquantes' && x.rang === 20)!.aCompleter.map((x) => x.texte).join(' ')).toMatch(/foyer suspecté/);
   });

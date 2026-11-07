@@ -111,6 +111,21 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       limite: `${ind.pointNonResolu} Cela ne signifie pas qu'aucun traitement n'est indiqué.`,
       origine: [ind.regleId],
     });
+  /* F bis. Absence de recommandation dédiée, déclarée par une règle : expliquée, jamais comblée. */
+  for (const a of plan.absencesRecommandation)
+    motifs.push({
+      type: 'non_validee',
+      rang: 25,
+      statut: 'Aucune recommandation dédiée : pas de proposition automatisée',
+      motif: `${a.sujet} : aucune recommandation dédiée n'a été trouvée. L'application ne propose pas de schéma extrapolé d'autres situations.`,
+      verifie: [],
+      dejaPropose: [...a.aFaire, ...dejaTraitement],
+      aCompleter: [],
+      prochaineAction: a.aFaire.length ? a.aFaire.join(' ; ') : (avis[0] ?? 'Avis du SMIT.'),
+      sources: a.sources,
+      limite: `${a.recherche} Cela ne signifie pas qu'aucun traitement n'est indiqué.`,
+      origine: [a.origine],
+    });
   const masquees = ecartees.filter((e) => e.type === 'non_validee' || e.type === 'source_retiree');
   // Mode usage clinique : le masquage des règles non validées est la vraie cause ; il passe en tête.
   const masquageExplique = masquees.length > 0 && plan.options.length === 0;
@@ -242,7 +257,7 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
 
   /* D. Situation non couverte : nommer la limite exacte. */
   const conclusionIndication = decision === 'ne_pas_traiter' || decision === 'attendre_resultat' || decision === 'informations_insuffisantes';
-  if (plan.options.length === 0 && !conclusionIndication && !rienSaisi && !masquageExplique && !motifs.some((m) => m.type === 'contraintes' || m.type === 'informations_manquantes')) {
+  if (plan.options.length === 0 && !conclusionIndication && !rienSaisi && !masquageExplique && plan.absencesRecommandation.length === 0 && !motifs.some((m) => m.type === 'contraintes' || m.type === 'informations_manquantes')) {
     motifs.push({
       type: 'non_couverte',
       rang: 60,
@@ -272,6 +287,21 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       prochaineAction: 'Compléter les données signalées ; la dose de référence reste affichée en attendant.',
       sources: [],
       origine: ['donnees-manquantes'],
+    });
+
+  // Options seulement conditionnelles (aucune 1re ligne) sans autre explication : le dire.
+  if (traitement === 'partiel' && premieres.length === 0 && motifs.length === 0)
+    motifs.push({
+      type: 'non_validee',
+      rang: 55,
+      statut: 'Pas d’option de 1re ligne : options conditionnelles seulement',
+      motif: 'Les options affichées dépendent chacune d’une condition (voir leur libellé) ; aucune n’est proposée sans condition.',
+      verifie: [],
+      dejaPropose: dejaTraitement,
+      aCompleter: [],
+      prochaineAction: avis[0] ?? 'Vérifier les conditions de chaque option ; avis du SMIT.',
+      sources: [],
+      origine: ['moteur'],
     });
 
   // Filet de sécurité : jamais d'absence de proposition sans motif.

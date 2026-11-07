@@ -82,7 +82,7 @@ export const R_ILC: Regle = {
   statut: 'verifiee_ia',
   priorite: 0,
   sources: [S('IDSA-2009-Mermel-ILC', 'rec. 19, 31-33', undefined, 'geste')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && (ctx.foyer === 'catheter' || (ctx.materielVasculairePresent && (ctx.hemocultures[0]?.hemoc?.delaiPositiviteDifferentielHeures ?? 0) >= 2)),
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ctx.foyer !== 'meningite' && (ctx.foyer === 'catheter' || (ctx.materielVasculairePresent && (ctx.hemocultures[0]?.hemoc?.delaiPositiviteDifferentielHeures ?? 0) >= 2)),
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const { g } = germePrincipal(ctx);
@@ -129,7 +129,7 @@ export const R_VALVE_BACTERIEMIE: Regle = {
   statut: 'verifiee_ia',
   priorite: 0,
   sources: [S('SRLF-2020-catheters', 'R3.3b', undefined, 'imagerie')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ctx.foyer !== 'endocardite' && (ctx.protheseValvulaire || ctx.dossier.patient.dispositifIntracardiaque === 'oui') && !['s_aureus', 'cgp_amas', 'scn'].includes(germePrincipal(ctx).g),
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite' && (ctx.protheseValvulaire || ctx.dossier.patient.dispositifIntracardiaque === 'oui') && !['s_aureus', 'cgp_amas', 'scn'].includes(germePrincipal(ctx).g),
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia').plafond('partielle').urgence('elevee');
     const { g } = germePrincipal(ctx);

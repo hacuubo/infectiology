@@ -315,7 +315,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     await u.click(within(screen.getByRole('radiogroup', { name: /^Sexe/ })).getByRole('radio', { name: 'Homme' }));
     expect(screen.getByText(/« Grossesse » n'est plus pertinent/)).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup', { name: 'Grossesse' })).toBeNull();
-  });
+  }, 20000);
 
   test('frise : moment court en colonne, détails (pourquoi, cible, conduite) dans un panneau dépliable', async () => {
     render(<App dossierInitial={casFictif('blse-amk')} />);

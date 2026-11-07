@@ -275,3 +275,5 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .points-attention li.info { color: inherit; }
 .etat-proposition { font-size: 0.88rem; color: #6e3400; margin: 0 0 4px; }
+.questions-foyer { border-top: 1px solid var(--bord); margin-top: 8px; padding-top: 6px; }
+.questions-foyer h3 { font-size: 0.95rem; margin: 4px 0; }

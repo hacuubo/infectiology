@@ -23,7 +23,7 @@ export interface AnalyseAllergie {
   sources: SourceRef[];
 }
 
-const PENICILLINES = ['penicilline', 'penicillines', 'amoxicilline', 'amoxicilline_clavulanate', 'ampicilline', 'cloxacilline', 'oxacilline', 'piperacilline_tazobactam', 'piperacilline', 'ticarcilline', 'temocilline'];
+const PENICILLINES = ['penicilline', 'penicillines', 'mecillinam', 'pivmecillinam', 'amoxicilline', 'amoxicilline_clavulanate', 'ampicilline', 'cloxacilline', 'oxacilline', 'piperacilline_tazobactam', 'piperacilline', 'ticarcilline', 'temocilline'];
 const CEPHALOSPORINES = ['cephalosporine', 'cephalosporines', 'cefazoline', 'cefalexine', 'cefadroxil', 'cefuroxime', 'cefotaxime', 'ceftriaxone', 'ceftazidime', 'cefepime', 'cefixime', 'cefpodoxime', 'ceftaroline', 'ceftobiprole'];
 const CARBAPENEMES = ['carbapeneme', 'carbapenemes', 'meropeneme', 'imipeneme', 'imipeneme_cilastatine', 'ertapeneme'];
 
@@ -50,7 +50,14 @@ export function familleDeclaree(molecule: string): Famille | 'betalactamine_inde
   if (n.includes('sulfam') || n.includes('cotrimoxazole') || n.includes('trimethoprime')) return 'sulfamide';
   if (n.includes('daptomycine')) return 'lipopeptide';
   if (n.includes('linezolide')) return 'oxazolidinone';
+  // Macrolides (RCP : hypersensibilité « à tout antibiotique de la famille des macrolides » pour l'azithromycine).
+  if (['macrolide', 'erythromycine', 'azithromycine', 'clarithromycine', 'roxithromycine', 'spiramycine'].some((m) => n.includes(m))) return 'macrolide';
   if (n.includes('rifampicine')) return 'rifamycine';
+  // Métronidazole : contre-indiqué en cas d'hypersensibilité « aux nitroimidazolés » (RCP IV §4.3), « aux imidazolés » (RCP oral §4.3).
+  if (n.includes('nidazole') || n.includes('imidazole')) return 'nitroimidazole';
+  // RCP Dalacine § 4.3 : hypersensibilité à la clindamycine ou à la lincomycine ; RCP Pyostacine § 4.3 : synergistines.
+  if (n.includes('clindamycine') || n.includes('lincomycine') || n.includes('lincosamide')) return 'lincosamide';
+  if (n.includes('pristinamycine') || n.includes('synergistine') || n.includes('streptogramine') || n.includes('virginiamycine')) return 'streptogramine';
   return 'autre';
 }
 
@@ -154,6 +161,8 @@ export function analyserAllergies(d: Dossier): AnalyseAllergie {
     res.explications.push(`Allergie déclarée à « ${a.molecule} » (type non précisé, non sévère) : molécule évitée par prudence ; préciser le type de réaction.`);
     res.moleculesAEviter.add(n);
   }
+  // Allergie au cotrimoxazole ou au triméthoprime : le triméthoprime seul est aussi évité (famille « autre » dans la base).
+  if (res.famillesAEviter.has('sulfamide')) res.moleculesAEviter.add('trimethoprime');
   return res;
 }
 

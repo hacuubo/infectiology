@@ -286,6 +286,8 @@ export type FoyerId =
   | 'cutane'
   | 'pulmonaire'
   | 'digestif'
+  | 'meningite'
+  | 'clostridioides_difficile'
   | 'autre';
 
 export interface Prelevement extends DonneesIsolat {
@@ -331,9 +333,13 @@ export type Famille =
   | 'glycopeptide'
   | 'lipopeptide'
   | 'oxazolidinone'
+  | 'macrolide'
   | 'fluoroquinolone'
   | 'sulfamide'
   | 'rifamycine'
+  | 'nitroimidazole'
+  | 'lincosamide'
+  | 'streptogramine'
   | 'autre';
 
 export interface DoseSpec {
@@ -358,11 +364,22 @@ export interface Regimen {
   indication: string;
   dose: DoseSpec;
   chargeInitiale?: DoseSpec & { libelle: string };
-  voie: 'IV' | 'PO' | 'IV ou PO' | 'IM ou IV';
+  /** « intraluminale » : sonde gastroduodénale ou voie colique (ex. vancomycine dans l'ICD, voie orale impossible). */
+  voie: 'IV' | 'PO' | 'IV ou PO' | 'IM ou IV' | 'intraluminale';
   modalites: string; // ex. "perfusion de 30 min"
   statut: StatutValidation;
   sources: SourceRef[];
   remarques?: string;
+  /**
+   * Adaptation rénale propre à ce régime (ex. doses méningées : paliers de la recommandation, pas ceux du schéma
+   * standard du RCP). Prioritaire sur celle de la molécule.
+   */
+  adaptationRenale?: AdaptationRenale;
+  /**
+   * Interactions propres à ce régime (ex. forme IV contre-indiquée, forme orale en précaution d'emploi). Elles
+   * remplacent celles de la molécule pour le même traitement associé.
+   */
+  interactionsPertinentes?: { avec: TraitementAssocie; texte: string; sources: SourceRef[] }[];
 }
 
 export interface PalierRenal {
@@ -420,6 +437,8 @@ export type ConditionId =
   | 'serotoninergique_associe'
   | 'qt_allongeant_associe'
   | 'anticoagulant_associe'
+  | 'avk_associe'
+  | 'ciprofloxacine_associee'
   | 'perfusion_continue'
   | 'perfusion_intermittente'
   | 'instabilite_renale'
@@ -476,6 +495,8 @@ export interface Molecule {
   adaptationRenale: AdaptationRenale;
   surveillance: ElementSurveillance[];
   stp?: SpecSTP[];
+  /** Molécule non absorbée (voie orale à action intraluminale) : ni adaptation rénale ni réglage en dialyse. */
+  absorptionSystemiqueNegligeable?: { texte: string; sources: SourceRef[] };
   grossesse?: { statut: 'utilisable' | 'eviter' | 'contre_indique' | 'non_verifie'; texte: string; sources: SourceRef[] };
   insuffisanceHepatique?: { texte: string; sources: SourceRef[] };
   interactionsPertinentes?: { avec: TraitementAssocie; texte: string; sources: SourceRef[] }[];
@@ -497,6 +518,7 @@ export type TraitementAssocie =
   | 'contraceptif_oral'
   | 'antiepileptique'
   | 'antiretroviral'
+  | 'colchicine'
   | 'autre';
 
 /* ------------------------------------------------------------------ */
@@ -550,6 +572,8 @@ export interface PrescriptionProposee {
   sources: SourceRef[];
   statut: StatutValidation;
   avertissements: string[];
+  /** Contre-indication établie par le moteur (palier rénal, interaction déclarée) : l'option est écartée. */
+  contreIndication?: string;
 }
 
 export interface OptionTherapeutique {
@@ -665,6 +689,8 @@ export interface Plan {
   contientReglesNonValidees: boolean;
   /** Option dont le calendrier est affiché (retenue par le prescripteur ou 1re ligne). */
   optionRetenueId?: string;
+  /** Points sans recommandation dédiée : expliqués, jamais comblés par extrapolation. */
+  absencesRecommandation: AbsenceRecommandation[];
   /** État de sortie explicite : pourquoi la proposition est complète, partielle ou absente. */
   sortie: EtatSortie;
 }
@@ -717,6 +743,21 @@ export interface MotifSortie {
 }
 
 /** Proposition écartée par le moteur, avec une raison structurée et vérifiable. */
+/**
+ * Absence de recommandation dédiée, déclarée par une règle : l'application ne comble pas ce vide par une
+ * extrapolation ; elle l'explique (ce qui a été cherché, ce qui reste à faire).
+ */
+export interface AbsenceRecommandation {
+  /** Ce qui n'est pas tranché (ex. « choix probabiliste d'une bactériémie à BGN sans foyer »). */
+  sujet: string;
+  /** Ce qui a été cherché et quand. */
+  recherche: string;
+  /** Ce que l'application propose à la place (gestes, contrôles, avis). */
+  aFaire: string[];
+  sources: SourceRef[];
+  origine: string;
+}
+
 export interface PropositionEcartee {
   libelle: string;
   type: 'allergie' | 'resistance' | 'contre_indication' | 'non_validee' | 'source_retiree' | 'inadaptee';

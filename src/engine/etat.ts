@@ -4,6 +4,7 @@
  * Aucune donnée n'est conservée en dehors de la session du navigateur.
  */
 import type { Clinique, DonneesIsolat, FoyerId, Isolat, OrganismeId, Patient, Prelevement } from '../clinical/types';
+import { QUESTIONS_SYNDROME, questionsPour } from '../clinical/syndromes/questions';
 
 export type ModeEntree = 'syndrome' | 'microbiologie' | 'non_choisi';
 
@@ -15,6 +16,8 @@ export interface Dossier {
   /** Éléments cliniques de l'épisode (indication de traitement). */
   clinique: Clinique;
   prelevements: Prelevement[];
+  /** Réponses aux questions propres au foyer (src/clinical/syndromes), par identifiant de question. */
+  details?: Record<string, string>;
   /** Horodatages réels saisis, pour transformer les calendriers relatifs en dates. */
   /** Option thérapeutique retenue par le prescripteur (le calendrier suit cette option). */
   optionRetenueId?: string;
@@ -72,9 +75,10 @@ export function pertinenceClinique(d: Dossier): Record<keyof Clinique, boolean> 
   const c = d.clinique ?? cliniqueParDefaut();
   const sonde = DISPOSITIFS_URINAIRES.includes(d.patient.materielUrinaire);
   const grave = d.patient.gravite === 'sepsis' || d.patient.gravite === 'choc_septique';
+  const foyerUrinaire = foyerDeclare(d) === 'urinaire';
   return {
-    fievre: urine,
-    signesUrinaires: urine,
+    fievre: urine || foyerUrinaire,
+    signesUrinaires: urine || foyerUrinaire,
     signesNonSpecifiques: urine,
     autreFoyer: urine && (c.fievre === 'oui' || c.signesNonSpecifiques === 'oui' || (grave && sonde)),
     gesteUrologique: urine,
@@ -361,9 +365,35 @@ function precision(avant: OrganismeId, apres: OrganismeId): boolean {
   return PRECISIONS[avant]?.includes(apres) ?? false;
 }
 
+/** Foyers dont les questions sont posées : foyer déclaré, et foyer urinaire dès qu'un ECBU est saisi. */
+export function foyersQuestions(d: Dossier): FoyerId[] {
+  const l: FoyerId[] = [foyerDeclare(d)];
+  if (d.entree === 'syndrome' && d.syndrome !== 'non_choisi' && !l.includes(d.syndrome)) l.push(d.syndrome);
+  if (d.prelevements.some((x) => x.type === 'urine') && !l.includes('urinaire')) l.push('urinaire');
+  return l;
+}
+
+/** Foyer déclaré (syndrome choisi, sinon foyer du prélèvement principal), sans déduction à partir de l'ECBU. */
+export function foyerDeclare(d: Dossier): FoyerId {
+  const principal = d.prelevements.find((x) => x.type === 'hemoculture') ?? d.prelevements[0];
+  if (principal && principal.foyer !== 'inconnu') return principal.foyer;
+  if (d.entree === 'syndrome' && d.syndrome !== 'non_choisi') return d.syndrome;
+  return 'inconnu';
+}
+
 export function nettoyerDossier(d: Dossier): Invalidation[] {
   const invalidations: Invalidation[] = [];
   if (!d.clinique) d.clinique = cliniqueParDefaut();
+  // Réponses aux questions d'un foyer qui n'est plus le foyer retenu, ou devenues sans objet : effacées.
+  if (d.details) {
+    const visibles = new Set(foyersQuestions(d).flatMap((fo) => questionsPour(fo, d)).map((q) => q.id));
+    for (const id of Object.keys(d.details)) {
+      if (visibles.has(id)) continue;
+      const q = QUESTIONS_SYNDROME.find((x) => x.id === id);
+      delete d.details[id];
+      if (q) invalidations.push({ champ: `details.${id}`, raison: `« ${q.libelle} » n'est plus pertinent avec le foyer ou les réponses actuelles : réponse effacée.` });
+    }
+  }
   // Un antibiogramme saisi pour un germe ne doit jamais être réutilisé pour un autre germe.
   for (const p of d.prelevements) {
     for (const iso of isolatsDe(p)) {

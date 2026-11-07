@@ -4,6 +4,7 @@
  * résultat est identique (aucun aléa, aucun appel réseau, aucun modèle génératif).
  */
 import type {
+  AbsenceRecommandation,
   Alerte,
   Couverture,
   IndicationPlan,
@@ -45,6 +46,8 @@ export interface Contribution {
   indication?: IndicationPlan;
   /** Propositions écartées par la règle, avec leur raison structurée. */
   ecartees?: PropositionEcartee[];
+  /** Points sans recommandation dédiée : expliqués, non comblés. */
+  absences?: Omit<AbsenceRecommandation, 'origine'>[];
 }
 
 export interface Regle {
@@ -133,6 +136,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
     regles: [],
     sources: [],
     contientReglesNonValidees: false,
+    absencesRecommandation: [],
     sortie: { traitement: 'aucun', urgence: false, actionsUrgentes: [], motifs: [], ecartees: [] },
   };
   const ecartees: PropositionEcartee[] = [];
@@ -164,7 +168,10 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   plan.indicationsSecondaires = indications.filter((i) => i !== principale);
   // Sans traitement, les éléments propres au traitement sont écartés (options, contrôles et réévaluation des règles thérapeutiques).
   const garder = (x: { ra: RegleAppliquee; c: Contribution }) =>
-    traitement || nonTraitement(x.c) || ((x.c.options?.length ?? 0) === 0 && !REGLES_DU_TRAITEMENT.includes(x.ra.id));
+    traitement ||
+    nonTraitement(x.c) ||
+    ((x.c.options?.length ?? 0) === 0 && !REGLES_DU_TRAITEMENT.includes(x.ra.id)) ||
+    (x.ra.id === 'R-GRAVITE-SEPSIS' && (dossier.patient.gravite === 'sepsis' || dossier.patient.gravite === 'choc_septique'));
   const situationCandidate = contributions.find((x) => x.c.situation && (!traitement || !nonTraitement(x.c))) ?? contributions.find((x) => x.c.situation);
   if (situationCandidate) {
     plan.situation = situationCandidate.c.situation!;
@@ -173,6 +180,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
 
   for (const { ra, c } of contributions.filter(garder)) {
     if (c.ecartees) ecartees.push(...c.ecartees.map((e) => ({ ...e, origine: ra.id })));
+    if (c.absences) plan.absencesRecommandation.push(...c.absences.map((a) => ({ ...a, origine: ra.id })));
     if (c.couvertureMax && RANG_COUV[c.couvertureMax] < RANG_COUV[couvertureMax]) couvertureMax = c.couvertureMax;
     if (c.urgence && RANG_URGENCE[c.urgence] > RANG_URGENCE[plan.urgence.niveau]) plan.urgence.niveau = c.urgence;
     if (c.alertes) plan.urgence.alertes.push(...c.alertes);
@@ -199,7 +207,7 @@ export function decider(dossier: Dossier, opts: OptionsMoteur = {}): Plan {
   for (const prl of dossier.prelevements) for (const iso of isolatsDe(prl)) if (iso.organisme) plan.microbiologie.push(analyserIsolat(ctx, prl, iso));
 
   // Indication : une culture positive ne déclenche jamais, à elle seule, une proposition d'antibiotique.
-  if (!plan.indication && plan.options.length > 0 && regleSituation) {
+  if (!plan.indication && plan.options.some((o) => o.rang !== 'conditionnelle') && regleSituation) {
     plan.indication = {
       decision: plan.urgence.niveau === 'immediate' ? 'urgence' : 'traiter',
       qualification: 'infection',

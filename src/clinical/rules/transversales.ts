@@ -37,6 +37,8 @@ export const R_GRAVITE: Regle = {
     const sscSrc = S('SSC-2026', 'page SCCM — contrôle de la source', 'early source control over late source control, ideally within 6 hr of diagnosis', 'geste');
     const has = S('HAS-2025-sepsis', 'page de présentation', 'Appliquer au mieux dans la première heure, un groupe d\'actions coordonnées et standardisées', 'autre');
     if (g === 'choc_septique' || g === 'sepsis') {
+      if (ctx.foyer === 'clostridioides_difficile')
+        f.alerte('info', 'Infection à C. difficile : son traitement est oral (ou intraluminal), voir la fiche ; l\'antibiothérapie IV probabiliste du sepsis vise un autre foyer suspecté.', [S('ESCMID-2021-ICD-traitement', 'recommandations', undefined, 'autre')]);
       f.urgence('immediate')
         .alerte('urgence', `${g === 'choc_septique' ? 'Choc septique' : 'Sepsis'} : antibiothérapie IV immédiate, idéalement dans l'heure ; hémocultures (au moins 40 mL, 2-3 paires) et lactate sans retarder l'antibiothérapie ; avis réanimation.`, [ssc1h, sscHc, has])
         .geste('Contrôle de la source le plus tôt possible, idéalement dans les 6 h du diagnostic (drainage, ablation de matériel infecté, levée d\'obstacle).', [sscSrc])
@@ -46,6 +48,8 @@ export const R_GRAVITE: Regle = {
       f.urgence('elevee')
         .alerte('attention', 'Gravité non renseignée : rechercher un sepsis (dysfonction d\'organe, SOFA ≥ 2) ou un choc septique ; elle conditionne le délai (1 h si sepsis probable ou choc, 3 h si sepsis seulement possible) et le schéma (ajout d\'un aminoside).', [ssc1h, S('SSC-2026', 'page SCCM — sepsis possible', 'within 3 hours from the time when sepsis was first suspected', 'autre')])
         .manque('gravité (sepsis, choc septique ou stable)', 'conditionne le délai et le schéma probabiliste', 'bloque_decision');
+    } else if (ctx.foyer === 'meningite') {
+      // Méningite : l'urgence (antibiotique dans l'heure) est portée par R-MENINGITE-BACTERIENNE ; pas de délai de 3 h.
     } else {
       f.alerte('info', 'Pas de dysfonction d\'organe déclarée : réévaluer la gravité à chaque étape ; en cas de sepsis seulement possible, antibiothérapie dans les 3 h si la suspicion persiste.', [S('SSC-2026', 'page SCCM — sepsis possible', 'within 3 hours from the time when sepsis was first suspected', 'autre')]);
     }
@@ -177,14 +181,15 @@ export const R_PERSISTANCE: Regle = {
 export const R_SYNDROME_NON_COUVERT: Regle = {
   id: 'R-SYNDROME-NON-COUVERT',
   libelle: 'Syndrome hors périmètre actuel',
-  description: 'Foyers pulmonaire, digestif, cutané ou autre sans bactériémie couverte.',
+  // Foyers digestif, cutané et pulmonaire retirés le 2026-11-06 : couverts par R-INTRA-ABDOMINAL, R-PEAU-TISSUS-MOUS et R-PNEUMONIE.
+  description: 'Foyers « autre » et ostéoarticulaire sans matériel, sans bactériémie couverte.',
   statut: 'verifiee_ia',
   priorite: 10,
   sources: [],
-  sApplique: (ctx) => adulte(ctx) && ['pulmonaire', 'digestif', 'cutane', 'autre', 'osteoarticulaire_sans_materiel'].includes(ctx.foyer) && germePrincipal(ctx).g === 'aucun',
+  sApplique: (ctx) => adulte(ctx) && ['autre', 'osteoarticulaire_sans_materiel'].includes(ctx.foyer) && germePrincipal(ctx).g === 'aucun',
   appliquer: (ctx) =>
     new Fiche(ctx, 'verifiee_ia')
-      .situation('syndrome-non-couvert', 'Foyer non couvert par la version actuelle', 'non_couverte', 'Les infections pulmonaires, digestives, cutanées et ostéoarticulaires sans matériel ne sont pas encore modélisées. Seules les règles transversales (gravité, réévaluation) s\'appliquent.')
+      .situation('syndrome-non-couvert', 'Foyer non couvert par la version actuelle', 'non_couverte', 'Les infections ostéoarticulaires sans matériel et les autres foyers ne sont pas encore modélisés. Seules les règles transversales (gravité, réévaluation) s\'appliquent.')
       .avis('Avis infectiologique pour le choix thérapeutique.', false, [])
       .fin(),
 };

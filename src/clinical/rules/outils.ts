@@ -36,6 +36,8 @@ export function statutMin(...s: StatutValidation[]): StatutValidation {
 export interface ItemPrescription {
   m: string;
   r: string;
+  /** Durée propre à cette molécule (ex. aminoside d'une association) ; sinon, durée de l'option. */
+  duree?: DureeDecidee;
 }
 
 /** Accumulateur d'une contribution de règle. */
@@ -49,6 +51,7 @@ export class Fiche {
     avisSpecialise: [],
     donneesManquantes: [],
     ecartees: [],
+    absences: [],
   };
   constructor(
     public readonly ctx: ContexteDecision,
@@ -71,13 +74,18 @@ export class Fiche {
     this.c.alertes.push({ niveau, texte, sources });
     return this;
   }
-  manque(champ: string, pourquoi: string, impact: DonneeManquante['impact'] = 'bloque_decision') {
-    this.c.donneesManquantes.push({ champ, pourquoi, impact });
+  manque(champ: string, pourquoi: string, impact: DonneeManquante['impact'] = 'bloque_decision', cible?: string) {
+    this.c.donneesManquantes.push({ champ, pourquoi, impact, ...(cible ? { cible } : {}) });
     return this;
   }
   /** Proposition écartée par la règle : raison structurée, affichée dans « Pourquoi cette proposition n'est-elle pas disponible ? ». */
   ecarter(libelle: string, type: PropositionEcartee['type'], raison: string, sources: SourceRef[] = []) {
     this.c.ecartees.push({ libelle, type, raison, sources, origine: '' });
+    return this;
+  }
+  /** Point sans recommandation dédiée : l'application l'explique au lieu de proposer une extrapolation. */
+  absence(sujet: string, recherche: string, aFaire: string[], sources: SourceRef[] = []) {
+    this.c.absences.push({ sujet, recherche, aFaire, sources });
     return this;
   }
   avis(texte: string, urgent: boolean, sources: SourceRef[]) {
@@ -107,15 +115,23 @@ export class Fiche {
     items: ItemPrescription[];
     duree: DureeDecidee;
     statut?: StatutValidation;
-  }) {
+  }): boolean {
     const ids = o.items.map((i) => i.m);
+    const manques: DonneeManquante[] = [];
     const prescriptions = o.items.map((i) => {
       const { molecule, regimen: r } = regimen(i.m, i.r);
-      const res = calculerPrescription({ molecule, regimen: r, ctx: this.ctx, duree: o.duree, coPrescriptions: ids.filter((x) => x !== i.m) });
+      const res = calculerPrescription({ molecule, regimen: r, ctx: this.ctx, duree: i.duree ?? o.duree, coPrescriptions: ids.filter((x) => x !== i.m) });
       // Les données manquantes d'une option conditionnelle n'en bloquent pas d'autres : on les conserve mais en « affine ».
-      for (const dm of res.donneesManquantes) this.c.donneesManquantes.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' || dm.impact === 'bloque_dose' ? dm.impact : 'affine' });
+      for (const dm of res.donneesManquantes) manques.push(o.rang === 'premiere_ligne' ? dm : { ...dm, impact: dm.impact === 'bloque_decision' || dm.impact === 'bloque_dose' ? dm.impact : 'affine' });
       return res.prescription;
     });
+    // Contre-indication établie (palier rénal, interaction déclarée) : l'option n'est pas proposée ; la raison est tracée.
+    const ci = prescriptions.find((p) => p.contreIndication);
+    if (ci) {
+      this.ecarter(o.libelle, 'contre_indication', ci.contreIndication!, ci.sources);
+      return false;
+    }
+    this.c.donneesManquantes.push(...manques);
     const statut = statutMin(o.statut ?? this.statutRegle, ...prescriptions.map((p) => p.statut));
     this.c.options.push({
       id: o.id,
@@ -128,7 +144,16 @@ export class Fiche {
       sources: o.sources,
       statut,
     });
-    return this;
+    return true;
+  }
+  /**
+   * Options d'une liste ordonnée (ordre de préférence de la source) : la première option non contre-indiquée est
+   * en 1re ligne, les suivantes en alternatives ; une option contre-indiquée laisse sa place à la suivante.
+   */
+  optionsEnOrdre(liste: (Omit<Parameters<Fiche['option']>[0], 'rang'> & { rang?: OptionTherapeutique['rang'] })[], premierRang: OptionTherapeutique['rang'] = 'premiere_ligne') {
+    let n = 0;
+    for (const o of liste) if (this.option({ ...o, rang: o.rang ?? (n === 0 ? premierRang : premierRang === 'conditionnelle' ? 'conditionnelle' : 'alternative') })) n++;
+    return n;
   }
   fin(): Contribution {
     return this.c;

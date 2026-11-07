@@ -68,6 +68,31 @@ export const ciprofloxacine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 29', 'Ciprofloxacine IV 400 mgx3/jour OU lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (ciprofloxacine)', 'forte : 0,4 g iv toutes les 8 h', 'posologie')],
     },
+    // Prophylaxie des infections invasives à méningocoque (docs/sources/recherche-meningites.md §5, §10.2) : RCP oral lu.
+    {
+      id: 'cipro-po-500-du',
+      libelle: '500 mg per os en dose unique — prophylaxie des infections invasives à méningocoque',
+      indication: 'Prophylaxie du portage de méningocoque (instruction DGS 2018 : 2e intention, en cas de contre-indication ou de résistance à la rifampicine, ou d\'infections répétées dans une même communauté ; DGS-Urgent 2025_06 relayé : 1re intention si souche sensible).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 1, texte: '500 mg en dose unique' },
+      voie: 'PO',
+      modalites: 'Prise unique (1 jour).',
+      statut: 'verifiee_ia',
+      sources: [
+        S('RCP-ciprofloxacine-orale', '§4.2 (prophylaxie des infections invasives à Neisseria meningitidis)', '500 mg en dose unique', 'posologie'),
+        S('DGS-2018-IIM', 'p. 18, fiche 8-2', 'Ciprofloxacine par voie orale, en dose unique : Adulte : dose unique de 500 mg', 'posologie'),
+      ],
+    },
+    // Méningite, allergie grave aux bêta-lactamines (SPILF 2018 Tableau 10) : fréquence non précisée, RCP IV non relu pour cette indication.
+    {
+      id: 'cipro-iv-meninge',
+      libelle: '800 à 1 200 mg/j IV — méningite à méningocoque ou à H. influenzae, allergie grave aux bêta-lactamines (fréquence non précisée)',
+      indication: 'Méningite à méningocoque ou à H. influenzae chez un patient allergique grave aux bêta-lactamines (SPILF 2018, Tableau 10) ; avis infectiologique.',
+      dose: { type: 'fixe', valeur: 800, unite: 'mg', texte: '800 à 1 200 mg par jour (fréquence d\'administration non précisée par la source)' },
+      voie: 'IV',
+      modalites: 'Fréquence non précisée par SPILF 2018 (Tableau 10) ; RCP de la ciprofloxacine IV non relu pour cette indication : avis infectiologique et pharmacologique.',
+      statut: 'brouillon',
+      sources: [S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] méningocoque → ciprofloxacine « 800–1200 mg » (fréquence non précisée)', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -112,6 +137,39 @@ export const levofloxacine: Molecule = {
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 29', 'lévofloxacine IV 500 mgx2/jour ET Amikacine IV 30 mg/kg dose unique', 'posologie')],
     },
+    // Infections intra-abdominales (docs/sources/recherche-intra-abdominal.md §1, Annexe 1) : voie IV.
+    {
+      id: 'levo-iv-iia',
+      libelle: '500 mg toutes les 12 à 24 h IV (infection intra-abdominale, allergie, posologie usuelle)',
+      indication: 'Infection intra-abdominale communautaire avec allergie interdisant céphalosporines et carbapénèmes, avec le métronidazole (SFAR 2026 R1.2.11, Annexe 1, colonne « usuelles »).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 2, texte: '500 mg toutes les 12 à 24 h' },
+      voie: 'IV',
+      modalites: 'perfusion IV toutes les 12 à 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SFAR-2026-IIA', 'Annexe 1, p. 73-74 (usuelles)', '500 mg/12-24h IV', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
+    // Pneumonies (docs/sources/recherche-pneumonies.md).
+    {
+      id: 'levo-pac-500',
+      libelle: '500 mg toutes les 24 h per os ou IV (pneumonie hors soins critiques)',
+      indication: 'PAC : uniquement en cas d\'allergie grave aux bêta-lactamines (ou contre-indication aux macrolides si bactérie atypique) ; légionellose non grave avec contre-indication aux macrolides (SPILF 2025/2026, HAS 2025).',
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', frequenceParJour: 1 },
+      voie: 'IV ou PO',
+      modalites: 'per os ou perfusion de 60 min, 1 fois par 24 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8', 'Lévofloxacine « 500 mg/j »', 'posologie'), S('HAS-2025-PAC-adulte-ambulatoire', 'dernier recours', 'levofloxacine 500 mg 1 fois par jour', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
+    {
+      id: 'levo-pac-soins-critiques',
+      libelle: '500 à 1 000 mg/j IV (pneumonie grave, soins critiques)',
+      indication: 'PAC grave avec allergie à la C3G ou au macrolide (monothérapie) ; légionellose grave ou du patient immunodéprimé (1re intention, SPILF 2026).',
+      // Fourchette de la source (500 à 1 000 mg/j) : pas de fréquence stockée, aucune des deux valeurs n'est retenue en silence.
+      dose: { type: 'fixe', valeur: 500, unite: 'mg', texte: '500 à 1 000 mg/j IV (500 mg une ou deux fois par jour) — fourchette de la SPILF, non tranchée par l\'application' },
+      voie: 'IV',
+      modalites: 'perfusion de 60 min, une ou deux fois par 24 h ; relais oral dès la stabilité clinique',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SPLF-2025-PAC', 'tableau 10, p. 8 (soins critiques)', '500 mg à 1000 mg/j', 'posologie'), S('SPILF-2026-legionellose-diapo', 'diapo 9 (soins critiques, IV)', '500 mg à 1000 mg/j', 'posologie'), S('RCP-levofloxacine', '§4.2', 'PAC « 500 mg une ou deux fois par jour »', 'posologie')],
+    },
   ],
   adaptationRenale: {
     methode: 'Cockcroft',
@@ -146,6 +204,34 @@ export const cotrimoxazole: Molecule = {
       modalites: '1 comprimé « forte » (800 mg SMX + 160 mg TMP) toutes les 12 h',
       statut: 'verifiee_ia',
       sources: [S('SPILF-2026-IUM', 'diapo 16-17, 23', 'Sulfaméthoxazole-triméthoprime PO 800/160 mg 1 cpx2/jour', 'posologie'), S('HAS-2021-PNA-femme', 'tableau relais', 'cotrimoxazole 800/160 ×2/j 10 j', 'posologie'), S(SRC_DOSES_2026, 'Annexe 9 (cotrimoxazole)', '0,16 g TMP + 0,8 g SMX toutes les 12 h', 'posologie')],
+    },
+    // Méningite à Listeria, allergie (docs/sources/recherche-meningites.md §1 Tableau 10, §9.8 point 1, §10.2) : SPILF au-dessus du RCP.
+    {
+      id: 'smx-tmp-meninge',
+      libelle: '10 à 20 mg/kg/j de triméthoprime IV en 4 prises — méningite à Listeria (allergie) — au-dessus du RCP',
+      indication: 'Méningite à Listeria (ou bacille à Gram positif, ou arguments pour une listériose) chez un patient allergique aux pénicillines (SPILF 2018, Tableaux 10 et 11).',
+      // valeur par prise (2,5 mg/kg × 4 = 10 mg/kg/j, bas de la fourchette) ; l'affichage repose sur `texte`.
+      dose: { type: 'ponderale', valeur: 2.5, unite: 'mg/kg', frequenceParJour: 4, poidsReference: 'total', texte: '10 à 20 mg/kg/j de triméthoprime, en 4 prises (SPILF 2018) — RCP (infections neuro-méningées à Listeria) : 6 à 8 mg/kg/j de triméthoprime et 30 à 40 mg/kg/j de sulfaméthoxazole' },
+      voie: 'IV',
+      modalites: 'Hors RCP : la dose SPILF dépasse la posologie du RCP pour la listériose neuro-méningée (divergence non tranchée) ; avis infectiologique. Poids de référence non précisé par la source.',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] Listeria → cotrimoxazole 10–20 mg/kg/j de triméthoprime en 4 prises', 'posologie'),
+        S('RCP-cotrimoxazole', '§4.2', 'Traitement des infections neuro-méningées à Listeria monocytogenes : 30 à 40 mg/kg/j de sulfaméthoxazole et de 6 à 8 mg/kg/j de triméthoprime', 'posologie'),
+      ],
+      remarques: 'Écart au RCP signalé (recherche-meningites.md §9.8, point 1).',
+    },
+    // Pneumonie d'inhalation (docs/sources/recherche-pneumonies.md §6).
+    {
+      id: 'smx-tmp-inhalation',
+      libelle: '800 mg de sulfaméthoxazole toutes les 8 h, per os ou IV (pneumonie d\'inhalation)',
+      indication: 'Pneumonie d\'inhalation avec contre-indication aux bêta-lactamines (SPILF/SFGG 2025).',
+      dose: { type: 'fixe', valeur: 960, unite: 'mg', frequenceParJour: 3, texte: '800 mg de sulfaméthoxazole (+ 160 mg de triméthoprime) toutes les 8 h' },
+      voie: 'IV ou PO',
+      modalites: 'per os ou IV toutes les 8 h',
+      statut: 'verifiee_ia',
+      sources: [S('SPILF-SFGG-2025-inhalation-diapo', 'diapo 11', '>30ml/min : 800mg de sulfamethoxazole toutes les 8h', 'posologie')],
+      remarques: 'Indication dans la pneumonie d\'inhalation non rapprochée du RCP dans la note de recherche (à vérifier).',
     },
   ],
   adaptationRenale: {
@@ -193,6 +279,38 @@ export const rifampicine: Molecule = {
       modalites: 'à introduire après négativation des hémocultures (SPILF/AEPEI ; ESC : après 3-5 jours de traitement efficace)',
       statut: 'verifiee_ia',
       sources: [S('ESC-2023-endocardite', 'Recommendation Table 8 (EHJ p. 3980-3981)', 'Rifampin 900 mg/day i.v. or orally in 3 equally divided doses', 'posologie'), S('SPILF-AEPEI-2025-endocardite', 'diapo 15-16', 'Rifampicine [après] Hémocultures stériles ; 900 mg/j en 1 dose/24h (600 mg si poids < 70kg)', 'posologie')],
+    },
+    // Méningite, allergie grave aux bêta-lactamines (docs/sources/recherche-meningites.md §1 Tableau 10, §9.8 point 8).
+    {
+      id: 'rifampicine-meninge-300x2',
+      libelle: '300 mg toutes les 12 h — méningite, allergie grave aux bêta-lactamines, en association à la vancomycine',
+      indication: 'Méningite à pneumocoque ou à examen direct négatif chez un patient allergique grave aux bêta-lactamines : vancomycine + rifampicine (SPILF 2018, Tableau 10).',
+      dose: { type: 'fixe', valeur: 300, unite: 'mg', frequenceParJour: 2 },
+      voie: 'IV ou PO',
+      modalites: 'Voie non précisée par la source. Divergence SPILF 2018 : 300 mg × 2/j (Tableau 10) ; 10 mg/kg/12 h en cas d\'échec à pneumocoque (§14.1.1). Inducteur enzymatique : l\'effet de la dexaméthasone peut être réduit (RCP dexaméthasone).',
+      statut: 'brouillon',
+      sources: [
+        S('SPILF-2018-meningites', 'Tableau 10 p. 24', '[reformulation] rifampicine (adulte 300 mg × 2/j)', 'posologie'),
+        S('SPILF-2018-meningites', 'p. 27, §14.1', '[reformulation] ajout rifampicine 10 mg/kg/12 h ou vancomycine', 'posologie'),
+        S('RCP-dexamethasone-krka', '§4.5', 'L\'effet des corticoïdes peut être réduit', 'autre'),
+      ],
+    },
+    // Prophylaxie des infections invasives à méningocoque (docs/sources/recherche-meningites.md §5, §10.2) : RCP oral (Rifadine gélule) lu.
+    {
+      id: 'rifampicine-po-prophylaxie-iim',
+      libelle: '600 mg toutes les 12 h per os pendant 48 h — prophylaxie des infections invasives à méningocoque',
+      indication: 'Prophylaxie du portage de méningocoque (instruction DGS 2018 : 1re intention ; DGS-Urgent 2025_06 relayé : réservée à une souche résistante à la ciprofloxacine avec contre-indication à la ceftriaxone).',
+      dose: { type: 'fixe', valeur: 600, unite: 'mg', frequenceParJour: 2 },
+      voie: 'PO',
+      modalites: 'Pendant 48 heures (2 gélules de 300 mg toutes les 12 h). Femme : contraception non hormonale hautement efficace pendant le traitement et 6 mois après (RCP 08/04/2026 ; l\'instruction DGS 2018 indiquait une contraception mécanique pendant le traitement et la semaine suivante). Grossesse : seulement si strictement nécessaire (RCP) ; vitamine K1 au nouveau-né si prise en fin de grossesse.',
+      statut: 'verifiee_ia',
+      sources: [
+        S('RCP-rifampicine-orale', '§4.2', 'La rifampicine sera donnée pendant 48 heures à la posologie suivante : Adulte : 600 mg toutes les 12 heures', 'posologie'),
+        S('DGS-2018-IIM', 'p. 18, fiche 8-2', 'Adulte : 600 mg (2 gélules de 300 mg), deux fois par jour', 'posologie'),
+        S('RCP-rifampicine-orale', '§4.6', 'ne doit être utilisé pendant la grossesse que lorsque cela est strictement nécessaire', 'autre'),
+        S('RCP-rifampicine-orale', '§4.6', '[reformulation] contraception non hormonale hautement efficace pendant le traitement et jusqu\'à 6 mois après la dernière dose (femme)', 'autre'),
+      ],
+      remarques: 'Le RCP précise que la rifampicine n\'est pas un traitement de la méningite à méningocoque (§4.1).',
     },
   ],
   adaptationRenale: {

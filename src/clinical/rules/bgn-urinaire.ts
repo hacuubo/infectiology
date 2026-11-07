@@ -2,6 +2,7 @@
  * Bacilles à Gram négatif : infections urinaires fébriles (avec ou sans bactériémie)
  * et bactériémies à BGN hors foyer urinaire.
  */
+import { formeCystite } from './cystite';
 import type { Regle } from '../../engine/decider';
 import type { ContexteDecision } from '../../engine/contexte';
 import type { OptionTherapeutique, Prelevement, SourceRef } from '../types';
@@ -244,6 +245,10 @@ export const R_IU_FEBRILE: Regle = {
     const decisionECBU = ctx.evaluationECBU?.decision;
     if (decisionECBU === 'ne_pas_traiter' || decisionECBU === 'attendre_resultat' || decisionECBU === 'informations_insuffisantes') return false;
     if (forme === 'cystite' || forme === 'colonisation_gravidique' || forme === 'colonisation_avant_geste' || forme === 'a_preciser') return false;
+    // Cystite (y compris de l'homme, sans fièvre) : R-CYSTITE.
+    if (formeCystite(ctx)) return false;
+    // Sans ECBU, foyer urinaire déclaré sans fièvre : pas un schéma d'infection fébrile (cystite ou à préciser).
+    if (!ctx.evaluationECBU && ctx.dossier.clinique.fievre === 'non' && germeUrinaire(ctx).g === 'aucun') return false;
     const g = germeUrinaire(ctx).g;
     return g === 'aucun' || g === 'bgn';
   },
@@ -370,12 +375,13 @@ export const R_BGN: Regle = {
   statut: 'verifiee_ia',
   priorite: 130,
   sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bacilles à Gram négatif (dont entérobactéries et BGN non fermentant), streptocoques, entérocoques : 7 jours', 'duree')],
-  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'bgn' && ctx.foyer !== 'urinaire' && ctx.foyer !== 'endocardite',
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && germePrincipal(ctx).g === 'bgn' && ctx.foyer !== 'urinaire' && ctx.foyer !== 'endocardite' && ctx.foyer !== 'meningite',
   appliquer: (ctx) => {
     const f = new Fiche(ctx, 'verifiee_ia');
     const p = ctx.dossier.patient;
     const { prl } = germePrincipal(ctx);
-    const foyerConnu = ctx.foyer !== 'inconnu';
+    // Une colite à C. difficile n'est pas la source d'une bactériémie à BGN : foyer considéré comme non déterminé.
+    const foyerConnu = ctx.foyer !== 'inconnu' && ctx.foyer !== 'clostridioides_difficile';
     const nonIdentifie = !prl?.organisme || prl.organisme === 'bgn_non_identifie' || prl.stade === 'examen_direct';
     f.situation('bacteriemie-bgn', `Bactériémie à ${nonIdentifie ? 'BGN non identifié' : 'BGN'}${foyerConnu ? '' : ' — foyer non déterminé'}`, 'partielle', foyerConnu ? 'Foyer suspecté hors urinaire.' : 'Le foyer conditionne le spectre, la durée et le contrôle de la source : le rechercher activement (urinaire, digestif/biliaire, cathéter, pulmonaire). Les propositions restent conditionnelles tant que la gravité, le contexte et le foyer ne sont pas précisés.');
     const duree: DureeDecidee = { texte: '7 jours pour une bactériémie non compliquée avec foyer contrôlé ; durée à adapter au foyer s\'il est profond ou non contrôlé. (L\'essai BALANCE 2024 conforte 7 j mais n\'est pas une recommandation.)', pointDeDepart: 'premier jour d\'antibiothérapie efficace (après contrôle du foyer) — point de départ non précisé par la source', dureePrevueJours: 7, sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree'), S('SRLF-2020-catheters', 'R3.13', '7j pour les autres pathogènes', 'duree'), S('BALANCE-2024-NEJM', 'résultat principal', 'antibiotic treatment for 7 days was noninferior to treatment for 14 days', 'autre')] };
@@ -384,6 +390,64 @@ export const R_BGN: Regle = {
 
     if (prl && prl.stade === 'antibiogramme' && (prl.antibiogramme?.length ?? 0) > 0) {
       documenterBGN(f, prl, 'autre', p.gravite === 'sepsis' || p.gravite === 'choc_septique', duree);
+      return f.fin();
+    }
+    // Foyer inconnu : aucune recommandation dédiée au choix probabiliste. L'absence est expliquée, pas comblée
+    // par un schéma extrapolé des infections urinaires graves (demande de l'utilisateur du 2026-11-06).
+    if (!foyerConnu) {
+      // Sans option, l'indication doit être explicite : une bactériémie à BGN se traite (durée fixée par SPILF/GPIP 2021) ;
+      // seul le choix probabiliste n'est pas tranché.
+      const graveBgn = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
+      const srcIndic = [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree')];
+      f.c.indication = {
+        decision: graveBgn ? 'urgence' : 'traiter',
+        qualification: 'infection',
+        titre: 'Bactériémie à BGN : traitement indiqué, choix probabiliste non tranché sans foyer',
+        raison: 'Un bacille à Gram négatif dans les hémocultures est traité (les recommandations lues en fixent la durée) ; sans foyer identifié, aucune recommandation ne fixe le choix probabiliste.',
+        conditions: ['BGN dans au moins une hémoculture', 'foyer non identifié'],
+        exceptions: [],
+        actions: ['Rechercher le foyer', graveBgn ? 'Antibiothérapie probabiliste dans l\'heure selon le protocole local ; avis réanimation / SMIT immédiat' : 'Avis du SMIT pour le choix probabiliste'],
+        surveillance: [],
+        reconsiderer: ['Foyer identifié', 'Antibiogramme rendu'],
+        questions: [],
+        sources: srcIndic,
+        statut: 'verifiee_ia',
+        regleId: 'R-BACTERIEMIE-BGN',
+      };
+      f.absence(
+        'Choix probabiliste d\'une bactériémie à BGN sans foyer identifié',
+        'Recherche du 2026-11-04 : aucune recommandation française (SPILF, HAS) ni ESCMID dédiée ; les textes lus traitent les BGN par foyer (urinaire, intra-abdominal, pulmonaire, cathéter) ou une fois l\'antibiogramme connu (SPILF 2023 d\'après ESCMID 2022).',
+        [
+          'Rechercher le foyer (ECBU, cathéters, voies biliaires et abdomen, poumon) : le choix suit ensuite les règles du foyer',
+          p.gravite === 'sepsis' || p.gravite === 'choc_septique' ? 'Sepsis ou choc : antibiothérapie probabiliste dans l\'heure selon le protocole local, avis réanimation / SMIT immédiat' : 'Avis du SMIT pour le choix probabiliste',
+          'Saisir l\'antibiogramme dès qu\'il est rendu : le traitement documenté est proposé',
+        ],
+        [S('SPILF-2023-BGN-MDR-diapo', 'traitement documenté', undefined, 'choix'), S('HAS-2025-sepsis', 'page de présentation', 'antibiothérapie IV adaptée « au site, aux germes, à l\'origine communautaire ou non, au risque de bactéries multirésistantes et à l\'écologie locale »', 'choix')],
+      );
+      f.avis('Bactériémie à BGN sans foyer identifié : avis du SMIT pour le choix probabiliste.', p.gravite === 'choc_septique' || p.gravite === 'sepsis', []);
+      return f.fin();
+    }
+    // Foyer couvert par une règle de domaine (intra-abdominal, pulmonaire, peau) : son probabiliste s'applique ; pas de schéma
+    // extrapolé ici. L'indication reste explicite : une bactériémie à BGN se traite, même si la règle du foyer conclut autrement
+    // (ex. diverticulite non compliquée « sans antibiotique »).
+    if ((['digestif', 'pulmonaire', 'cutane'] as string[]).includes(ctx.foyer)) {
+      const graveBgn = p.gravite === 'sepsis' || p.gravite === 'choc_septique';
+      f.c.indication = {
+        decision: graveBgn ? 'urgence' : 'traiter',
+        qualification: 'infection',
+        titre: 'Bactériémie à BGN : traitement indiqué',
+        raison: 'Un bacille à Gram négatif dans les hémocultures est traité (les recommandations lues en fixent la durée) ; le choix probabiliste suit la règle du foyer déclaré.',
+        conditions: ['BGN dans au moins une hémoculture', `foyer déclaré : ${ctx.foyer}`],
+        exceptions: [],
+        actions: [graveBgn ? 'Antibiothérapie probabiliste dans l’heure (schéma du foyer) ; avis réanimation / SMIT' : 'Antibiothérapie selon le schéma du foyer, adaptée à l’antibiogramme'],
+        surveillance: [],
+        reconsiderer: ['Antibiogramme rendu'],
+        questions: [],
+        sources: [S('SPILF-GPIP-2021-durees', 'diapo 21', 'Bactériémies non compliquées sans porte d\'entrée retrouvée : Bacilles à Gram négatif […] : 7 jours', 'duree')],
+        statut: 'verifiee_ia',
+        regleId: 'R-BACTERIEMIE-BGN',
+      };
+      f.alerte('info', 'Bactériémie à BGN : la durée du traitement du foyer est à confronter à celle d’une bactériémie (7 jours pour une bactériémie à BGN non compliquée, SPILF/GPIP 2021).', [S('SPILF-GPIP-2021-durees', 'diapo 21', undefined, 'duree')]);
       return f.fin();
     }
     const proba = 'probabiliste' as const;

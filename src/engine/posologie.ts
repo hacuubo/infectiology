@@ -36,6 +36,8 @@ function cibleRenale(manquants: string[]): string {
   return 'patient.renal.creatinine';
 }
 
+/** Palier rénal qui interdit la molécule (le texte du palier vient du RCP). */
+const CONTRE_INDICATION = /contre-indiqu|ne pas utiliser|non recommandée/i;
 const SANS_ADAPTATION = /pas d'adaptation|pas d'ajustement|dose normale|schéma habituel|posologie normale|dose unique journalière habituelle|pas de réduction/i;
 
 export interface DureeDecidee {
@@ -158,6 +160,10 @@ export function evaluerCondition(id: ConditionId | undefined, ctx: ContexteDecis
       return p.traitementsAssocies.includes('qt_allongeant');
     case 'anticoagulant_associe':
       return p.traitementsAssocies.includes('avk') || p.traitementsAssocies.includes('aod');
+    case 'avk_associe':
+      return p.traitementsAssocies.includes('avk');
+    case 'ciprofloxacine_associee':
+      return opts.coPrescriptions.includes('ciprofloxacine');
     case 'perfusion_continue':
       return opts.continue === true;
     case 'perfusion_intermittente':
@@ -226,6 +232,7 @@ export function calculerPrescription(args: {
   const { molecule: m, regimen: r, ctx, duree } = args;
   const manquants: DonneeManquante[] = [];
   const avert: string[] = [];
+  let contreIndication: string | undefined;
   const adaptations: string[] = [];
   const sources: SourceRef[] = [...r.sources];
 
@@ -278,9 +285,12 @@ export function calculerPrescription(args: {
 
   // --- Adaptation rénale
   let adaptationRequise = false;
-  const ar = m.adaptationRenale;
+  const ar = r.adaptationRenale ?? m.adaptationRenale;
   const p = ctx.dossier.patient;
-  if (ar.statut !== 'retiree') {
+  if (m.absorptionSystemiqueNegligeable) {
+    adaptations.push(`Pas d'adaptation à la fonction rénale ni à la dialyse : ${m.absorptionSystemiqueNegligeable.texte}`);
+    sources.push(...m.absorptionSystemiqueNegligeable.sources);
+  } else if (ar.statut !== 'retiree') {
     if (p.renal.dialyse === 'hemodialyse_intermittente' || p.renal.dialyse === 'eer_continue' || p.renal.dialyse === 'dialyse_peritoneale') adaptationRequise = true;
     if (p.renal.dialyse === 'hemodialyse_intermittente') {
       adaptations.push(ar.hemodialyse ? `Hémodialyse intermittente : ${ar.hemodialyse.texte}` : `Hémodialyse intermittente : modalité non renseignée dans la base pour ${m.dci} — avis pharmacologique/néphrologique requis.`);
@@ -329,6 +339,7 @@ export function calculerPrescription(args: {
         if (palier) {
           adaptations.push(`${clTexte} : ${palier.texte}`);
           sources.push(...palier.sources);
+          if (CONTRE_INDICATION.test(palier.texte)) contreIndication = `${m.dci} : ${clTexte} — ${palier.texte}`;
           if (!SANS_ADAPTATION.test(palier.texte)) adaptationRequise = true;
         } else if (ar.texteGeneral) {
           adaptations.push(`${clTexte} : ${ar.texteGeneral}`);
@@ -364,10 +375,14 @@ export function calculerPrescription(args: {
   for (const res of ctx.allergie.reserves) if (res.moleculeId === m.id) avert.push(res.texte);
 
   // --- Interactions
-  for (const inter of m.interactionsPertinentes ?? []) {
+  // Une interaction déclarée par le régime remplace celle de la molécule pour le même traitement associé.
+  const interRegime = r.interactionsPertinentes ?? [];
+  const interactions = [...interRegime, ...(m.interactionsPertinentes ?? []).filter((i) => !interRegime.some((x) => x.avec === i.avec))];
+  for (const inter of interactions) {
     if (p.traitementsAssocies.includes(inter.avec)) {
       avert.push(`Interaction (${inter.avec}) : ${inter.texte}`);
       sources.push(...inter.sources);
+      if (/^contre-indiqu/i.test(inter.texte)) contreIndication = `${m.dci} : ${inter.texte}`;
     }
   }
 
@@ -393,6 +408,7 @@ export function calculerPrescription(args: {
       sources,
       statut,
       avertissements: avert,
+      ...(contreIndication ? { contreIndication } : {}),
     },
     donneesManquantes: manquants,
   };

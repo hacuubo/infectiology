@@ -2,6 +2,11 @@ import type { Molecule } from '../types';
 import { amikacine, gentamicine, vancomycine, daptomycine } from './aminosides-glycopeptides';
 import { cefotaxime, ceftriaxone, cloxacilline, cefazoline, amoxicilline, amoxicillineClavulanate, piperacillineTazobactam, temocilline, cefoxitine, cefepime, meropeneme, imipeneme, ertapeneme, aztreonam, cefixime } from './betalactamines';
 import { ciprofloxacine, levofloxacine, cotrimoxazole, rifampicine } from './divers';
+import { fosfomycineTrometamol, pivmecillinam, nitrofurantoine, trimethoprime } from './urinaires-oraux';
+import { fidaxomicine, vancomycineOrale } from './clostridioides-difficile';
+import { metronidazole } from './intra-abdominal';
+import { pristinamycine, clindamycine } from './peau-tissus-mous';
+import { spiramycine, clarithromycine, azithromycine, linezolide } from './pneumonies';
 
 export const MOLECULES: Molecule[] = [
   cefotaxime,
@@ -27,6 +32,19 @@ export const MOLECULES: Molecule[] = [
   levofloxacine,
   cotrimoxazole,
   rifampicine,
+  fosfomycineTrometamol,
+  pivmecillinam,
+  nitrofurantoine,
+  trimethoprime,
+  fidaxomicine,
+  vancomycineOrale,
+  metronidazole,
+  pristinamycine,
+  clindamycine,
+  spiramycine,
+  clarithromycine,
+  azithromycine,
+  linezolide,
 ];
 
 export const MOLECULES_PAR_ID: Record<string, Molecule> = Object.fromEntries(MOLECULES.map((m) => [m.id, m]));

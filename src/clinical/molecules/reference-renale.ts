@@ -58,7 +58,29 @@ export const REFERENCE_RENALE: Record<string, ReferenceRenale> = {
   cefixime: clcr('RCP-cefixime', 'Lorsque les valeurs de la clairance de la créatinine sont ≤ 20 ml/min'),
   levofloxacine: clcr('RCP-levofloxacine', 'tableau par ClCr 50-20, 19-10, < 10'),
   cotrimoxazole: clcr('RCP-cotrimoxazole', 'Clairance de la créatinine > 30 ml/min : posologie normale'),
+  fosfomycine_trometamol: clcr('RCP-fosfomycine-trometamol', 'clairance de la créatinine < 10 ml/min'),
+  // RCP pivmécillinam : paliers exprimés en « filtration glomérulaire » (mL/min).
+  pivmecillinam: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-pivmecillinam', '§4.2', 'Quand la filtration glomérulaire est comprise entre 15 et 30 ml/min, diviser la posologie par deux.', 'adaptation_renale')] },
+  // RCP nitrofurantoïne : grandeur mixte (ClCr au §4.2, « TFGe » au §4.3) : la clairance est retenue, ce qui fait comparer
+  // Cockcroft-Gault et DFG désindexé ; une discordance de palier est signalée et bloque la dose.
+  nitrofurantoine: clcr('RCP-nitrofurantoine', 'clairance de la créatinine < 45 ml/mn… la nitrofurantoïne est contre-indiquée'),
+  trimethoprime: clcr('RCP-trimethoprime', 'Insuffisance rénale sévère (clairance de la créatinine < 15mL/mn)'),
   rifampicine: clcr('RCP-rifampicine', 'IR 60-30 ml/min : rifampicinémie « au 2ème ou 3ème jour du traitement »'),
+  // RCP fidaxomicine : aucun palier ni grandeur (« Aucune adaptation posologique n'est jugée nécessaire ») ; grandeur par défaut.
+  fidaxomicine: clcr('RCP-fidaxomicine', 'Aucune adaptation posologique n\'est jugée nécessaire.'),
+  // Vancomycine orale : aucune adaptation prévue pour la voie orale ; les paliers en clairance du RCP concernent la voie IV.
+  vancomycine_orale: clcr('RCP-vancomycine-orale', 'aucune adaptation posologique prévue pour la voie orale (les paliers ClCr du RCP concernent la voie IV)'),
+  // RCP métronidazole IV : aucune réduction de dose en insuffisance rénale ; aucune grandeur citée (clairance par défaut, sans effet sur la dose).
+  metronidazole: clcr('RCP-metronidazole-IV', 'Aucune réduction de dose n\'est nécessaire'),
+  // Pristinamycine et clindamycine : aucune adaptation rénale dans le RCP, aucune grandeur citée ; clairance par défaut.
+  pristinamycine: clcr('RCP-pristinamycine', 'aucun ajustement posologique n\'est jugé nécessaire chez les patients insuffisants rénaux'),
+  clindamycine: { grandeur: 'clairance_creatinine', unite: 'mL/min', sources: [S('RCP-clindamycine-orale', '§4.2 (aucune adaptation rénale mentionnée)', undefined, 'adaptation_renale')] },
+  // Pneumonies (docs/sources/recherche-pneumonies.md §12) : spiramycine et linézolide sans palier ; clarithromycine en clairance (RCP IV) ;
+  // azithromycine : RCP exprimé en « DFG » (mL/min).
+  spiramycine: clcr('RCP-spiramycine', 'Chez le sujet insuffisant rénal : Aucun ajustement posologique n\'est nécessaire'),
+  clarithromycine: clcr('RCP-clarithromycine-IV', 'clairance inférieure à 30 ml/minute, la dose administrée doit être diminuée de moitié'),
+  azithromycine: { grandeur: 'dfg', unite: 'mL/min', sources: [S('RCP-azithromycine', '§4.2', 'Aucune adaptation posologique n\'est nécessaire chez les patients présentant un DFG ≥ 10 mL/min', 'adaptation_renale')] },
+  linezolide: clcr('RCP-linezolide', 'Insuffisance rénale : Aucun ajustement posologique n\'est nécessaire'),
 };
 
 /** Référence par défaut (molécule absente du tableau) : clairance en mL/min, méthode non précisée. */

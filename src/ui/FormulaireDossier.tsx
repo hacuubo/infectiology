@@ -1,6 +1,7 @@
+import { optionsAvecInconnu, questionsPour } from '../clinical/syndromes/questions';
 import { useState } from 'react';
 import type { Dossier } from '../engine/etat';
-import { nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
+import { foyersQuestions, nouveauPrelevement, REGLES_PERTINENCE, REGLES_PERTINENCE_PRELEVEMENT } from '../engine/etat';
 import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, FoyerId, Prelevement, TraitementAssocie } from '../clinical/types';
 import { AntibiogrammeGuide, ChampReferentiel, ContexteECBUSaisie, IsolatsSupplementaires, SelectOrganisme } from './Microbiologie';
 import { SectionIndication } from './Indication';
@@ -67,6 +68,7 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
             Vous pourrez ajouter les prélèvements (hémocultures, ECBU…) à l'étape 4 ; les propositions probabilistes s'affichent dès maintenant et seront précisées par la microbiologie.
           </p>
         )}
+        <QuestionsFoyer dossier={d} modifier={modifier} />
       </section>
 
       <section className="carte" aria-labelledby="t-patient">
@@ -405,6 +407,44 @@ function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; mod
         </span>
       )}
     </Champ>
+  );
+}
+
+/** Questions propres au foyer retenu (forme clinique, lieu de prise en charge…) : src/clinical/syndromes. */
+function QuestionsFoyer({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
+  return (
+    <>
+      {foyersQuestions(dossier).map((f) => (
+        <QuestionsUnFoyer key={f} foyer={f} dossier={dossier} modifier={modifier} />
+      ))}
+    </>
+  );
+}
+
+function QuestionsUnFoyer({ foyer, dossier, modifier }: { foyer: FoyerId; dossier: Dossier; modifier: Modifier }) {
+  const qs = questionsPour(foyer, dossier);
+  if (qs.length === 0) return null;
+  return (
+    <div className="questions-foyer" aria-label={`Précisions : ${LIBELLE_FOYER[foyer]}`} role="group">
+      <h3>Précisions : {LIBELLE_FOYER[foyer].split(' (')[0]}</h3>
+      {qs.map((q) => (
+        <ChoixRadio
+          key={q.id}
+          libelle={q.libelle}
+          aide={q.aide}
+          cible={`details.${q.id}`}
+          valeur={dossier.details?.[q.id] ?? 'inconnu'}
+          options={optionsAvecInconnu(q)}
+          onChange={(v) =>
+            modifier((x) => {
+              x.details = { ...(x.details ?? {}) };
+              if (v === 'inconnu') delete x.details[q.id];
+              else x.details[q.id] = v;
+            })
+          }
+        />
+      ))}
+    </div>
   );
 }
 
