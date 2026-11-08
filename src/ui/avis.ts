@@ -68,8 +68,9 @@ export interface ComplementsAvis {
 function patientEnUnePhrase(d: Dossier): string {
   const p = d.patient;
   const qui = p.sexe === 'femme' ? 'une patiente' : p.sexe === 'homme' ? 'un patient' : 'un(e) patient(e)';
-  const mesures = [p.age !== undefined ? `${nombreFr(p.age)} ans` : 'âge non renseigné', p.poidsKg !== undefined ? `${nombreFr(p.poidsKg, 1)} kg` : '', p.tailleCm !== undefined ? `${nombreFr(p.tailleCm)} cm` : ''].filter(Boolean);
-  return `${qui} de ${mesures.join(', ')}`;
+  const mesures = [p.poidsKg !== undefined ? `${nombreFr(p.poidsKg, 1)} kg` : '', p.tailleCm !== undefined ? `${nombreFr(p.tailleCm)} cm` : ''].filter(Boolean);
+  if (p.age === undefined) return `${qui} (âge non renseigné${mesures.length ? `, ${mesures.join(', ')}` : ''})`;
+  return `${qui} de ${[`${nombreFr(p.age)} ans`, ...mesures].join(', ')}`;
 }
 
 /** Motif : syndrome choisi et réponses aux questions du foyer (les réponses « inconnu » sont omises). */
