@@ -46,7 +46,7 @@ describe('Fiche concise', () => {
     expect(synthese).toHaveTextContent(/Traitement proposé \(1re ligne\) — provisoire/);
     expect(synthese).toHaveTextContent(/la proposition affichée reste provisoire/);
     expect(synthese).not.toHaveTextContent(/Traitement retenu/);
-    expect(synthese).toHaveTextContent(/Vancomycine : Dose de charge/);
+    expect(synthese).toHaveTextContent(/Vancomycine\s*Dose de charge/);
     expect(synthese).toHaveTextContent(/— IV, perfusion/);
     expect(synthese).toHaveTextContent(/Hémodialyse intermittente/);
     expect(synthese).toHaveTextContent(/Durée : 14 jours/);
@@ -88,12 +88,12 @@ describe('Fiche concise', () => {
     expect(fiche().querySelector('.synthese')).not.toHaveTextContent(/explication ci-dessous/);
   }, 20000);
 
-  test('une option en brouillon reste marquée, dans les options comme dans la synthèse', () => {
+  test('une option en brouillon reste marquée dans la synthèse (le bloc d’options n’est plus répété)', () => {
     const d = clonerDossier(casFictif('ecoli-i'));
     d.patient.immunodepression = 'oui';
     render(<App dossierInitial={d} />);
     expect(fiche().querySelector('.synthese')).toHaveTextContent(/brouillon/);
-    expect(within(fiche()).getAllByText('brouillon').length).toBeGreaterThan(1);
+    expect(within(fiche()).queryByRole('heading', { name: /Options thérapeutiques/ })).toBeNull();
   });
 
   test('sources : deux sources du même organisme et de la même année restent distinguables', () => {
@@ -114,7 +114,7 @@ describe('Fiche concise', () => {
   test('« Traitement retenu » seulement quand le prescripteur a retenu une option', async () => {
     const u = userEvent.setup();
     render(<App dossierInitial={casFictif('sab')} />);
-    await u.click(screen.getByText(/Alternatives et options conditionnelles/));
+    await u.click(screen.getByText(/Autres options : alternatives et options conditionnelles/));
     await u.click(screen.getAllByRole('button', { name: 'Retenir cette option' })[0]);
     const synthese = fiche().querySelector('.synthese')!;
     expect(synthese).toHaveTextContent(/Traitement retenu — provisoire/);

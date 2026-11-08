@@ -194,19 +194,62 @@ export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, 
     const v = Number((Math.round((valeur + sens * pas) / pas) * pas).toFixed(decimales));
     onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v)));
   };
-  const avancerCourant = useRef(avancer);
-  avancerCourant.current = avancer;
-  // Molette : seulement quand le champ est actif, pour ne pas détourner le défilement de la page.
+  /** Valeur à `crans` crans d'une valeur de base ; depuis un champ vide, le premier cran donne la valeur de départ. */
+  const decaler = (base: number | undefined, crans: number): number => {
+    const v = base === undefined ? depart! + (crans - Math.sign(crans)) * pas : base + crans * pas;
+    return Math.min(max ?? Infinity, Math.max(min ?? -Infinity, Number((Math.round(v / pas) * pas).toFixed(decimales))));
+  };
+  const courant = useRef({ avancer, decaler, valeur, onChange });
+  courant.current = { avancer, decaler, valeur, onChange };
   useEffect(() => {
     const el = champ.current;
     if (!el || depart === undefined) return;
+    // Molette : seulement quand le champ est actif, pour ne pas détourner le défilement de la page.
     const surMolette = (e: WheelEvent) => {
       if (document.activeElement !== el || e.deltaY === 0) return;
       e.preventDefault();
-      avancerCourant.current(e.deltaY < 0 ? 1 : -1);
+      courant.current.avancer(e.deltaY < 0 ? 1 : -1);
+    };
+    // Doigt (téléphone) : glisser vers le haut augmente, vers le bas diminue, un cran tous les 14 px.
+    // Un simple appui ouvre le clavier comme d'habitude ; un glissement ne déplace pas la page.
+    const PX_PAR_CRAN = 14;
+    let depuis: { y: number; base: number | undefined; derniere?: number } | undefined;
+    let glisse = false;
+    const debut = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      depuis = { y: e.touches[0].clientY, base: courant.current.valeur };
+      glisse = false;
+    };
+    const mouvement = (e: TouchEvent) => {
+      if (!depuis || e.touches.length !== 1) return;
+      const dy = depuis.y - e.touches[0].clientY;
+      if (!glisse && Math.abs(dy) < 6) return;
+      glisse = true;
+      e.preventDefault();
+      const crans = Math.trunc(dy / PX_PAR_CRAN);
+      if (crans === 0) return;
+      const v = courant.current.decaler(depuis.base, crans);
+      if (v !== depuis.derniere) {
+        depuis.derniere = v;
+        courant.current.onChange(v);
+      }
+    };
+    const fin = (e: TouchEvent) => {
+      if (glisse) e.preventDefault(); // pas de clavier ouvert après un glissement
+      depuis = undefined;
     };
     el.addEventListener('wheel', surMolette, { passive: false });
-    return () => el.removeEventListener('wheel', surMolette);
+    el.addEventListener('touchstart', debut, { passive: true });
+    el.addEventListener('touchmove', mouvement, { passive: false });
+    el.addEventListener('touchend', fin, { passive: false });
+    el.addEventListener('touchcancel', fin);
+    return () => {
+      el.removeEventListener('wheel', surMolette);
+      el.removeEventListener('touchstart', debut);
+      el.removeEventListener('touchmove', mouvement);
+      el.removeEventListener('touchend', fin);
+      el.removeEventListener('touchcancel', fin);
+    };
   }, [depart]);
   return (
     <Champ libelle={libelle} aide={aide} id={id} cible={cible}>

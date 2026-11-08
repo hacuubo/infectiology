@@ -566,6 +566,15 @@ export interface PrescriptionProposee {
   voie: string;
   modalites: string;
   adaptations: string[];
+  /**
+   * Résumé de l'adaptation à la fonction rénale, pour l'affichage : pas d'adaptation, posologie recommandée (texte
+   * du palier de la source), ou adaptation non calculée (raison). Le détail reste dans `adaptations`.
+   */
+  renal?: { statut: 'sans_adaptation' | 'adaptee' | 'non_calculee'; texte: string; details?: string[] };
+  /** Dose de référence (fonction rénale normale) quand une adaptation rénale est requise. */
+  doseReference?: string;
+  /** Adaptations autres que rénales (insuffisance hépatique). */
+  autresAdaptations?: string[];
   duree: { texte: string; pointDeDepart: string; sources: SourceRef[]; dureePrevueJours?: number };
   /** Surveillance propre à cette molécule, affichée avec le traitement. */
   surveillance: LigneSurveillance[];

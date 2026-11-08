@@ -65,7 +65,35 @@ function LigneEstimation({ e, detail }: { e: Estimation; detail: boolean }) {
   );
 }
 
-/** Carte de la fiche : résultat, unité, formule et version, date de la créatinine, données, limites, détail et source. */
+/**
+ * Prise en charge : seulement ce qui empêche ou fausse l'adaptation des doses (valeur incohérente, dialyse,
+ * fonction rénale instable). Les estimations elles-mêmes restent dans l'onglet Patient.
+ */
+export function AlertesRenales({ dossier, allerAuChamp }: { dossier: Dossier; allerAuChamp?: AllerAuChamp }) {
+  const r = contexteUI(dossier).renal;
+  if (!r.raisonNonApplicable && r.incoherences.length === 0) return null;
+  return (
+    <div className="alertes-renales" aria-label="Fonction rénale">
+      {r.raisonNonApplicable && r.etat !== 'dialyse' && (
+        <p className="alerte attention">
+          Fonction rénale : {r.raisonNonApplicable}. Les estimations ne sont pas utilisées pour adapter les doses.
+        </p>
+      )}
+      {r.incoherences.map((i) => (
+        <p key={i.texte} className="alerte urgence">
+          {i.texte}{' '}
+          {allerAuChamp && (
+            <button type="button" className="btn discret" onClick={() => allerAuChamp(i.cible)}>
+              Corriger
+            </button>
+          )}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** Carte détaillée : résultat, unité, formule et version, date de la créatinine, données, limites, détail et source. */
 export function CarteFonctionRenale({ dossier, plan, allerAuChamp }: { dossier: Dossier; plan: Plan; allerAuChamp?: AllerAuChamp }) {
   const r = contexteUI(dossier).renal;
   const p = dossier.patient;

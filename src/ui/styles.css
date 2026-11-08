@@ -283,6 +283,8 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .ligne.pas-a-pas input[type='number'], .deux-colonnes .ligne.pas-a-pas input[type='number'] { width: 4.5em; min-width: 3.2em; flex: 0 1 auto; padding-left: 4px; padding-right: 4px; text-align: center; -moz-appearance: textfield; appearance: textfield; }
 .ligne.pas-a-pas input[type='number']::-webkit-inner-spin-button, .ligne.pas-a-pas input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .deux-colonnes .ligne select { max-width: 100%; min-width: 0; }
+/* Glissement au doigt géré par l'application (pas de défilement de la page depuis le champ). */
+.ligne.pas-a-pas input[type='number'] { touch-action: none; }
 .ligne.pas-a-pas input::placeholder { color: var(--texte-2); opacity: 0.75; }
 .btn.cran { flex: none; background: #fff; color: var(--accent); border-color: var(--bord-controle); min-width: 32px; min-height: 36px; padding: 0 6px; font-size: 1.15rem; line-height: 1; }
 
@@ -295,3 +297,13 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .avis .signature { margin: 10px 0; padding: 6px 10px; border: 1px solid var(--bord); border-radius: var(--rayon); }
 .avis .signature summary { cursor: pointer; font-weight: 600; }
 .avis .signature input { width: 100%; max-width: 320px; padding: 7px 9px; border: 1px solid var(--bord-controle); border-radius: 6px; background: #fff; color: var(--texte); }
+
+/* Prise en charge : traitement de 1re ligne mis en évidence ; une ligne sur la fonction rénale. */
+.synthese-dl dd.traitement-premiere { background: var(--ok-clair); border-left: 4px solid var(--ok); border-radius: 6px; padding: 8px 10px; }
+.synthese-dl dd.traitement-premiere > strong:first-of-type { color: var(--ok); }
+.synthese-prescription { margin-top: 6px; }
+.rein { font-size: 0.92rem; margin-top: 2px; }
+.rein-sans_adaptation { color: var(--texte-2); }
+.rein-adaptee { color: var(--texte); }
+.rein-non_calculee { color: var(--attention); font-weight: 600; }
+.autres-options > summary { font-weight: 600; cursor: pointer; }

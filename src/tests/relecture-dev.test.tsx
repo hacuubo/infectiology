@@ -287,7 +287,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     expect(within(barre).getByText(/Sepsis : antibiothérapie IV immédiate/)).toBeInTheDocument();
     expect(screen.getAllByText(/Sepsis : antibiothérapie IV immédiate/)).toHaveLength(1);
     // IRA : aucune estimation ne personnalise la dose ; chaque molécule l'explique (méropénème, amikacine).
-    expect(screen.getAllByText(/Adaptation rénale non calculée/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Adaptation à la fonction rénale non calculée/).length).toBeGreaterThanOrEqual(2);
   });
 
   test('résumé lisible : libellés accentués, pas de valeur codée brute', async () => {
