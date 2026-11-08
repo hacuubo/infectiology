@@ -7,6 +7,7 @@ import { GardeErreur, GardeLocale, PanneauErreurTechnique } from './Explication'
 import { contexteUI } from './contexte-ui';
 import { FormulaireDossier } from './FormulaireDossier';
 import { ResumePatient } from './ResumePatient';
+import { AvisInfectiologique } from './AvisInfectiologique';
 import { alertesUrgentes, elementsManquants, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
 import { VERSION_CLINIQUE, estObsolete } from '../clinical/version';
 import { Badge, ChampsManquants, RefsInline } from './composants';
@@ -40,6 +41,8 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
   };
 
   const [essai, setEssai] = useState(0);
+  // Incrémenté à chaque réinitialisation : efface aussi le texte libre de la demande d'avis (patient précédent).
+  const [nouveauPatient, setNouveauPatient] = useState(0);
   const ctx = useMemo(() => {
     try {
       return contexteUI(dossier);
@@ -79,7 +82,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
   const urgentes = plan ? alertesUrgentes(plan) : !resultat.ok ? resultat.sortie.actionsUrgentes.map((a) => ({ niveau: 'urgence' as const, texte: a.texte, sources: a.sources })) : [];
   const niveau = plan?.urgence.niveau ?? (!resultat.ok && resultat.sortie.urgence ? 'immediate' : 'standard');
 
-  /** Mène directement au champ à compléter (onglet Saisie sur écran étroit), sans refaire le parcours. */
+  /** Mène directement au champ à compléter (onglet Patient sur écran étroit), sans refaire le parcours. */
   const allerAuChamp = useCallback((cible: string) => {
     setOnglet('saisie');
     window.setTimeout(() => {
@@ -87,7 +90,8 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
       if (!el) return;
       const reduit = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       el.scrollIntoView?.({ block: 'center', behavior: reduit ? 'auto' : 'smooth' });
-      const focusable = el.querySelector<HTMLElement>('input:not([disabled]), select, textarea, [role="radio"][tabindex="0"], button') ?? (el.matches('h2, h3') ? el : null);
+      // Le champ de saisie d'abord (avant les boutons − / + qui l'entourent), sinon le premier contrôle.
+      const focusable = el.querySelector<HTMLElement>('input:not([disabled]), select, textarea') ?? el.querySelector<HTMLElement>('[role="radio"][tabindex="0"], button') ?? (el.matches('h2, h3') ? el : null);
       if (focusable) {
         if (focusable.matches('h2, h3')) focusable.setAttribute('tabindex', '-1');
         focusable.focus({ preventScroll: true });
@@ -133,10 +137,10 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
 
       <nav className="onglets" aria-label="Affichage sur écran étroit">
         <button type="button" aria-pressed={onglet === 'saisie'} className={onglet === 'saisie' ? 'actif' : ''} onClick={() => setOnglet('saisie')}>
-          Saisie
+          Patient
         </button>
         <button type="button" aria-pressed={onglet === 'resultat'} className={onglet === 'resultat' ? 'actif' : ''} onClick={() => setOnglet('resultat')}>
-          Fiche {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{niveau === 'immediate' ? 'urgence' : 'élevée'}</Badge>}
+          Prise en charge {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{niveau === 'immediate' ? 'urgence' : 'élevée'}</Badge>}
         </button>
       </nav>
 
@@ -150,9 +154,10 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
                   setDossier(dossierParDefaut());
                   setPlanAvant(undefined);
                   setInvalidations([]);
+                  setNouveauPatient((n) => n + 1);
                 }}
               >
-                Réinitialiser la saisie
+                Réinitialiser le patient
               </button>
           </div>
           {invalidations.length > 0 && (
@@ -173,10 +178,15 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
               <FormulaireDossier dossier={dossier} modifier={modifier} />
             </ChampsManquants.Provider>
           </GardeLocale>
+          {ctx && (
+            <GardeLocale nom="demande d’avis" cle={dossier}>
+              <AvisInfectiologique key={nouveauPatient} dossier={dossier} ctx={ctx} />
+            </GardeLocale>
+          )}
           {/* En fin de saisie : statut de l'outil et état de la base clinique. */}
           <footer className="pied pied-saisie">
             <div className="avertissement-global" role="note">
-              <strong>Outil en développement, non validé pour l'usage clinique.</strong> Moteur déterministe et règles sourcées, en attendant l'avis du service de maladies infectieuses et tropicales. Les règles « vérifiées par IA » ne sont pas validées médicalement. Aucune donnée saisie n'est conservée ni transmise. Utilisez des patients fictifs.
+              <strong>Outil en développement, non validé pour l'usage clinique.</strong> Moteur déterministe et règles sourcées, en attendant l'avis du service de maladies infectieuses et tropicales. Les règles « vérifiées par IA » ne sont pas validées médicalement. Aucune donnée saisie n'est conservée ; l'application ne transmet rien (le courriel de demande d'avis s'ouvre dans votre messagerie et c'est vous qui l'envoyez). Utilisez des patients fictifs.
             </div>
             <div className="statut" aria-label="État de la base clinique">
               <span>
@@ -197,20 +207,20 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
               </details>
             </div>
             <p>
-              Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
+              Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir les sources de chaque prise en charge.
             </p>
           </footer>
         </div>
         <div className={`colonne-resultat ${onglet === 'saisie' ? 'masque-etroit' : ''}`}>
           {resultat.ok && plan ? (
-            <GardeErreur cle={plan} rendu={(message, reessayer) => <PanneauErreurTechnique sortie={{ traitement: 'aucun', urgence: false, actionsUrgentes: [], ecartees: [], motifs: [{ type: 'erreur_technique', rang: 0, statut: 'Erreur technique d’affichage — ce n’est pas une conclusion médicale', motif: `L’affichage de la fiche a échoué (${message}).`, verifie: [], dejaPropose: [], aCompleter: [], prochaineAction: 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.', sources: [], origine: ['interface'] }] }} onReessayer={reessayer} />}>
+            <GardeErreur cle={plan} rendu={(message, reessayer) => <PanneauErreurTechnique sortie={{ traitement: 'aucun', urgence: false, actionsUrgentes: [], ecartees: [], motifs: [{ type: 'erreur_technique', rang: 0, statut: 'Erreur technique d’affichage — ce n’est pas une conclusion médicale', motif: `L’affichage de la prise en charge a échoué (${message}).`, verifie: [], dejaPropose: [], aCompleter: [], prochaineAction: 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.', sources: [], origine: ['interface'] }] }} onReessayer={reessayer} />}>
               <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} allerAuChamp={allerAuChamp} changements={changements} />
             </GardeErreur>
           ) : (
             !resultat.ok && <PanneauErreurTechnique sortie={resultat.sortie} onReessayer={() => setEssai((n) => n + 1)} />
           )}
           <footer className="pied">
-            Outil en développement, non validé pour l'usage clinique. Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir le registre des sources dans chaque fiche.
+            Outil en développement, non validé pour l'usage clinique. Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir les sources de chaque prise en charge.
           </footer>
         </div>
       </main>

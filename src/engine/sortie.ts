@@ -91,7 +91,7 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       verifie: [],
       dejaPropose: dejaTraitement,
       aCompleter: inco.map((i) => element(i.texte, 'valeur contradictoire ou implausible : ce qui en dépend ne peut pas être calculé de façon fiable', 'bloque_decision', i.cible)),
-      prochaineAction: 'Vérifier et corriger ces valeurs, puis relire la fiche recalculée.',
+      prochaineAction: 'Vérifier et corriger ces valeurs, puis relire la prise en charge recalculée.',
       sources: inco.flatMap((i) => i.sources),
       origine: dedup(inco.map((i) => i.origine), (x) => x),
     });
@@ -233,7 +233,7 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
       verifie: ind?.conditions ?? [],
       dejaPropose: [...(insuffisant && ind ? ind.actions : []), ...dejaTraitement],
       aCompleter: [...questions.map((q) => element(q, "nécessaire pour conclure sur l'indication", 'bloque_decision')), ...manquesDecision.map((m) => element(m.champ, m.pourquoi, m.impact, m.cible))],
-      prochaineAction: 'Compléter les données signalées : la fiche est recalculée à chaque saisie.',
+      prochaineAction: 'Compléter les données signalées : la prise en charge est recalculée à chaque saisie.',
       sources: insuffisant && ind ? ind.sources : [],
       origine: insuffisant && ind ? [ind.regleId] : ['donnees-manquantes'],
     });

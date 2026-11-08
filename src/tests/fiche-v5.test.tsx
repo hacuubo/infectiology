@@ -9,7 +9,7 @@ import { App } from '../ui/App';
 import { casFictif } from './cas-fictifs';
 import { clonerDossier } from '../engine/etat';
 
-const fiche = () => screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
+const fiche = () => screen.getByRole('heading', { name: /^Prise en charge/ }).closest('section')!;
 
 describe('Fiche concise', () => {
   test('ni étapes du parcours, ni mention « non validée » en tête : la mention est en fin de fiche', () => {
@@ -73,7 +73,7 @@ describe('Fiche concise', () => {
     expect(lien).toHaveAttribute('target', '_blank');
     expect(lien.getAttribute('title')).toMatch(/Staphylococcus aureus Bacteremia/);
     expect(within(f).queryByText(/^Sources \(\d+\)$/)).toBeNull();
-    expect(within(f).getByText(/^Sources de cette fiche \(\d+\)$/)).toBeInTheDocument();
+    expect(within(f).getByText(/^Sources de cette prise en charge \(\d+\)$/)).toBeInTheDocument();
   });
 
   test('dossier vide : le point d’entrée figure dans les éléments manquants et mène au champ', async () => {

@@ -277,3 +277,21 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .etat-proposition { font-size: 0.88rem; color: #6e3400; margin: 0 0 4px; }
 .questions-foyer { border-top: 1px solid var(--bord); margin-top: 8px; padding-top: 6px; }
 .questions-foyer h3 { font-size: 0.95rem; margin: 4px 0; }
+
+/* Champs numériques à valeur de départ (âge, poids, taille) : − / + autour du champ, valeur de départ en grisé. */
+.ligne.pas-a-pas, .deux-colonnes .ligne.pas-a-pas { flex-wrap: nowrap; gap: 4px; }
+.ligne.pas-a-pas input[type='number'], .deux-colonnes .ligne.pas-a-pas input[type='number'] { width: 4.5em; min-width: 3.2em; flex: 0 1 auto; padding-left: 4px; padding-right: 4px; text-align: center; -moz-appearance: textfield; appearance: textfield; }
+.ligne.pas-a-pas input[type='number']::-webkit-inner-spin-button, .ligne.pas-a-pas input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.deux-colonnes .ligne select { max-width: 100%; min-width: 0; }
+.ligne.pas-a-pas input::placeholder { color: var(--texte-2); opacity: 0.75; }
+.btn.cran { flex: none; background: #fff; color: var(--accent); border-color: var(--bord-controle); min-width: 32px; min-height: 36px; padding: 0 6px; font-size: 1.15rem; line-height: 1; }
+
+/* Demande d'avis infectiologique par courriel */
+.avis-apercu { width: 100%; min-height: 16em; padding: 8px 10px; border: 1px solid var(--bord-controle); border-radius: 6px; font-family: inherit; font-size: 0.9rem; background: #fff; color: var(--texte); white-space: pre-wrap; }
+.avis textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--bord-controle); border-radius: 6px; background: #fff; color: var(--texte); }
+.avis .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.avis a.btn { text-decoration: none; display: inline-block; }
+
+.avis .signature { margin: 10px 0; padding: 6px 10px; border: 1px solid var(--bord); border-radius: var(--rayon); }
+.avis .signature summary { cursor: pointer; font-weight: 600; }
+.avis .signature input { width: 100%; max-width: 320px; padding: 7px 9px; border: 1px solid var(--bord-controle); border-radius: 6px; background: #fff; color: var(--texte); }

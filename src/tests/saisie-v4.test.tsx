@@ -61,10 +61,13 @@ describe('Saisie simplifiée', () => {
     expect(screen.queryByLabelText('DFG estimé (valeur du laboratoire)')).toBeNull();
   }, 20000);
 
-  test('DFG saisi : sans équation précisée, la valeur est signalée comme non utilisée', async () => {
+  test('DFG saisi : CKD-EPI préselectionnée ; sans équation précisée, la valeur est signalée comme non utilisée', async () => {
     const u = userEvent.setup();
     render(<App />);
+    expect(screen.getByLabelText('Équation du DFG saisi')).toHaveValue('CKD-EPI');
     await u.type(screen.getByLabelText('DFG estimé (valeur du laboratoire)'), '45');
+    expect(screen.queryByText(/Équation non précisée/)).toBeNull();
+    await u.selectOptions(screen.getByLabelText('Équation du DFG saisi'), 'inconnue');
     expect(screen.getByText(/Équation non précisée : la valeur n’est pas utilisée/)).toBeInTheDocument();
     await u.selectOptions(screen.getByLabelText('Équation du DFG saisi'), 'CKD-EPI');
     expect(screen.queryByText(/Équation non précisée/)).toBeNull();

@@ -6,7 +6,7 @@ import type { Allergie, AntecedentMicrobiologique, AntibiotiqueRecent, FoyerId, 
 import { AntibiogrammeGuide, ChampReferentiel, ContexteECBUSaisie, IsolatsSupplementaires, SelectOrganisme } from './Microbiologie';
 import { SectionIndication } from './Indication';
 import { Champ, ChampNombre, ChampTexte, ChoixRadio, ChoixTri, RefsInline, Select } from './composants';
-import { creatininePlausible } from '../calc/renal';
+import { creatininePlausible, EQUATION_DFG_PAR_DEFAUT, SOURCES_RENALES, type EquationDFG } from '../calc/renal';
 import { FOYERS_ENTREE_A, LIBELLE_FOYER, LIBELLE_TRAITEMENT } from './libelles';
 import { contexteUI } from './contexte-ui';
 import { nombreFr } from '../calc/format';
@@ -74,12 +74,12 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
       <section className="carte" aria-labelledby="t-patient">
         <h2 id="t-patient">2. Patient</h2>
         <div className="deux-colonnes">
-          <ChampNombre libelle="Âge" valeur={p.age} onChange={(v) => modifier((x) => (x.patient.age = v))} unite="ans" min={0} max={120} step={1} cible="patient.age" />
+          <ChampNombre libelle="Âge" valeur={p.age} onChange={(v) => modifier((x) => (x.patient.age = v))} unite="ans" min={0} max={120} step={1} depart={50} cible="patient.age" />
           <ChoixRadio libelle="Sexe" valeur={p.sexe} options={[{ v: 'femme', l: 'Femme' }, { v: 'homme', l: 'Homme' }]} onChange={(v) => modifier((x) => (x.patient.sexe = v))} cible="patient.sexe" />
         </div>
         <div className="deux-colonnes">
-          <ChampNombre libelle="Poids" valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={25} max={300} cible="patient.poidsKg" />
-          <ChampNombre libelle="Taille" valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={120} max={230} cible="patient.tailleCm" />
+          <ChampNombre libelle="Poids" valeur={p.poidsKg} onChange={(v) => modifier((x) => (x.patient.poidsKg = v))} unite="kg" min={25} max={300} step={1} depart={70} cible="patient.poidsKg" />
+          <ChampNombre libelle="Taille" valeur={p.tailleCm} onChange={(v) => modifier((x) => (x.patient.tailleCm = v))} unite="cm" min={120} max={230} step={1} depart={170} cible="patient.tailleCm" />
         </div>
         {pertinent('patient.grossesse', d) && (
           <div className="grille-2">
@@ -354,11 +354,13 @@ type Creatinine = Dossier['patient']['renal']['creatinine'];
 type UniteCreat = 'umol/L' | 'mg/dL';
 
 /**
- * Créatininémie : valeur et unité explicite (jamais déduite de la valeur). Sans unité choisie, la valeur est
- * conservée mais n'est pas utilisée. Une valeur non plausible pour l'unité est signalée et n'est pas utilisée.
+ * Créatininémie : valeur et unité explicite, jamais déduite de la valeur. L'unité préselectionnée est le µmol/L
+ * (unité des laboratoires français), affichée à côté de la valeur et modifiable. Sans unité, la valeur est
+ * conservée mais n'est pas utilisée. Une valeur non plausible pour l'unité (ex. 1,2 en µmol/L) est signalée et
+ * n'est pas utilisée.
  */
 function ChampCreatinine({ creatinine, modifier }: { creatinine: Creatinine; modifier: Modifier }) {
-  const [unitePendante, setUnitePendante] = useState<UniteCreat | ''>('');
+  const [unitePendante, setUnitePendante] = useState<UniteCreat | ''>('umol/L');
   const unite = creatinine ? (creatinine.unite ?? '') : unitePendante;
   const verif = creatinine && creatinine.unite ? creatininePlausible(creatinine.valeur, creatinine.unite) : undefined;
   return (
@@ -466,7 +468,7 @@ function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier 
   }
   const indexe = renal?.estimations.find((e) => e.id === 'dfg_indexe');
   const dfg = dossier.patient.renal.dfg;
-  const [methodePendante, setMethodePendante] = useState<MethodeDfg>('inconnue');
+  const [methodePendante, setMethodePendante] = useState<MethodeDfg>('CKD-EPI');
   const methode = dfg?.methode ?? methodePendante;
   if (indexe?.calculable && indexe.valeur !== undefined) {
     return (
@@ -479,7 +481,8 @@ function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier 
             {indexe.unite} ({indexe.nomCourt})
           </span>
         </div>
-        {renal && !renal.applicable && <span className="erreur">Non utilisé pour adapter les doses (voir la fiche).</span>}
+        <ChoixEquation dossier={dossier} modifier={modifier} />
+        {renal && !renal.applicable && <span className="erreur">Non utilisé pour adapter les doses (voir la prise en charge).</span>}
         {dfg && (
           <div className="ligne">
             <span>
@@ -531,6 +534,11 @@ function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier 
         <option value="MDRD">MDRD</option>
         <option value="mesure">Mesuré</option>
       </select>
+      {methode === 'CKD-EPI' && (
+        <span className="aide">
+          Préselection : CKD-EPI, formule demandée par la HAS pour adapter les posologies ; vérifier l’équation du compte rendu. <RefsInline refs={[SOURCES_RENALES.hasCkdEpi]} />
+        </span>
+      )}
       {dfg && methode === 'inconnue' && (
         <span className="erreur" role="alert">
           Équation non précisée : la valeur n’est pas utilisée pour adapter une dose.
@@ -540,5 +548,44 @@ function ChampDfg({ dossier, modifier }: { dossier: Dossier; modifier: Modifier 
         <span className="aide">Calcul automatique impossible, il manque : {indexe.manquants.join(', ')}.</span>
       )}
     </Champ>
+  );
+}
+
+const LIBELLE_EQUATION: Record<EquationDFG, string> = { ckd_epi_2009: 'CKD-EPI 2009 (sans coefficient racial)', ckd_epi_2021: 'CKD-EPI 2021', ekfc: 'EKFC' };
+
+/**
+ * Équation du DFG estimé. Préselection : CKD-EPI 2009 sans coefficient racial, recommandée en Europe (EFLM 2022)
+ * et validée par la KDIGO 2024. Aucune source lue ne fait varier l'équation selon la situation clinique
+ * (docs/sources/recherche-fonction-renale.md) : l'adaptation au cas se fait dose par dose, l'estimation exigée par
+ * chaque RCP (DFG désindexé ou clairance de Cockcroft-Gault) étant choisie automatiquement. EKFC n'est proposée
+ * qu'après 25 ans (Q dépend de l'âge avant, non implémenté).
+ */
+function ChoixEquation({ dossier, modifier }: { dossier: Dossier; modifier: Modifier }) {
+  const age = dossier.patient.age;
+  const equation = dossier.patient.renal.equationDfg ?? EQUATION_DFG_PAR_DEFAUT;
+  return (
+    <>
+      <div className="ligne">
+        <select
+          aria-label="Équation du DFG estimé"
+          value={equation}
+          onChange={(e) =>
+            modifier((x) => {
+              const eq = e.target.value as EquationDFG;
+              x.patient.renal.equationDfg = eq === EQUATION_DFG_PAR_DEFAUT ? undefined : eq;
+            })
+          }
+        >
+          {(Object.keys(LIBELLE_EQUATION) as EquationDFG[]).map((eq) => (
+            <option key={eq} value={eq} disabled={eq === 'ekfc' && age !== undefined && age <= 25}>
+              {LIBELLE_EQUATION[eq]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <span className="aide">
+        {equation === EQUATION_DFG_PAR_DEFAUT ? 'Préselection : équation recommandée en Europe ; choisir celle du laboratoire si elle diffère.' : 'Équation choisie : vérifier qu’il s’agit de celle du laboratoire.'} Pour chaque dose, l’estimation exigée par le RCP (DFG désindexé ou Cockcroft-Gault) est choisie automatiquement. <RefsInline refs={[SOURCES_RENALES.ckdEpi2009[1], SOURCES_RENALES.kdigoEquation]} />
+      </span>
+    </>
   );
 }

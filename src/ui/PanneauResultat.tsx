@@ -469,11 +469,11 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
   return (
     <section className={`carte fiche ${niveau === 'immediate' ? 'urgence' : niveau === 'elevee' ? 'attention' : ''}`} aria-labelledby="t-fiche">
       <p className="sr-only" role="status" aria-live="polite">
-        Fiche recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
+        Prise en charge recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
         {urgentes.length ? ` ; ${urgentes.length} alerte(s) urgente(s)` : ''}.
       </p>
       <h2 id="t-fiche">
-        Fiche opérationnelle{' '}
+        Prise en charge{' '}
         <Badge type={plan.situation.couverture === 'couverte' ? 'ok' : plan.situation.couverture === 'partielle' ? 'attention' : 'urgence'}>
           {plan.situation.couverture === 'couverte' ? 'situation couverte' : plan.situation.couverture === 'partielle' ? 'partiellement couverte' : 'non couverte'}
         </Badge>
@@ -639,7 +639,7 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
 
       <div className="fiche-section fin-fiche">
         <details>
-          <summary>Sources de cette fiche ({toutesSources.length})</summary>
+          <summary>Sources de cette prise en charge ({toutesSources.length})</summary>
           <ListeSources refs={toutesSources} />
         </details>
         <details className="discret">

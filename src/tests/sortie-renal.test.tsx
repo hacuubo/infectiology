@@ -274,7 +274,7 @@ describe('Interface : explication et accès direct aux champs', () => {
   test('« Compléter » mène directement au champ du poids', async () => {
     const u = userEvent.setup();
     render(<App dossierInitial={casFictif('sarm-hd')} />);
-    const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
+    const fiche = screen.getByRole('heading', { name: /^Prise en charge/ }).closest('section')!;
     // Les éléments manquants sont listés en tête de fiche, chacun menant à son champ.
     const manquants = within(fiche).getByRole('region', { name: /Éléments manquants/ });
     await u.click(within(manquants).getByRole('button', { name: /^Compléter : poids/ }));
@@ -283,7 +283,7 @@ describe('Interface : explication et accès direct aux champs', () => {
 
   test('fiche patient : estimations distinctes avec formule, version, unité et détail du calcul', async () => {
     render(<App dossierInitial={casFictif('sab')} />);
-    const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
+    const fiche = screen.getByRole('heading', { name: /^Prise en charge/ }).closest('section')!;
     expect(within(fiche).getByText(/DFG estimé indexé/)).toBeInTheDocument();
     expect(within(fiche).getAllByText(/mL\/min\/1,73 m²/).length).toBeGreaterThan(0);
     expect(within(fiche).getAllByText(/version 2009, sans coefficient racial/).length).toBeGreaterThan(0);

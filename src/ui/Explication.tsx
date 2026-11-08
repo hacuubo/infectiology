@@ -184,7 +184,7 @@ export function PanneauErreurTechnique({ sortie, onReessayer }: { sortie: EtatSo
       )}
       <p>{m?.motif}</p>
       <p>
-        <strong>Ce n’est pas une conclusion médicale :</strong> l’absence de fiche ne signifie ni qu’une antibiothérapie est inutile, ni qu’elle est indiquée.
+        <strong>Ce n’est pas une conclusion médicale :</strong> l’absence de prise en charge affichée ne signifie ni qu’une antibiothérapie est inutile, ni qu’elle est indiquée.
       </p>
       <p>{m?.prochaineAction}</p>
       <button type="button" className="btn" onClick={onReessayer}>

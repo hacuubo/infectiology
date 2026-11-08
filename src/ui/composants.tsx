@@ -1,4 +1,4 @@
-import { createContext, Fragment, useContext, useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, Fragment, useContext, useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { SourceRef, StatutValidation, TriState } from '../clinical/types';
 import { SOURCES_PAR_ID } from '../clinical/sources';
 
@@ -175,27 +175,74 @@ export function ChoixRadio<T extends string>({ libelle, aide, valeur, options, o
   );
 }
 
-export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, step, cible }: { libelle: string; aide?: string; valeur: number | undefined; onChange: (v: number | undefined) => void; unite?: string; min?: number; max?: number; step?: number; cible?: string }) {
+/**
+ * Champ numérique. Avec `depart` (valeur de départ, ex. 50 ans) : la valeur est affichée en grisé tant qu'elle
+ * n'est pas saisie, et les boutons − / +, les flèches du clavier et la molette (champ actif) partent de cette valeur.
+ * La valeur de départ n'est jamais utilisée par le moteur tant qu'elle n'a pas été choisie : une dose calculée sur
+ * un poids ou un âge par défaut serait une donnée inventée.
+ */
+export function ChampNombre({ libelle, aide, valeur, onChange, unite, min, max, step, cible, depart }: { libelle: string; aide?: string; valeur: number | undefined; onChange: (v: number | undefined) => void; unite?: string; min?: number; max?: number; step?: number; cible?: string; depart?: number }) {
   const id = useId();
+  const champ = useRef<HTMLInputElement>(null);
   const horsBornes = valeur !== undefined && ((min !== undefined && valeur < min) || (max !== undefined && valeur > max));
+  const pas = step ?? 1;
+  const decimales = (String(pas).split('.')[1] ?? '').length;
+  /** Un cran vers le haut ou le bas ; depuis un champ vide, le premier cran donne la valeur de départ. */
+  const avancer = (sens: 1 | -1) => {
+    if (depart === undefined) return;
+    if (valeur === undefined) return onChange(depart);
+    const v = Number((Math.round((valeur + sens * pas) / pas) * pas).toFixed(decimales));
+    onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v)));
+  };
+  const avancerCourant = useRef(avancer);
+  avancerCourant.current = avancer;
+  // Molette : seulement quand le champ est actif, pour ne pas détourner le défilement de la page.
+  useEffect(() => {
+    const el = champ.current;
+    if (!el || depart === undefined) return;
+    const surMolette = (e: WheelEvent) => {
+      if (document.activeElement !== el || e.deltaY === 0) return;
+      e.preventDefault();
+      avancerCourant.current(e.deltaY < 0 ? 1 : -1);
+    };
+    el.addEventListener('wheel', surMolette, { passive: false });
+    return () => el.removeEventListener('wheel', surMolette);
+  }, [depart]);
   return (
     <Champ libelle={libelle} aide={aide} id={id} cible={cible}>
-      <div className="ligne">
+      <div className={`ligne${depart !== undefined ? ' pas-a-pas' : ''}`}>
+        {depart !== undefined && (
+          <button type="button" className="btn cran" aria-label={`Diminuer : ${libelle}`} onClick={() => avancer(-1)}>
+            −
+          </button>
+        )}
         <input
+          ref={champ}
           id={id}
           type="number"
           inputMode="decimal"
           min={min}
           max={max}
           step={step ?? 'any'}
+          placeholder={depart !== undefined ? String(depart) : undefined}
           value={valeur ?? ''}
           aria-invalid={horsBornes || undefined}
           aria-describedby={[aide ? `${id}-aide` : '', horsBornes ? `${id}-err` : ''].filter(Boolean).join(' ') || undefined}
+          onKeyDown={(e) => {
+            if (depart === undefined || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+            e.preventDefault();
+            avancer(e.key === 'ArrowUp' ? 1 : -1);
+          }}
           onChange={(e) => {
             const v = e.target.value === '' ? undefined : Number(e.target.value);
             onChange(v !== undefined && Number.isFinite(v) ? v : undefined);
           }}
         />
+        {depart !== undefined && (
+          <button type="button" className="btn cran" aria-label={`Augmenter : ${libelle}`} onClick={() => avancer(1)}>
+            +
+          </button>
+        )}
         {unite && <span>{unite}</span>}
       </div>
       {horsBornes && (

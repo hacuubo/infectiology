@@ -33,6 +33,6 @@ test('panne du calcul rénal : erreur technique affichée, saisie conservée, au
   // Correction de la saisie : tout revient.
   await u.clear(screen.getByLabelText('Âge'));
   await u.type(screen.getByLabelText('Âge'), '64');
-  expect(screen.getByRole('heading', { name: /Fiche opérationnelle/ })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /^Prise en charge/ })).toBeInTheDocument();
   journal.mockRestore();
 }, 20000);
