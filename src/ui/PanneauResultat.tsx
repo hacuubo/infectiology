@@ -61,11 +61,16 @@ function Duree({ p }: { p: PrescriptionProposee }) {
  * (texte du palier de la source) ou adaptation non calculée (raison). Les estimations (DFG, Cockcroft-Gault)
  * ne sont pas répétées ici ; elles restent dans l'onglet Patient.
  */
+/** Vrai si la dose est modifiée par rapport à la posologie habituelle (fonction rénale, insuffisance hépatique). */
+export function avecAdaptation(p: PrescriptionProposee): boolean {
+  return p.renal?.statut === 'adaptee' || (p.autresAdaptations?.length ?? 0) > 0;
+}
+
 export function DoseEtRein({ p }: { p: PrescriptionProposee }) {
   const r = p.renal;
   return (
     <>
-      <div>
+      <div className="dose-principale">
         {p.doseReference ? (
           <>
             <span className="aide">Dose de référence (fonction rénale normale) :</span> <strong>{p.doseReference}</strong>
@@ -207,6 +212,11 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
       <td>
         <span className="quoi">{e.quoi}</span>
         {e.cible && <div className="cible">Cible : {e.cible}</div>}
+        {e.conduite && (
+          <div className="conduite">
+            <strong>Conduite à tenir :</strong> {e.conduite}
+          </div>
+        )}
         {aDetails && (
           <details className="discret">
             <summary>Pourquoi, conduite et précisions</summary>
@@ -229,7 +239,7 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
                   <dd>{e.pourquoi}</dd>
                 </>
               )}
-              {e.ensuite && (
+              {e.ensuite && e.ensuite !== e.conduite && (
                 <>
                   <dt>Ensuite</dt>
                   <dd>{e.ensuite}</dd>
@@ -398,7 +408,8 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
               {choixPrescripteur ? 'Traitement retenu' : 'Traitement proposé (1re ligne)'}
               {retenue && provisoire ? ' — provisoire' : ''}
             </dt>
-            <dd className={retenue?.rang === 'premiere_ligne' ? 'traitement-premiere' : undefined}>
+            {/* Traitement en vert et gras ; s'il est adapté (rein, foie), c'est l'adaptation qui est en gras. */}
+            <dd className={retenue ? `traitement${retenue.prescriptions.some(avecAdaptation) ? ' avec-adaptation' : ''}` : undefined}>
               {etat.map((m) => (
                 <div key={m.statut} className="etat-proposition">
                   <strong>{m.statut}</strong> : {m.motif} {m.prochaineAction}
@@ -406,7 +417,7 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
               ))}
               {retenue ? (
                 <>
-                  <strong>{retenue.libelle}</strong> {statutASignaler(retenue.statut) && <BadgeStatut statut={retenue.statut} court />}
+                  <strong className="traitement-nom">{retenue.libelle}</strong> {statutASignaler(retenue.statut) && <BadgeStatut statut={retenue.statut} court />}
                   {retenue.condition && <div className="aide">Condition : {retenue.condition}</div>}
                   {retenue.prescriptions.map((p) => (
                     <div key={p.regimenId} className="synthese-prescription">
@@ -416,7 +427,11 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
                           <strong>{p.dci}</strong> {p.statut !== retenue.statut && statutASignaler(p.statut) && <BadgeStatut statut={p.statut} court />}
                         </div>
                       )}
-                      {p.chargeInitiale && <div>{p.chargeInitiale} ; puis :</div>}
+                      {p.chargeInitiale && (
+                        <div className="dose-principale">
+                          <strong>{p.chargeInitiale}</strong> ; puis :
+                        </div>
+                      )}
                       <DoseEtRein p={p} />
                       {p.avertissements.map((a) => (
                         <div key={a} className="avert">

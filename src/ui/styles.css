@@ -299,11 +299,17 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .avis .signature input { width: 100%; max-width: 320px; padding: 7px 9px; border: 1px solid var(--bord-controle); border-radius: 6px; background: #fff; color: var(--texte); }
 
 /* Prise en charge : traitement de 1re ligne mis en évidence ; une ligne sur la fonction rénale. */
-.synthese-dl dd.traitement-premiere { background: var(--ok-clair); border-left: 4px solid var(--ok); border-radius: 6px; padding: 8px 10px; }
-.synthese-dl dd.traitement-premiere > strong:first-of-type { color: var(--ok); }
+/* Traitement en vert et gras ; si la dose est adaptée, le traitement reste vert sans gras et l'adaptation passe en vert gras. */
+.synthese-dl dd.traitement .traitement-nom, .synthese-dl dd.traitement .dci strong, .synthese-dl dd.traitement .dose-principale strong { color: var(--ok); font-weight: 700; }
+.synthese-dl dd.traitement.avec-adaptation .traitement-nom, .synthese-dl dd.traitement.avec-adaptation .dci strong, .synthese-dl dd.traitement.avec-adaptation .dose-principale strong { font-weight: 400; }
+.synthese-dl dd.traitement .rein-adaptee, .synthese-dl dd.traitement .rein-adaptee strong, .synthese-dl dd.traitement .adaptation { color: var(--ok); font-weight: 700; }
 .synthese-prescription { margin-top: 6px; }
 .rein { font-size: 0.92rem; margin-top: 2px; }
 .rein-sans_adaptation { color: var(--texte-2); }
 .rein-adaptee { color: var(--texte); }
 .rein-non_calculee { color: var(--attention); font-weight: 600; }
 .autres-options > summary { font-weight: 600; cursor: pointer; }
+
+/* Calendrier : cible et conduite à tenir visibles sans dépliage. */
+.frise .conduite { margin-top: 2px; font-size: 0.9rem; }
+.frise .conduite strong { color: var(--attention); }

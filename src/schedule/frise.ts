@@ -30,6 +30,8 @@ export interface EvenementFriseDetaille extends EvenementFrise {
   /** Vrai si la date est au jour près (jour de traitement) et non à l'heure près. */
   dateAuJour?: boolean;
   cible?: string;
+  /** Conduite à tenir selon le résultat (dosage hors cible, anomalie), affichée sans dépliage. */
+  conduite?: string;
   limites?: string;
   repetition?: string;
   conditionnel?: boolean;
@@ -229,6 +231,7 @@ export function construireFrise(surveillance: LigneSurveillance[], controles: Li
       // texteCalendrier contient la formulation complète ET la condition d'application éventuelle.
       precisionMoment: precision(r.moment, s.texteCalendrier),
       cible: estStp(e) && e.cible ? `${e.cible.texte}${e.cible.verifiee ? '' : ' (cible non vérifiée dans la source)'}` : undefined,
+      conduite: e.conduite,
       limites: estStp(e) ? e.limites : undefined,
       repetition: estStp(e) ? e.repetition : e.quand.repetition,
       conditionnel: e.categorie === 'conditionnelle',
