@@ -36,7 +36,7 @@ describe('Saisie simplifiée', () => {
     expect(document.getElementById('resume-patient')).toHaveTextContent('sexe ?');
     for (const c of ['patient.age', 'patient.sexe', 'patient.poidsKg', 'patient.tailleCm']) expect(container.querySelector(`[data-champ="${c}"] .aide`)).toBeNull();
     // Âge et sexe sur une même ligne, poids et taille sur la suivante.
-    const lignes = [...container.querySelectorAll('#t-patient ~ .deux-colonnes')];
+    const lignes = [...container.querySelectorAll('#t-patient-corps > .deux-colonnes')];
     expect(lignes[0].querySelector('[data-champ="patient.age"]') && lignes[0].querySelector('[data-champ="patient.sexe"]')).toBeTruthy();
     expect(lignes[1].querySelector('[data-champ="patient.poidsKg"]') && lignes[1].querySelector('[data-champ="patient.tailleCm"]')).toBeTruthy();
   });
@@ -83,7 +83,7 @@ describe('Saisie simplifiée', () => {
 
   test('contexte : définitions « associée aux soins » et « communautaire » sourcées ; gravité sans paragraphe explicatif', () => {
     const { container } = render(<App />);
-    const def = container.querySelector('#t-contexte ~ .definition')!;
+    const def = container.querySelector('#t-contexte-corps > .definition')!;
     expect(def).toHaveTextContent(/sans être présente ni en incubation/);
     expect(def).toHaveTextContent(/48 h/);
     expect(def).toHaveTextContent(/Communautaire : les autres situations/);

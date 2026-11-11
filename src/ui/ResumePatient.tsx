@@ -75,6 +75,23 @@ export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, 
   return lignes;
 }
 
+/** Résumé d'une ligne de chaque étape de la saisie, affiché quand l'étape est repliée (reprend les lignes du résumé). */
+const LIGNES_ETAPE: Record<string, (cle: string) => boolean> = {
+  't-entree': (k) => k === 'Syndrome',
+  't-patient': (k) => ['Patient', 'Grossesse', 'Rein', 'Allergies', 'Terrain', 'Antibiotiques récents', 'Antécédents micro.'].includes(k),
+  't-contexte': (k) => k === 'Contexte' || k === 'Matériel',
+  't-micro': (k) => /^(Hémocultures|ECBU|Prélèvement)/.test(k),
+  't-horaires': (k) => k === '1re dose',
+};
+export function resumesEtapes(dossier: Dossier, ctx: ContexteDecision): Record<string, string> {
+  const lignes = lignesResume(dossier, ctx);
+  const out: Record<string, string> = {};
+  for (const [id, garde] of Object.entries(LIGNES_ETAPE)) out[id] = lignes.filter(([k]) => garde(k)).map(([k, v]) => `${k} : ${v}`).join(' · ');
+  out['t-entree'] = dossier.entree === 'microbiologie' ? 'B. Résultat microbiologique' : dossier.entree === 'syndrome' ? (out['t-entree'] ? `A. ${out['t-entree']}` : 'A. Syndrome non choisi') : 'Point d’entrée non choisi';
+  if (!out['t-micro']) out['t-micro'] = 'Aucun prélèvement saisi';
+  return out;
+}
+
 export function ResumePatient({ dossier, ctx }: { dossier: Dossier; ctx: ContexteDecision }) {
   const lignes = lignesResume(dossier, ctx);
   return (

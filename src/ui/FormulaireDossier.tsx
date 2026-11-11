@@ -12,6 +12,7 @@ import { contexteUI } from './contexte-ui';
 import { nombreFr } from '../calc/format';
 import { S } from '../clinical/molecules/base';
 import { GardeLocale } from './Explication';
+import { SectionEtape } from './Repli';
 
 type Modifier = (fn: (d: Dossier) => void) => void;
 
@@ -39,8 +40,7 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
   const p = d.patient;
   return (
     <>
-      <section className="carte" aria-labelledby="t-entree">
-        <h2 id="t-entree">1. Point d'entrée</h2>
+      <SectionEtape id="t-entree" titre="1. Point d'entrée">
         <ChoixRadio
           libelle="Par quoi commencez-vous ?" cible="entree"
           valeur={d.entree}
@@ -69,10 +69,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           </p>
         )}
         <QuestionsFoyer dossier={d} modifier={modifier} />
-      </section>
+      </SectionEtape>
 
-      <section className="carte" aria-labelledby="t-patient">
-        <h2 id="t-patient">2. Patient</h2>
+      <SectionEtape id="t-patient" titre="2. Patient">
         <div className="deux-colonnes">
           <ChampNombre libelle="Âge" valeur={p.age} onChange={(v) => modifier((x) => (x.patient.age = v))} unite="ans" min={0} max={120} step={1} depart={50} cible="patient.age" />
           <ChoixRadio libelle="Sexe" valeur={p.sexe} options={[{ v: 'femme', l: 'Femme' }, { v: 'homme', l: 'Homme' }]} onChange={(v) => modifier((x) => (x.patient.sexe = v))} cible="patient.sexe" />
@@ -129,10 +128,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
 
         <h3>Antécédents microbiologiques</h3>
         <AntecedentsMicro liste={p.antecedentsMicro} onChange={(l) => modifier((x) => (x.patient.antecedentsMicro = l))} />
-      </section>
+      </SectionEtape>
 
-      <section className="carte" aria-labelledby="t-contexte">
-        <h2 id="t-contexte">3. Contexte, gravité et matériel</h2>
+      <SectionEtape id="t-contexte" titre="3. Contexte, gravité et matériel">
         <ChoixRadio libelle="Contexte de l'infection" cible="patient.contexte" valeur={p.contexte} options={[{ v: 'communautaire', l: 'Communautaire' }, { v: 'associe_aux_soins', l: 'Associé aux soins' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.contexte = v))} />
         <div className="definition">
           <p>
@@ -164,10 +162,9 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           <ChoixRadio libelle="Matériel urinaire" cible="patient.materielUrinaire" valeur={p.materielUrinaire} options={[{ v: 'aucun', l: 'Aucun' }, { v: 'sonde_vesicale', l: 'Sonde vésicale' }, { v: 'sonde_jj', l: 'Sonde JJ' }, { v: 'nephrostomie', l: 'Néphrostomie' }, { v: 'autre', l: 'Autre' }, { v: 'inconnu', l: 'Inconnu' }]} onChange={(v) => modifier((x) => (x.patient.materielUrinaire = v))} />
         </div>
         <ChampTexte libelle="Intervention ou geste récent (facultatif)" valeur={p.interventionRecente} onChange={(v) => modifier((x) => (x.patient.interventionRecente = v))} />
-      </section>
+      </SectionEtape>
 
-      <section className="carte" aria-labelledby="t-micro">
-        <h2 id="t-micro">4. Prélèvements et microbiologie</h2>
+      <SectionEtape id="t-micro" titre="4. Prélèvements et microbiologie">
         <div className="liste-objets">
           {d.prelevements.map((prl, i) => (
             <FormulairePrelevement key={prl.id} index={i} prl={prl} d={d} modifier={modifier} />
@@ -179,20 +176,19 @@ export function FormulaireDossier({ dossier, modifier }: { dossier: Dossier; mod
           <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('profond')))}>+ Prélèvement profond / opératoire</button>
           <button type="button" className="btn secondaire" onClick={() => modifier((x) => x.prelevements.push(nouveauPrelevement('autre')))}>+ Autre</button>
         </div>
-      </section>
+      </SectionEtape>
 
       <GardeLocale nom="questions d’indication" cle={d}>
         <SectionIndication dossier={d} modifier={modifier} />
       </GardeLocale>
 
-      <section className="carte" aria-labelledby="t-horaires">
-        <h2 id="t-horaires">5. Horaires (pour dater le calendrier)</h2>
+      <SectionEtape id="t-horaires" titre="5. Horaires (pour dater le calendrier)">
         <p className="aide">Facultatif. Sans horaires, le calendrier reste exprimé en délais relatifs ; aucune date n'est inventée.</p>
         <div className="grille-2">
           <ChampTexte libelle="Première dose prévue ou administrée" cible="horaires.premiereDoseISO" type="datetime-local" valeur={d.horaires.premiereDoseISO} onChange={(v) => modifier((x) => (x.horaires.premiereDoseISO = v))} />
           <ChampNombre libelle="Durée de perfusion prévue (aminosides)" valeur={d.horaires.dureePerfusionMin} onChange={(v) => modifier((x) => (x.horaires.dureePerfusionMin = v))} unite="min" min={15} max={240} step={5} />
         </div>
-      </section>
+      </SectionEtape>
     </>
   );
 }

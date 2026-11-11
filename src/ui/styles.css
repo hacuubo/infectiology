@@ -412,3 +412,16 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 @media print { .onglets, .progression { display: none !important; } }
 /* Une section atteinte depuis les étapes ne passe pas sous la barre de progression collante. */
 .colonne-saisie section.carte { scroll-margin-top: 150px; }
+
+/* Repli des étapes terminées (v8.1) */
+.entete-etape { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.entete-etape h2 { margin-bottom: 0; }
+.etape-saisie:not(.repliee) .entete-etape { margin-bottom: 10px; }
+.bouton-repli { flex: none; }
+.etape-saisie.repliee { padding-block: 12px; }
+.etape-saisie.repliee h2::before { content: '✓'; display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--ok); color: #fff; font-size: 0.8rem; vertical-align: 2px; }
+.resume-etape { margin: 6px 0 0; color: var(--texte-2); font-size: 0.9rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tout-deplier { align-self: flex-start; }
+@media print { .bouton-repli, .tout-deplier { display: none !important; } }
+/* Les libellés pour lecteur d'écran (position absolue) restent dans la liste défilante des étapes. */
+.etapes { position: relative; }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { clonerDossier, dossierParDefaut, nettoyerDossier, type Dossier, type Invalidation } from '../engine/etat';
 import { deciderSansPanne } from '../engine/decider';
 import { comparerPlans } from '../engine/comparaison';
@@ -6,7 +6,8 @@ import type { Plan } from '../clinical/types';
 import { GardeErreur, GardeLocale, PanneauErreurTechnique } from './Explication';
 import { contexteUI } from './contexte-ui';
 import { FormulaireDossier } from './FormulaireDossier';
-import { BandeauPatient, ResumePatient } from './ResumePatient';
+import { BandeauPatient, ResumePatient, resumesEtapes } from './ResumePatient';
+import { peutReplierAuto, RepliContexte, type EtatRepli } from './Repli';
 import { AvisInfectiologique } from './AvisInfectiologique';
 import { alertesUrgentes, elementsManquants, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
 import { VERSION_CLINIQUE, estObsolete } from '../clinical/version';
@@ -67,6 +68,95 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
     for (const x of plan ? elementsManquants(plan) : []) if (x.cible) m.set(x.cible, (m.get(x.cible) ?? false) || x.impact !== 'affine');
     return m;
   }, [plan]);
+  const etapesACompleter = useMemo(() => etapesBloquees(ciblesManquantes), [ciblesManquantes]);
+
+  // Repli des étapes terminées (voir Repli.tsx pour les règles de sécurité).
+  const [replies, setReplies] = useState<ReadonlySet<string>>(() => new Set());
+  const touchees = useRef(new Set<string>());
+  const colonneSaisie = useRef<HTMLDivElement>(null);
+  /** Repère (étape suivante) dont la position doit rester fixe à l'écran après un repli automatique. */
+  const ancre = useRef<{ el: Element; haut: number } | undefined>(undefined);
+  const basculerEtape = useCallback((id: string, replier: boolean) => {
+    ancre.current = undefined;
+    setReplies((r) => {
+      if (r.has(id) === replier) return r;
+      const n = new Set(r);
+      if (replier) n.add(id);
+      else n.delete(id);
+      return n;
+    });
+  }, []);
+  const ouvrirEtape = useCallback((id: string | undefined) => {
+    if (id) basculerEtape(id, false);
+  }, [basculerEtape]);
+  // Une donnée bloquante apparaît dans une étape repliée : elle se rouvre.
+  useEffect(() => {
+    setReplies((r) => ([...r].some((id) => etapesACompleter.has(id)) ? new Set([...r].filter((id) => !etapesACompleter.has(id))) : r));
+  }, [etapesACompleter]);
+  // Le contenu au-dessus de l'écran a rétréci : on compense pour que rien ne bouge sous les yeux.
+  useLayoutEffect(() => {
+    const a = ancre.current;
+    ancre.current = undefined;
+    if (!a) return;
+    const delta = a.el.getBoundingClientRect().top - a.haut;
+    if (!delta) return;
+    const col = colonneSaisie.current;
+    const avant = col?.scrollTop ?? 0;
+    if (col) col.scrollTop += delta;
+    const reste = delta - ((col?.scrollTop ?? 0) - avant);
+    if (reste) window.scrollBy?.(0, reste);
+  }, [replies]);
+  const etapesRef = useRef(etapesACompleter);
+  etapesRef.current = etapesACompleter;
+  const repliesRef = useRef(replies);
+  repliesRef.current = replies;
+  useEffect(() => {
+    const col = colonneSaisie.current;
+    if (!col) return;
+    const surFocus = (e: Event) => {
+      const id = (e.target as Element | null)?.closest?.('[data-etape]')?.getAttribute('data-etape');
+      if (id) touchees.current.add(id);
+    };
+    let attente = 0;
+    const verifier = () => {
+      attente = 0;
+      if (col.offsetParent === null || ancre.current) return; // colonne masquée (onglet Prise en charge) ou repli en cours
+      const prog = col.querySelector('.progression');
+      const hautVisible = prog ? prog.getBoundingClientRect().bottom : col.getBoundingClientRect().top;
+      const sections = [...col.querySelectorAll<HTMLElement>('[data-etape]')];
+      // Une seule étape à la fois, la plus basse éligible : la compensation de défilement reste exacte.
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const s = sections[i];
+        const id = s.dataset.etape!;
+        if (repliesRef.current.has(id)) continue;
+        const r = s.getBoundingClientRect();
+        if (!peutReplierAuto({ visible: r.height > 0, aCompleter: etapesRef.current.has(id), touchee: touchees.current.has(id), focusDedans: s.contains(document.activeElement), basSection: r.bottom, hautVisible })) continue;
+        const suivant = s.nextElementSibling;
+        if (suivant) ancre.current = { el: suivant, haut: suivant.getBoundingClientRect().top };
+        setReplies((x) => new Set(x).add(id));
+        return;
+      }
+    };
+    const surDefilement = () => {
+      if (!attente) attente = window.setTimeout(verifier, 120);
+    };
+    // Étape « travaillée » : l'utilisateur y est entré (clavier) ou y a cliqué.
+    col.addEventListener('focusin', surFocus);
+    col.addEventListener('click', surFocus);
+    document.addEventListener('scroll', surDefilement, { capture: true, passive: true });
+    return () => {
+      col.removeEventListener('focusin', surFocus);
+      col.removeEventListener('click', surFocus);
+      document.removeEventListener('scroll', surDefilement, { capture: true });
+      if (attente) window.clearTimeout(attente);
+    };
+  }, []);
+  // Nouveau patient : tout est déplié.
+  useEffect(() => {
+    setReplies(new Set());
+    touchees.current.clear();
+  }, [nouveauPatient]);
+  const ctxRepli: EtatRepli = useMemo(() => ({ replies, aCompleter: etapesACompleter, resumes: ctx ? resumesEtapes(dossier, ctx) : {}, basculer: basculerEtape }), [replies, etapesACompleter, ctx, dossier, basculerEtape]);
   // Données sans champ précis (antibiogramme, signes cliniques, antécédents…) : c'est la section qui est signalée.
   useEffect(() => {
     document.querySelectorAll('.section-manquante').forEach((el) => el.classList.remove('section-manquante'));
@@ -85,6 +175,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
   /** Mène directement au champ à compléter (onglet Patient sur écran étroit), sans refaire le parcours. */
   const allerAuChamp = useCallback((cible: string) => {
     setOnglet('saisie');
+    ouvrirEtape(etapeDeCible(cible));
     window.setTimeout(() => {
       const el = trouverChamp(cible);
       if (!el) return;
@@ -99,7 +190,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
       el.classList.add('surbrillance');
       window.setTimeout(() => el.classList.remove('surbrillance'), 2500);
     }, 0);
-  }, []);
+  }, [ouvrirEtape]);
 
   return (
     <div className="app">
@@ -150,8 +241,8 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
       </nav>
 
       <main className="contenu">
-        <div className={`colonne-saisie ${onglet === 'resultat' ? 'masque-etroit' : ''}`}>
-          <Progression manquants={ciblesManquantes} />
+        <div ref={colonneSaisie} className={`colonne-saisie ${onglet === 'resultat' ? 'masque-etroit' : ''}`}>
+          <Progression aCompleter={etapesACompleter} replies={replies} ouvrir={ouvrirEtape} toutDeplier={() => setReplies(new Set())} />
           <div className="ligne reinitialiser">
               <button
                 type="button"
@@ -181,7 +272,9 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
           )}
           <GardeLocale nom="formulaire" cle={dossier}>
             <ChampsManquants.Provider value={ciblesManquantes}>
-              <FormulaireDossier dossier={dossier} modifier={modifier} />
+              <RepliContexte.Provider value={ctxRepli}>
+                <FormulaireDossier dossier={dossier} modifier={modifier} />
+              </RepliContexte.Provider>
             </ChampsManquants.Provider>
           </GardeLocale>
           {ctx && (
@@ -279,14 +372,19 @@ export function etapeDeCible(cible: string): string | undefined {
  * Progression de la saisie : une étape est « à compléter » si la fiche y signale une donnée qui
  * bloque le choix, la dose, la durée ou la surveillance ; les données « pour affiner » ne bloquent pas.
  */
-function Progression({ manquants }: { manquants: ReadonlyMap<string, boolean> }) {
+export function etapesBloquees(manquants: ReadonlyMap<string, boolean>): ReadonlySet<string> {
   const aCompleter = new Set<string>();
   for (const [cible, bloquant] of manquants) {
     const etape = bloquant ? etapeDeCible(cible) : undefined;
     if (etape) aCompleter.add(etape);
   }
+  return aCompleter;
+}
+
+function Progression({ aCompleter, replies, ouvrir, toutDeplier }: { aCompleter: ReadonlySet<string>; replies: ReadonlySet<string>; ouvrir: (id: string) => void; toutDeplier: () => void }) {
   const faites = ETAPES.filter((e) => !aCompleter.has(e.id)).length;
   const aller = (id: string) => {
+    ouvrir(id);
     const el = document.getElementById(id);
     if (!el) return;
     const reduit = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -300,6 +398,11 @@ function Progression({ manquants }: { manquants: ReadonlyMap<string, boolean> })
         <span>
           {faites === ETAPES.length ? 'Saisie suffisante pour la proposition' : `${faites} étape${faites > 1 ? 's' : ''} sur ${ETAPES.length} sans donnée bloquante`}
         </span>
+        {replies.size > 0 && (
+          <button type="button" className="btn discret tout-deplier" onClick={toutDeplier}>
+            Tout déplier ({replies.size} étape{replies.size > 1 ? 's' : ''} repliée{replies.size > 1 ? 's' : ''})
+          </button>
+        )}
         <span className="progression-barre" aria-hidden="true">
           <i style={{ width: `${(faites / ETAPES.length) * 100}%` }} />
         </span>
