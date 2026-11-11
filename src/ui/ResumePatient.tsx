@@ -91,3 +91,42 @@ export function ResumePatient({ dossier, ctx }: { dossier: Dossier; ctx: Context
     </section>
   );
 }
+
+/** Une pastille du bandeau patient ; `manque` la signale comme donnée à compléter. */
+type Pastille = { texte: string; etat?: 'manque' | 'ok' | 'alerte' };
+
+/** Pastilles du bandeau patient permanent (exportées pour les tests). Aucune valeur n'est déduite. */
+export function pastillesBandeau(dossier: Dossier, ctx: ContexteDecision): Pastille[] {
+  const p = dossier.patient;
+  const out: Pastille[] = [];
+  const sexe = p.sexe === 'inconnu' ? 'sexe ?' : p.sexe === 'femme' ? 'Femme' : 'Homme';
+  out.push({ texte: `${sexe}, ${p.age !== undefined ? `${nombreFr(p.age)} ans` : 'âge ?'}`, etat: p.sexe === 'inconnu' || p.age === undefined ? 'manque' : undefined });
+  out.push({ texte: `${p.poidsKg !== undefined ? `${nombreFr(p.poidsKg, 1)} kg` : 'poids ?'}${p.tailleCm !== undefined ? ` · ${nombreFr(p.tailleCm)} cm` : ''}`, etat: p.poidsKg === undefined ? 'manque' : undefined });
+  const est = ctx.renal.estimations.find((e) => e.calculable && e.valeur !== undefined);
+  if (p.renal.dialyse !== 'aucune' && p.renal.dialyse !== 'inconnu') out.push({ texte: libelle(p.renal.dialyse) });
+  else if (est) out.push({ texte: `${est.nomCourt} ${nombreFr(est.valeur!)} ${est.unite}` });
+  else if (p.renal.dfg) out.push({ texte: `DFG ${nombreFr(p.renal.dfg.valeur, 1)} ${p.renal.dfg.unite ?? ''}`.trim() });
+  else out.push({ texte: 'rein ?', etat: 'manque' });
+  out.push(
+    p.statutAllergie === 'inconnu'
+      ? { texte: 'allergie ?', etat: 'manque' }
+      : p.statutAllergie === 'presentes'
+        ? { texte: `Allergie : ${p.allergies.map((a) => a.molecule || '?').join(', ') || 'à préciser'}`, etat: 'alerte' }
+        : { texte: 'Allergie : aucune connue', etat: 'ok' },
+  );
+  out.push({ texte: p.contexte === 'inconnu' ? 'contexte ?' : libelle(p.contexte).replace(/^./, (c) => c.toUpperCase()), etat: p.contexte === 'inconnu' ? 'manque' : undefined });
+  if (p.gravite === 'sepsis' || p.gravite === 'choc_septique') out.push({ texte: libelle(p.gravite).replace(/^./, (c) => c.toUpperCase()), etat: 'alerte' });
+  return out;
+}
+
+export function BandeauPatient({ dossier, ctx }: { dossier: Dossier; ctx: ContexteDecision }) {
+  return (
+    <ul className="bandeau-patient" aria-label="Patient en cours">
+      {pastillesBandeau(dossier, ctx).map((x, i) => (
+        <li key={i} className={x.etat ? `pastille ${x.etat}` : 'pastille'}>
+          {x.texte}
+        </li>
+      ))}
+    </ul>
+  );
+}

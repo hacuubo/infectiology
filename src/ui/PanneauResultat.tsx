@@ -4,6 +4,7 @@ import { CarteIndication, LIBELLE_DECISION, LectureMicrobiologique, indicationOu
 import type { Alerte, DonneeManquante, LigneSurveillance, NiveauUrgence, OptionTherapeutique, Plan, PrescriptionProposee } from '../clinical/types';
 import { Badge, BadgeStatut, ListeSources, RefsInline, statutASignaler } from './composants';
 import { formaterDate, type EvenementFriseDetaille } from '../schedule/frise';
+import { FriseGraphique, numerosReperes } from './FriseGraphique';
 import { dedupSources } from '../engine/decider';
 import { ExplicationSortie, PourquoiNonDisponible, type AllerAuChamp } from './Explication';
 import { AlertesRenales } from './FonctionRenale';
@@ -202,11 +203,17 @@ function Option({ o, retenue, onRetenir, communs }: { o: OptionTherapeutique; re
   );
 }
 
-function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
+function LigneFrise({ e, numero }: { e: EvenementFriseDetaille; numero?: number }) {
   const aDetails = e.pourquoi || e.ensuite || e.precisionMoment || e.cible || e.limites || e.repetition || e.sources.length > 0;
   return (
     <tr className={e.type === 'maintenant' ? 'maintenant' : ''}>
       <th scope="row" className="moment">
+        {numero !== undefined && (
+          <span className="numero-repere" title={`Repère ${numero} de la frise`}>
+            <span className="sr-only">Repère </span>
+            {numero}
+          </span>
+        )}
         {e.moment}
       </th>
       <td>
@@ -514,6 +521,7 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
   const communsSet = new Set(communs.map((c) => c.texte));
   const frise = plan.frise as EvenementFriseDetaille[];
   const friseDatee = frise.some((e) => e.dateISO);
+  const reperes = numerosReperes(frise);
   const optionRetenue = plan.options.find((o) => o.id === plan.optionRetenueId);
   const manquants = elementsManquants(plan);
   const explicationVisible = plan.sortie.traitement !== 'complet' && (plan.sortie.motifs.some((m) => !(MOTIFS_DEJA_PRESENTES as readonly string[]).includes(m.type)) || plan.sortie.urgence);
@@ -629,6 +637,8 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
         {frise.length === 0 ? (
           <p className="aide">{conclusionSansTraitement ? 'Pas de calendrier de surveillance d’antibiotique : aucun traitement n’est proposé.' : 'Aucun calendrier ne peut être établi sans proposition thérapeutique.'}</p>
         ) : (
+          <>
+          <FriseGraphique frise={frise} option={affichee} />
           <table className="frise">
             <caption className="sr-only">Calendrier de surveillance et de contrôles</caption>
             <thead>
@@ -639,10 +649,11 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
             </thead>
             <tbody>
               {frise.map((e) => (
-                <LigneFrise key={e.id} e={e} />
+                <LigneFrise key={e.id} e={e} numero={reperes.get(e.id)} />
               ))}
             </tbody>
           </table>
+          </>
         )}
         {plan.controles.length > 0 && (
           <details>

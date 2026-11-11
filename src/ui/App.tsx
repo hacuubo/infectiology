@@ -6,7 +6,7 @@ import type { Plan } from '../clinical/types';
 import { GardeErreur, GardeLocale, PanneauErreurTechnique } from './Explication';
 import { contexteUI } from './contexte-ui';
 import { FormulaireDossier } from './FormulaireDossier';
-import { ResumePatient } from './ResumePatient';
+import { BandeauPatient, ResumePatient } from './ResumePatient';
 import { AvisInfectiologique } from './AvisInfectiologique';
 import { alertesUrgentes, elementsManquants, LIBELLE_URGENCE, PanneauResultat, typeUrgence } from './PanneauResultat';
 import { VERSION_CLINIQUE, estObsolete } from '../clinical/version';
@@ -126,6 +126,11 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
             {resumeReduit ? 'Afficher le résumé' : 'Réduire le résumé'}
           </button>
         </div>
+        {ctx && (
+          <GardeLocale nom="bandeau patient" cle={dossier}>
+            <BandeauPatient dossier={dossier} ctx={ctx} />
+          </GardeLocale>
+        )}
         <div id="resume-patient" hidden={resumeReduit}>
           {ctx && (
             <GardeLocale nom="résumé du patient" cle={dossier}>
@@ -146,6 +151,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
 
       <main className="contenu">
         <div className={`colonne-saisie ${onglet === 'resultat' ? 'masque-etroit' : ''}`}>
+          <Progression manquants={ciblesManquantes} />
           <div className="ligne reinitialiser">
               <button
                 type="button"
@@ -251,4 +257,67 @@ export function trouverChamp(cible: string): HTMLElement | null {
   if (parent) return parent;
   for (const [prefixe, id] of SECTIONS) if (cible.startsWith(prefixe)) return document.getElementById(id) ?? (id === 't-indication' ? document.getElementById('t-micro') : null);
   return null;
+}
+
+/** Étapes de la saisie (sections du formulaire), dans l'ordre. */
+const ETAPES: { id: string; libelle: string }[] = [
+  { id: 't-entree', libelle: 'Point d’entrée' },
+  { id: 't-patient', libelle: 'Patient' },
+  { id: 't-contexte', libelle: 'Contexte' },
+  { id: 't-micro', libelle: 'Microbiologie' },
+  { id: 't-horaires', libelle: 'Horaires' },
+];
+const SECTION_ETAPE: Record<string, string> = { 't-renal': 't-patient', 't-indication': 't-micro' };
+
+/** Section de saisie qui contient le champ ciblé (même correspondance que la navigation depuis la fiche). */
+export function etapeDeCible(cible: string): string | undefined {
+  for (const [prefixe, id] of SECTIONS) if (cible.startsWith(prefixe)) return SECTION_ETAPE[id] ?? id;
+  return undefined;
+}
+
+/**
+ * Progression de la saisie : une étape est « à compléter » si la fiche y signale une donnée qui
+ * bloque le choix, la dose, la durée ou la surveillance ; les données « pour affiner » ne bloquent pas.
+ */
+function Progression({ manquants }: { manquants: ReadonlyMap<string, boolean> }) {
+  const aCompleter = new Set<string>();
+  for (const [cible, bloquant] of manquants) {
+    const etape = bloquant ? etapeDeCible(cible) : undefined;
+    if (etape) aCompleter.add(etape);
+  }
+  const faites = ETAPES.filter((e) => !aCompleter.has(e.id)).length;
+  const aller = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const reduit = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView?.({ block: 'start', behavior: reduit ? 'auto' : 'smooth' });
+    el.setAttribute('tabindex', '-1');
+    el.focus({ preventScroll: true });
+  };
+  return (
+    <nav className="progression" aria-label="Étapes de la saisie">
+      <div className="progression-titre">
+        <span>
+          {faites === ETAPES.length ? 'Saisie suffisante pour la proposition' : `${faites} étape${faites > 1 ? 's' : ''} sur ${ETAPES.length} sans donnée bloquante`}
+        </span>
+        <span className="progression-barre" aria-hidden="true">
+          <i style={{ width: `${(faites / ETAPES.length) * 100}%` }} />
+        </span>
+      </div>
+      <ol className="etapes">
+        {ETAPES.map((e, i) => {
+          const ok = !aCompleter.has(e.id);
+          return (
+            <li key={e.id}>
+              <button type="button" className={ok ? 'etape faite' : 'etape a-faire'} onClick={() => aller(e.id)}>
+                <span className="etape-num" aria-hidden="true">{ok ? '✓' : i + 1}</span>
+                {e.libelle}
+                <span className="sr-only">{ok ? ' : pas de donnée bloquante' : ' : à compléter'}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
 }

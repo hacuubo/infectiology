@@ -35,6 +35,13 @@ export interface EvenementFriseDetaille extends EvenementFrise {
   limites?: string;
   repetition?: string;
   conditionnel?: boolean;
+  /**
+   * Position sur la frise graphique, en heures depuis la 1re dose. Renseignée seulement si le moment
+   * est placé sans approximation (avant traitement, jour de traitement, délai explicite, 1re dose,
+   * réévaluation) ; absente pour « chaque jour », « juste avant la 3e dose », les ancres d'hémoculture
+   * ou un moment indéterminé : ces événements restent dans le tableau sans être placés.
+   */
+  position?: number;
 }
 
 /** Spécification interne : un libellé court peut être imposé (cas des dosages). */
@@ -87,7 +94,7 @@ function avecDate(libelle: string, dateISO: string | undefined, auJour = false):
  * Calcule l'ordre relatif (heures depuis la 1re dose, pour le tri), la date absolue si elle est
  * déterminable, et le moment court affiché.
  */
-export function resoudreCalendrier(spec: SpecInterne, h: Horaires): { ordre: number; dateISO?: string; moment: string; dateAuJour?: boolean } {
+export function resoudreCalendrier(spec: SpecInterne, h: Horaires): { ordre: number; dateISO?: string; moment: string; dateAuJour?: boolean; position?: number } {
   const offset = spec.offsetHeures ?? 0;
   const premiereDose = dateValide(h.premiereDoseISO) ? h.premiereDoseISO : undefined;
   switch (spec.ancre) {
@@ -97,13 +104,13 @@ export function resoudreCalendrier(spec: SpecInterne, h: Horaires): { ordre: num
       // le texte de la source est repris, pour ne pas imposer un examen avant la 1re dose à tort.
       const simple = spec.offsetHeures === undefined && /^(maintenant|avant)/i.test(spec.texte) && !/\bsi\b/i.test(spec.texte);
       const libelle = spec.libelleCourt ?? (simple ? 'Maintenant (avant la 1re dose)' : abreger(spec.texte));
-      return { ordre: spec.offsetHeures ? -1 + spec.offsetHeures / 1000 : -1, dateISO: simple && dateValide(h.maintenantISO) ? h.maintenantISO : undefined, moment: libelle };
+      return { ordre: spec.offsetHeures ? -1 + spec.offsetHeures / 1000 : -1, dateISO: simple && dateValide(h.maintenantISO) ? h.maintenantISO : undefined, moment: libelle, position: spec.offsetHeures ?? 0 };
     }
     case 'debut_traitement': {
       if (spec.jour !== undefined) {
         // Jour de traitement : J1 = jour de la 1re dose ; daté au jour près, jamais à l'heure.
         const dateISO = premiereDose ? ajouterHeures(premiereDose, (spec.jour - 1) * 24) : undefined;
-        return { ordre: (spec.jour - 1) * 24, dateISO, dateAuJour: true, moment: avecDate(spec.libelleCourt ?? `J${spec.jour}`, dateISO, true) };
+        return { ordre: (spec.jour - 1) * 24, dateISO, dateAuJour: true, moment: avecDate(spec.libelleCourt ?? `J${spec.jour}`, dateISO, true), position: (spec.jour - 1) * 24 + 12 };
       }
       if (spec.offsetHeures === undefined) {
         // Pas de délai explicite (ex. « à chaque administration », « dès que possible ») : aucune date.
@@ -111,27 +118,29 @@ export function resoudreCalendrier(spec: SpecInterne, h: Horaires): { ordre: num
       }
       const dateISO = premiereDose ? ajouterHeures(premiereDose, offset) : undefined;
       const libelle = spec.libelleCourt ?? (offset === 0 ? 'Début du traitement (1re dose)' : `H+${heures(offset)} après la 1re dose`);
-      return { ordre: offset, dateISO, moment: avecDate(libelle, dateISO) };
+      return { ordre: offset, dateISO, moment: avecDate(libelle, dateISO), position: offset };
     }
     case 'dose': {
       const n = spec.numeroDose ?? 1;
       const libelle = spec.libelleCourt ?? (offset === 0 ? `${ordinalDose(n)} dose` : `${ordinalDose(n)} dose ${offset > 0 ? '+' : '−'} ${heures(Math.abs(offset))} h`);
       const ordre = spec.jour !== undefined ? (spec.jour - 1) * 24 + offset : (n - 1) * 24 + offset;
+      // Placement sur la frise : 1re dose, ou jour de traitement explicite ; jamais d'après l'intervalle supposé.
+      const position = n === 1 ? offset : spec.jour !== undefined ? (spec.jour - 1) * 24 + 12 : undefined;
       // Seule la 1re dose est datable : l'heure des doses suivantes dépend de l'intervalle réellement appliqué.
       if (n === 1 && premiereDose) {
         const dateISO = ajouterHeures(premiereDose, offset);
-        return { ordre: offset, dateISO, moment: avecDate(libelle, dateISO) };
+        return { ordre: offset, dateISO, moment: avecDate(libelle, dateISO), position };
       }
-      return { ordre, moment: libelle };
+      return { ordre, moment: libelle, position };
     }
     case 'fin_perfusion': {
       const n = spec.numeroDose ?? 1;
       const libelle = spec.libelleCourt ?? `${ordinalDose(n)} dose : fin de perfusion + ${heures(offset * 60)} min`;
       if (n === 1 && premiereDose && h.dureePerfusionMin !== undefined && h.dureePerfusionMin > 0) {
         const dateISO = ajouterHeures(premiereDose, h.dureePerfusionMin / 60 + offset);
-        return { ordre: h.dureePerfusionMin / 60 + offset, dateISO, moment: avecDate(libelle, dateISO) };
+        return { ordre: h.dureePerfusionMin / 60 + offset, dateISO, moment: avecDate(libelle, dateISO), position: h.dureePerfusionMin / 60 + offset };
       }
-      return { ordre: (n - 1) * 24 + offset + 0.5, moment: libelle };
+      return { ordre: (n - 1) * 24 + offset + 0.5, moment: libelle, position: n === 1 ? offset + 0.5 : undefined };
     }
     case 'premiere_hemoculture_negative': {
       const libelle = spec.libelleCourt ?? (offset ? `H+${heures(offset)} après la 1re hémoculture négative` : '1re hémoculture négative');
@@ -206,6 +215,7 @@ export function construireFrise(surveillance: LigneSurveillance[], controles: Li
       type: c.quand.ancre === 'avant_traitement' ? 'maintenant' : 'controle',
       dateISO: r.dateISO,
       dateAuJour: r.dateAuJour,
+      position: r.position,
       precisionMoment: precision(r.moment, c.quand.texte),
       repetition: c.quand.repetition,
       conditionnel: c.categorie === 'conditionnel',
@@ -228,6 +238,7 @@ export function construireFrise(surveillance: LigneSurveillance[], controles: Li
       type: spec.ancre === 'avant_traitement' ? 'maintenant' : 'surveillance',
       dateISO: r.dateISO,
       dateAuJour: r.dateAuJour,
+      position: r.position,
       // texteCalendrier contient la formulation complète ET la condition d'application éventuelle.
       precisionMoment: precision(r.moment, s.texteCalendrier),
       cible: estStp(e) && e.cible ? `${e.cible.texte}${e.cible.verifiee ? '' : ' (cible non vérifiée dans la source)'}` : undefined,
@@ -250,6 +261,7 @@ export function construireFrise(surveillance: LigneSurveillance[], controles: Li
       pourquoi: 'Réévaluation systématique de l\'antibiothérapie',
       type: 'reevaluation',
       dateISO,
+      position: off,
       sources: re.sources,
     });
   }
