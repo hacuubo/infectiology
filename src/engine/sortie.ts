@@ -210,7 +210,8 @@ export function etablirSortie(plan: Plan, ctx: ContexteDecision, ecartees: Propo
   const manquesDecision = manques.filter((m) => m.domaine !== 'microbiologie' && m.impact === 'bloque_decision');
   const insuffisant = decision === 'informations_insuffisantes' && !!ind && !ind.pointNonResolu;
   const questions = insuffisant && ind ? ind.questions.filter((q) => !manquesDecision.some((m) => m.champ === q)) : [];
-  const rienSaisi = ctx.foyer === 'inconnu' && !ctx.organisme && ctx.dossier.prelevements.every((x) => !x.organisme) && !ind;
+  // Un examen direct renseigné est un point de départ (ex. levures en hémoculture), même sans germe identifié.
+  const rienSaisi = ctx.foyer === 'inconnu' && !ctx.organisme && ctx.dossier.prelevements.every((x) => !x.organisme && (!x.examenDirect || x.examenDirect === 'inconnu')) && !ind;
   if (rienSaisi && plan.options.length === 0)
     motifs.push({
       type: 'informations_manquantes',
