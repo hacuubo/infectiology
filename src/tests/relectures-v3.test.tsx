@@ -187,7 +187,7 @@ describe('Interface', () => {
     await u.type(creat, '400');
     const avis = await screen.findByText(/Votre dernière modification change la proposition/);
     expect(within(avis.closest('div')!).getAllByText(/adaptation rénale modifiée/).length).toBeGreaterThan(0);
-    await u.click(screen.getByRole('button', { name: 'Réinitialiser la saisie' }));
+    await u.click(screen.getByRole('button', { name: 'Réinitialiser le patient' }));
     expect(screen.queryByText(/Votre dernière modification change la proposition/)).toBeNull();
   }, 20000);
 });

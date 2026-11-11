@@ -285,22 +285,27 @@ export function calculerPrescription(args: {
 
   // --- Adaptation rénale
   let adaptationRequise = false;
+  let renal: PrescriptionProposee['renal'];
   const ar = r.adaptationRenale ?? m.adaptationRenale;
   const p = ctx.dossier.patient;
   if (m.absorptionSystemiqueNegligeable) {
     adaptations.push(`Pas d'adaptation à la fonction rénale ni à la dialyse : ${m.absorptionSystemiqueNegligeable.texte}`);
+    renal = { statut: 'sans_adaptation', texte: `Pas d'adaptation de posologie à la fonction rénale (${m.absorptionSystemiqueNegligeable.texte.replace(/\.+$/, '')}).` };
     sources.push(...m.absorptionSystemiqueNegligeable.sources);
   } else if (ar.statut !== 'retiree') {
     if (p.renal.dialyse === 'hemodialyse_intermittente' || p.renal.dialyse === 'eer_continue' || p.renal.dialyse === 'dialyse_peritoneale') adaptationRequise = true;
     if (p.renal.dialyse === 'hemodialyse_intermittente') {
       adaptations.push(ar.hemodialyse ? `Hémodialyse intermittente : ${ar.hemodialyse.texte}` : `Hémodialyse intermittente : modalité non renseignée dans la base pour ${m.dci} — avis pharmacologique/néphrologique requis.`);
+      renal = ar.hemodialyse ? { statut: 'adaptee', texte: `Hémodialyse intermittente : ${ar.hemodialyse.texte}` } : { statut: 'non_calculee', texte: `Hémodialyse intermittente : modalité non renseignée dans la base pour ${m.dci} — avis pharmacologique/néphrologique requis.` };
       if (ar.hemodialyse) sources.push(...ar.hemodialyse.sources);
       if (!p.renal.horairesDialyse) manquants.push({ champ: 'horaires de dialyse', pourquoi: `administration de ${m.dci} par rapport aux séances`, impact: 'affine' });
     } else if (p.renal.dialyse === 'eer_continue') {
       adaptations.push(ar.eerContinue ? `Épuration extrarénale continue : ${ar.eerContinue.texte}` : `Épuration extrarénale continue : posologie non déterminable à partir de la base pour ${m.dci} — avis pharmacologique/réanimation requis (dépend du débit d'effluent).`);
+      renal = { statut: ar.eerContinue ? 'adaptee' : 'non_calculee', texte: adaptations[adaptations.length - 1] };
       if (ar.eerContinue) sources.push(...ar.eerContinue.sources);
     } else if (p.renal.dialyse === 'dialyse_peritoneale') {
       adaptations.push(`Dialyse péritonéale : posologie non déterminable à partir de la base pour ${m.dci} — avis pharmacologique/néphrologique requis.`);
+      renal = { statut: 'non_calculee', texte: adaptations[adaptations.length - 1] };
     } else {
       // Estimation choisie selon la grandeur exigée par la référence posologique de CETTE molécule.
       const refM = referenceRenale(m.id);
@@ -317,15 +322,19 @@ export function calculerPrescription(args: {
         if (palierAvecAdaptation) adaptationRequise = true;
         if (!ctx.renal.applicable) {
           adaptations.push(`Adaptation rénale non calculée : ${choix.refus} Avis pharmacologique ou néphrologique${m.stp?.length ? ' ; dosage plasmatique (voir surveillance)' : ''} ; réévaluer régulièrement la fonction rénale (KDIGO 2024, PP 4.2.5).`);
+          renal = { statut: 'non_calculee', texte: `Adaptation à la fonction rénale non calculée : ${choix.refus} Avis pharmacologique ou néphrologique${m.stp?.length ? ' ; dosage plasmatique (voir surveillance)' : ''}.` };
           if (palierAvecAdaptation)
             manquants.push({ champ: 'fonction rénale à l’état d’équilibre (ou dosage plasmatique, DFG mesuré)', pourquoi: `adaptation rénale de ${m.dci} non calculable : ${ctx.renal.etat === 'instable' ? 'fonction rénale instable ou IRA' : 'hors domaine des équations'}`, impact: 'bloque_dose', cible: 'patient.renal.stabilite' });
         } else {
           adaptations.push(`Adaptation rénale non calculée : ${choix.refus}${choix.discordance ? ` ${choix.discordance}` : ''} Estimation exigée : ${choix.pourquoi}`);
+          renal = { statut: 'non_calculee', texte: `Adaptation à la fonction rénale non calculée : ${choix.refus}${choix.discordance ? ` ${choix.discordance}` : ''}`, details: [] };
           if (choix.discordance) {
             const pa = ar.paliers[palierDe(estimationValeur(ctx, 'clairance_cg'))];
             const pb = ar.paliers[palierDe(estimationValeur(ctx, 'dfg_desindexe'))];
             if (pa) adaptations.push(`Selon Cockcroft-Gault : ${pa.texte}`);
             if (pb) adaptations.push(`Selon le DFG désindexé : ${pb.texte}`);
+            if (pa) renal.details!.push(`Selon Cockcroft-Gault : ${pa.texte}`);
+            if (pb) renal.details!.push(`Selon le DFG désindexé : ${pb.texte}`);
           }
           // Une ligne par donnée : « poids » et « poids (surface corporelle) » fusionnent avec les autres demandes du même champ.
           for (const dm of choix.manquants)
@@ -333,6 +342,8 @@ export function calculerPrescription(args: {
           if (choix.discordance && palierAvecAdaptation)
             manquants.push({ champ: 'choix entre Cockcroft-Gault et DFG désindexé', pourquoi: `les deux estimations conduisent à des paliers différents pour ${m.dci} : décision avec le pharmacien ou le néphrologue`, impact: 'bloque_dose', cible: 'patient.renal.creatinine' });
         }
+        // Aucun palier de la source n'adapte la dose : la conclusion ne dépend pas de la valeur manquante.
+        if (!palierAvecAdaptation && ar.paliers.length > 0 && !ar.texteGeneral) renal = { statut: 'sans_adaptation', texte: 'Pas d’adaptation de posologie à la fonction rénale.' };
       } else {
         const palier = ar.paliers[palierDe(choix.valeur)];
         const clTexte = choix.libelle ?? `${nombreFr(choix.valeur)} ${choix.unite}`;
@@ -341,8 +352,10 @@ export function calculerPrescription(args: {
           sources.push(...palier.sources);
           if (CONTRE_INDICATION.test(palier.texte)) contreIndication = `${m.dci} : ${clTexte} — ${palier.texte}`;
           if (!SANS_ADAPTATION.test(palier.texte)) adaptationRequise = true;
+          renal = SANS_ADAPTATION.test(palier.texte) ? { statut: 'sans_adaptation', texte: 'Pas d’adaptation de posologie à la fonction rénale.' } : { statut: 'adaptee', texte: palier.texte };
         } else if (ar.texteGeneral) {
           adaptations.push(`${clTexte} : ${ar.texteGeneral}`);
+          renal = { statut: SANS_ADAPTATION.test(ar.texteGeneral) ? 'sans_adaptation' : 'adaptee', texte: SANS_ADAPTATION.test(ar.texteGeneral) ? 'Pas d’adaptation de posologie à la fonction rénale.' : ar.texteGeneral };
         }
         adaptations.push(`Estimation utilisée — pourquoi : ${choix.pourquoi}`);
         for (const l of ctx.renal.limites) if (!avert.includes(l)) avert.push(l);
@@ -352,11 +365,14 @@ export function calculerPrescription(args: {
     }
   }
 
+  const doseReference = adaptationRequise ? doseAffichee : undefined;
   if (adaptationRequise) doseAffichee = `Dose de référence (fonction rénale normale) : ${doseAffichee} — à adapter selon l'indication rénale ci-dessous`;
 
   // --- Hépatique
+  const autresAdaptations: string[] = [];
   if (p.insuffisanceHepatique === 'oui' && m.insuffisanceHepatique) {
     adaptations.push(`Insuffisance hépatique : ${m.insuffisanceHepatique.texte}`);
+    autresAdaptations.push(`Insuffisance hépatique : ${m.insuffisanceHepatique.texte}`);
     sources.push(...m.insuffisanceHepatique.sources);
   }
 
@@ -403,6 +419,9 @@ export function calculerPrescription(args: {
       voie: r.voie,
       modalites: r.modalites,
       adaptations,
+      ...(renal ? { renal } : {}),
+      ...(doseReference ? { doseReference } : {}),
+      autresAdaptations,
       duree: { texte: duree.texte, pointDeDepart: duree.pointDeDepart, sources: duree.sources, dureePrevueJours: duree.dureePrevueJours },
       surveillance: sv.lignes,
       sources,

@@ -4,9 +4,10 @@ import { CarteIndication, LIBELLE_DECISION, LectureMicrobiologique, indicationOu
 import type { Alerte, DonneeManquante, LigneSurveillance, NiveauUrgence, OptionTherapeutique, Plan, PrescriptionProposee } from '../clinical/types';
 import { Badge, BadgeStatut, ListeSources, RefsInline, statutASignaler } from './composants';
 import { formaterDate, type EvenementFriseDetaille } from '../schedule/frise';
+import { FriseGraphique, numerosReperes } from './FriseGraphique';
 import { dedupSources } from '../engine/decider';
 import { ExplicationSortie, PourquoiNonDisponible, type AllerAuChamp } from './Explication';
-import { CarteFonctionRenale } from './FonctionRenale';
+import { AlertesRenales } from './FonctionRenale';
 import { rattacherChamp } from '../engine/cibles';
 
 export const LIBELLE_URGENCE: Record<NiveauUrgence, string> = {
@@ -26,7 +27,7 @@ export function alertesUrgentes(plan: Plan): Alerte[] {
 
 /**
  * Avertissements présents dans au moins deux prescriptions du plan (ex. « sujet âgé : formules
- * moins fiables », « fonction rénale instable ») : affichés une seule fois en tête des options thérapeutiques
+ * moins fiables », « fonction rénale instable ») : affichés une seule fois en tête des autres options
  * avec la liste des molécules concernées, au lieu d'être répétés sous chaque molécule.
  */
 export function avertissementsCommuns(plan: Plan): { texte: string; dcis: string[] }[] {
@@ -56,6 +57,59 @@ function Duree({ p }: { p: PrescriptionProposee }) {
   );
 }
 
+/**
+ * Dose, voie, modalités puis une seule ligne sur la fonction rénale : pas d'adaptation, posologie recommandée
+ * (texte du palier de la source) ou adaptation non calculée (raison). Les estimations (DFG, Cockcroft-Gault)
+ * ne sont pas répétées ici ; elles restent dans l'onglet Patient.
+ */
+/** Vrai si la dose est modifiée par rapport à la posologie habituelle (fonction rénale, insuffisance hépatique). */
+export function avecAdaptation(p: PrescriptionProposee): boolean {
+  return p.renal?.statut === 'adaptee' || (p.autresAdaptations?.length ?? 0) > 0;
+}
+
+export function DoseEtRein({ p }: { p: PrescriptionProposee }) {
+  const r = p.renal;
+  return (
+    <>
+      <div className="dose-principale">
+        {p.doseReference ? (
+          <>
+            <span className="aide">Dose de référence (fonction rénale normale) :</span> <strong>{p.doseReference}</strong>
+          </>
+        ) : (
+          <strong>{p.doseAffichee}</strong>
+        )}{' '}
+        — {p.voie}, {p.modalites}
+      </div>
+      {r && (
+        <div className={`rein rein-${r.statut}`}>
+          {r.statut === 'adaptee' ? (
+            <>
+              <strong>Adaptation à la fonction rénale — posologie recommandée :</strong> {r.texte}
+            </>
+          ) : r.statut === 'non_calculee' ? (
+            <>
+              <span aria-hidden="true">⚠ </span>
+              {r.texte}
+              {r.details?.map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </>
+          ) : (
+            r.texte
+          )}
+        </div>
+      )}
+      {(p.autresAdaptations ?? []).map((a) => (
+        <div key={a} className="adaptation">
+          <span aria-hidden="true">↳ </span>
+          {a}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Prescription({ p, statutOption, communs, dureeAffichee }: { p: PrescriptionProposee; statutOption: OptionTherapeutique['statut']; communs: Set<string>; dureeAffichee: boolean }) {
   const propres = p.avertissements.filter((a) => !communs.has(a));
   const nbCommuns = p.avertissements.length - propres.length;
@@ -70,24 +124,16 @@ function Prescription({ p, statutOption, communs, dureeAffichee }: { p: Prescrip
             <strong>{p.chargeInitiale}</strong>
           </div>
         )}
-        <div>
-          <strong>{p.doseAffichee}</strong> — {p.voie}, {p.modalites}
-        </div>
+        <DoseEtRein p={p} />
         {dureeAffichee && <Duree p={p} />}
       </div>
-      {p.adaptations.map((a, i) => (
-        <div key={i} className="adaptation">
-          <span aria-hidden="true">↳ </span>
-          {a}
-        </div>
-      ))}
       {propres.map((a, i) => (
         <div key={i} className="avert">
           <span aria-hidden="true">⚠ </span>
           {a}
         </div>
       ))}
-      {nbCommuns > 0 && <div className="aide">+ {nbCommuns} avertissement{nbCommuns > 1 ? 's' : ''} commun{nbCommuns > 1 ? 's' : ''} à plusieurs molécules (en tête des options thérapeutiques).</div>}
+      {nbCommuns > 0 && <div className="aide">+ {nbCommuns} avertissement{nbCommuns > 1 ? 's' : ''} commun{nbCommuns > 1 ? 's' : ''} à plusieurs molécules (en tête des autres options).</div>}
       {p.surveillance.length > 0 && (
         <details>
           <summary>
@@ -157,16 +203,27 @@ function Option({ o, retenue, onRetenir, communs }: { o: OptionTherapeutique; re
   );
 }
 
-function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
+function LigneFrise({ e, numero }: { e: EvenementFriseDetaille; numero?: number }) {
   const aDetails = e.pourquoi || e.ensuite || e.precisionMoment || e.cible || e.limites || e.repetition || e.sources.length > 0;
   return (
     <tr className={e.type === 'maintenant' ? 'maintenant' : ''}>
       <th scope="row" className="moment">
+        {numero !== undefined && (
+          <span className="numero-repere" title={`Repère ${numero} de la frise`}>
+            <span className="sr-only">Repère </span>
+            {numero}
+          </span>
+        )}
         {e.moment}
       </th>
       <td>
         <span className="quoi">{e.quoi}</span>
         {e.cible && <div className="cible">Cible : {e.cible}</div>}
+        {e.conduite && (
+          <div className="conduite">
+            <strong>Conduite à tenir :</strong> {e.conduite}
+          </div>
+        )}
         {aDetails && (
           <details className="discret">
             <summary>Pourquoi, conduite et précisions</summary>
@@ -189,7 +246,7 @@ function LigneFrise({ e }: { e: EvenementFriseDetaille }) {
                   <dd>{e.pourquoi}</dd>
                 </>
               )}
-              {e.ensuite && (
+              {e.ensuite && e.ensuite !== e.conduite && (
                 <>
                   <dt>Ensuite</dt>
                   <dd>{e.ensuite}</dd>
@@ -308,12 +365,11 @@ function texteSurveillance(l: LigneSurveillance): string {
 const MOTIFS_DEJA_PRESENTES = ['informations_manquantes', 'non_indiquee'] as const;
 
 /** Synthèse : les informations principales de la fiche (situation, germe, traitement retenu avec dose et durée, surveillance). */
-function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: Plan; choixPrescripteur: boolean; explicationVisible: boolean }) {
+function SyntheseFiche({ plan, choixPrescripteur, explicationVisible, onRetenir }: { plan: Plan; choixPrescripteur: boolean; explicationVisible: boolean; onRetenir?: (id: string) => void }) {
   const ind = plan.indication;
   // Motifs « informations manquantes » du moteur (masqués plus bas) : statut, motif et prochaine action, mot pour mot.
   const etat = plan.sortie.motifs.filter((m) => m.type === 'informations_manquantes');
   const provisoire = elementsManquants(plan).some((m) => m.impact === 'bloque_decision');
-  const niveau = plan.urgence.niveau;
   const retenue = plan.options.find((o) => o.id === plan.optionRetenueId) ?? plan.options.find((o) => o.rang === 'premiere_ligne');
   const nonTraiter = ind?.decision === 'ne_pas_traiter';
   const sansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
@@ -323,30 +379,10 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
   const survIndication = sansTraitement && ind ? [...ind.actions, ...ind.surveillance] : [];
   const dureeUnique = retenue && retenue.prescriptions.length > 0 && retenue.prescriptions.every((p) => p.duree.texte === retenue.prescriptions[0].duree.texte && p.duree.pointDeDepart === retenue.prescriptions[0].duree.pointDeDepart);
   const avisUrgents = plan.avisSpecialise.filter((a) => a.urgent);
-  const determinants = plan.microbiologie.flatMap((m) => m.determinants.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
-  const inconnues = plan.microbiologie.flatMap((m) => m.inconnues.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
   return (
     <div className="fiche-section synthese">
-      <h3>Synthèse</h3>
+      <h3 className="sr-only">Synthèse</h3>
       <dl className="synthese-dl">
-        <dt>Situation</dt>
-        <dd>
-          {plan.situation.libelle} {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{LIBELLE_URGENCE[niveau]}</Badge>}
-        </dd>
-        {ind && (
-          <>
-            <dt>Indication</dt>
-            <dd>
-              <strong>{indicationOuiNon(ind)}</strong> — {LIBELLE_DECISION[ind.decision]}
-            </dd>
-          </>
-        )}
-        <dt>Germe{plan.microbiologie.length > 1 ? 's' : ''}</dt>
-        <dd>
-          {plan.microbiologie.length ? plan.microbiologie.map((m) => m.germe).join(' ; ') : 'non identifié'}
-          {determinants.length > 0 && <div className="aide">{determinants.join(' ; ')}</div>}
-          {inconnues.length > 0 && <div className="aide">À préciser : {inconnues.join(' ; ')}</div>}
-        </dd>
         {nonTraiter ? (
           <>
             <dt>Raison de ne pas traiter</dt>
@@ -354,11 +390,12 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
           </>
         ) : (
           <>
-            <dt>
+            <dt className={retenue ? 'traitement-label' : undefined}>
               {choixPrescripteur ? 'Traitement retenu' : 'Traitement proposé (1re ligne)'}
               {retenue && provisoire ? ' — provisoire' : ''}
             </dt>
-            <dd>
+            {/* Traitement en vert et gras ; s'il est adapté (rein, foie), c'est l'adaptation qui est en gras. */}
+            <dd className={retenue ? `traitement${retenue.prescriptions.some(avecAdaptation) ? ' avec-adaptation' : ''}` : undefined}>
               {etat.map((m) => (
                 <div key={m.statut} className="etat-proposition">
                   <strong>{m.statut}</strong> : {m.motif} {m.prochaineAction}
@@ -366,24 +403,28 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
               ))}
               {retenue ? (
                 <>
-                  <strong>{retenue.libelle}</strong> {statutASignaler(retenue.statut) && <BadgeStatut statut={retenue.statut} court />}
+                  <strong className="traitement-nom">{retenue.libelle}</strong> {statutASignaler(retenue.statut) && <BadgeStatut statut={retenue.statut} court />}
                   {retenue.condition && <div className="aide">Condition : {retenue.condition}</div>}
                   {retenue.prescriptions.map((p) => (
                     <div key={p.regimenId} className="synthese-prescription">
-                      <strong>{p.dci}</strong> : {p.chargeInitiale && <>{p.chargeInitiale} ; puis </>}
-                      {p.doseAffichee} — {p.voie}, {p.modalites}
-                      {p.adaptations.map((a) => (
-                        <div key={a} className="adaptation">
-                          <span aria-hidden="true">↳ </span>
+                      {/* Nom de la molécule seulement s'il n'est pas déjà le libellé de l'option (ex. « Amoxicilline »). */}
+                      {(retenue.prescriptions.length > 1 || p.dci.toLowerCase() !== retenue.libelle.toLowerCase() || (p.statut !== retenue.statut && statutASignaler(p.statut))) && (
+                        <div className="dci">
+                          <strong>{p.dci}</strong> {p.statut !== retenue.statut && statutASignaler(p.statut) && <BadgeStatut statut={p.statut} court />}
+                        </div>
+                      )}
+                      {p.chargeInitiale && (
+                        <div className="dose-principale">
+                          <strong>{p.chargeInitiale}</strong> ; puis :
+                        </div>
+                      )}
+                      <DoseEtRein p={p} />
+                      {p.avertissements.map((a) => (
+                        <div key={a} className="avert">
+                          <span aria-hidden="true">⚠ </span>
                           {a}
                         </div>
                       ))}
-                      {p.avertissements.length > 0 && (
-                        <div className="avert">
-                          <span aria-hidden="true">⚠ </span>
-                          {p.avertissements.length} avertissement{p.avertissements.length > 1 ? 's' : ''} : voir les options thérapeutiques.
-                        </div>
-                      )}
                       {!dureeUnique && (
                         <div>
                           Durée : {p.duree.texte} <span className="aide">(à partir de : {p.duree.pointDeDepart})</span>
@@ -396,14 +437,23 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
                       Durée : {retenue.prescriptions[0].duree.texte} <span className="aide">(à partir de : {retenue.prescriptions[0].duree.pointDeDepart})</span>
                     </div>
                   )}
-                  {autresOptions > 0 && <div className="aide">{autresOptions} autre{autresOptions > 1 ? 's' : ''} option{autresOptions > 1 ? 's' : ''} : voir les options thérapeutiques.</div>}
+                  {retenue.commentaire && <p className="aide">{retenue.commentaire}</p>}
+                  <RefsInline refs={retenue.sources} />
+                  {autresOptions > 0 && <div className="aide">{autresOptions} autre{autresOptions > 1 ? 's' : ''} option{autresOptions > 1 ? 's' : ''} : voir « Autres options » ci-dessous.</div>}
+                  {onRetenir && !choixPrescripteur && (
+                    <div className="actions-traitement">
+                      <button type="button" className="btn retenir-traitement" onClick={() => onRetenir(retenue.id)}>
+                        Retenir ce traitement
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : ind && sansTraitement ? (
                 LIBELLE_DECISION[ind.decision]
               ) : plan.options.length === 0 ? (
                 `aucun traitement proposé par l’application${explicationVisible ? ' : voir l’explication ci-dessous' : ''}.`
               ) : (
-                'aucune option de 1re ligne : voir les options conditionnelles.'
+                'aucune option de 1re ligne : voir « Autres options » ci-dessous.'
               )}
             </dd>
           </>
@@ -443,18 +493,50 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
   );
 }
 
-export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, changements = [] }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier; allerAuChamp?: AllerAuChamp; changements?: string[] }) {
+/** En-tête de la fiche : couverture de la situation, situation en titre, indication et germe en sous-titre. */
+function EnteteFiche({ plan }: { plan: Plan }) {
+  const ind = plan.indication;
+  const couv = plan.situation.couverture;
+  const germes = plan.microbiologie.length ? plan.microbiologie.map((m) => m.germe).join(' ; ') : 'germe non identifié';
+  const determinants = plan.microbiologie.flatMap((m) => m.determinants.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
+  const inconnues = plan.microbiologie.flatMap((m) => m.inconnues.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
+  return (
+    <div className="entete-fiche">
+      <Badge type={couv === 'couverte' ? 'ok' : couv === 'partielle' ? 'attention' : 'urgence'}>{couv === 'couverte' ? 'situation couverte' : couv === 'partielle' ? 'partiellement couverte' : 'non couverte'}</Badge>
+      <h2 id="t-fiche">
+        <span className="sr-only">Prise en charge : </span>
+        {plan.situation.libelle}
+      </h2>
+      <p className="sous-titre">
+        {ind && (
+          <>
+            Indication : <strong>{indicationOuiNon(ind)}</strong> — {LIBELLE_DECISION[ind.decision]} ·{' '}
+          </>
+        )}
+        {plan.microbiologie.length > 1 ? 'Germes : ' : plan.microbiologie.length ? 'Germe : ' : ''}
+        {germes}
+      </p>
+      {determinants.length > 0 && <p className="aide">{determinants.join(' ; ')}</p>}
+      {inconnues.length > 0 && <p className="aide">À préciser : {inconnues.join(' ; ')}</p>}
+    </div>
+  );
+}
+
+export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, changements = [], demanderAvis }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier; allerAuChamp?: AllerAuChamp; changements?: string[]; demanderAvis?: () => void }) {
   const ind = plan.indication;
   const conclusionSansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
   const niveau = plan.urgence.niveau;
   const premieres = plan.options.filter((o) => o.rang === 'premiere_ligne');
-  const autres = plan.options.filter((o) => o.rang !== 'premiere_ligne');
+  // Option présentée dans la synthèse (retenue par le prescripteur, sinon la 1re ligne) ; les autres sont repliées.
+  const affichee = plan.options.find((o) => o.id === plan.optionRetenueId) ?? premieres[0];
+  const autres = plan.options.filter((o) => o !== affichee);
   const urgentes = alertesUrgentes(plan);
   const autresAlertes = plan.urgence.alertes.filter((a) => a.niveau !== 'urgence');
   const communs = avertissementsCommuns(plan);
   const communsSet = new Set(communs.map((c) => c.texte));
   const frise = plan.frise as EvenementFriseDetaille[];
   const friseDatee = frise.some((e) => e.dateISO);
+  const reperes = numerosReperes(frise);
   const optionRetenue = plan.options.find((o) => o.id === plan.optionRetenueId);
   const manquants = elementsManquants(plan);
   const explicationVisible = plan.sortie.traitement !== 'complet' && (plan.sortie.motifs.some((m) => !(MOTIFS_DEJA_PRESENTES as readonly string[]).includes(m.type)) || plan.sortie.urgence);
@@ -469,15 +551,10 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
   return (
     <section className={`carte fiche ${niveau === 'immediate' ? 'urgence' : niveau === 'elevee' ? 'attention' : ''}`} aria-labelledby="t-fiche">
       <p className="sr-only" role="status" aria-live="polite">
-        Fiche recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
+        Prise en charge recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
         {urgentes.length ? ` ; ${urgentes.length} alerte(s) urgente(s)` : ''}.
       </p>
-      <h2 id="t-fiche">
-        Fiche opérationnelle{' '}
-        <Badge type={plan.situation.couverture === 'couverte' ? 'ok' : plan.situation.couverture === 'partielle' ? 'attention' : 'urgence'}>
-          {plan.situation.couverture === 'couverte' ? 'situation couverte' : plan.situation.couverture === 'partielle' ? 'partiellement couverte' : 'non couverte'}
-        </Badge>
-      </h2>
+      <EnteteFiche plan={plan} />
 
       {changements.length > 0 && (
         <div className="alerte attention changements" role="status">
@@ -490,8 +567,10 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
         </div>
       )}
       <ElementsManquants manquants={manquants} allerAuChamp={allerAuChamp} />
-      <SyntheseFiche plan={plan} choixPrescripteur={!!dossier?.optionRetenueId} explicationVisible={explicationVisible} />
+      <SyntheseFiche plan={plan} choixPrescripteur={!!dossier?.optionRetenueId} explicationVisible={explicationVisible} onRetenir={onRetenir} />
       {autresAlertes.length > 0 && (
+        <div className="fiche-section bloc-points">
+        <h3 aria-hidden="true">Points d’attention</h3>
         <ul className="points-attention" aria-label="Points d'attention">
           {autresAlertes.map((a, i) => (
             <li key={i} className={a.niveau}>
@@ -501,10 +580,11 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
             </li>
           ))}
         </ul>
+        </div>
       )}
 
       <div className="fiche-section">
-        <h3>{conclusionSansTraitement ? 'Conclusion sur l\'indication' : 'Options thérapeutiques'}</h3>
+        {conclusionSansTraitement && <h3>Conclusion sur l'indication</h3>}
         {plan.sortie.traitement !== 'complet' && <ExplicationSortie sortie={plan.sortie} allerAuChamp={allerAuChamp} masquer={[...MOTIFS_DEJA_PRESENTES]} />}
         <LectureMicrobiologique plan={plan} />
         {ind &&
@@ -525,44 +605,43 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
             ))}
           </details>
         )}
-        {plan.options.length > 0 && premieres.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les options conditionnelles ci-dessous.</p>}
-        {communs.length > 0 && (
-          <div className="alerte attention avert-communs">
-            <strong>Avertissements communs à plusieurs molécules</strong>
-            <ul>
-              {communs.map((c) => (
-                <li key={c.texte}>
-                  {c.texte} <span className="aide">(concerne : {c.dcis.join(', ')})</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {premieres.map((o) => (
-          <Option key={o.id} o={o} retenue={plan.optionRetenueId === o.id} onRetenir={onRetenir} communs={communsSet} />
-        ))}
+        {plan.options.length > 0 && premieres.length === 0 && <p className="aide">Aucune option de 1re ligne avec les données actuelles : voir les autres options ci-dessous.</p>}
+        {/* Le traitement de la synthèse n'est pas répété : seules les autres options sont listées, repliées. */}
         {autres.length > 0 && (
-          <details open={premieres.length === 0}>
-            <summary>Alternatives et options conditionnelles ({autres.length})</summary>
+          <details className="autres-options" open={!affichee}>
+            <summary>Autres options : alternatives et options conditionnelles ({autres.length})</summary>
+            {communs.length > 0 && (
+              <div className="alerte attention avert-communs">
+                <strong>Avertissements communs à plusieurs molécules</strong>
+                <ul>
+                  {communs.map((c) => (
+                    <li key={c.texte}>
+                      {c.texte} <span className="aide">(concerne : {c.dcis.join(', ')})</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {autres.map((o) => (
               <Option key={o.id} o={o} retenue={plan.optionRetenueId === o.id} onRetenir={onRetenir} communs={communsSet} />
             ))}
           </details>
         )}
         <PourquoiNonDisponible ecartees={plan.sortie.ecartees} />
-        {plan.gestes.length > 0 && (
-          <>
-            <h4>Contrôle du foyer et gestes</h4>
-            <ul>
-              {plan.gestes.map((g, i) => (
-                <li key={i}>
-                  {g.texte} <RefsInline refs={g.sources} />
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
       </div>
+
+      {plan.gestes.length > 0 && (
+        <div className="fiche-section">
+          <h3>Contrôle du foyer et gestes</h3>
+          <ul>
+            {plan.gestes.map((g, i) => (
+              <li key={i}>
+                {g.texte} <RefsInline refs={g.sources} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="fiche-section">
         <h3>Calendrier de surveillance et de contrôles</h3>
@@ -571,6 +650,8 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
         {frise.length === 0 ? (
           <p className="aide">{conclusionSansTraitement ? 'Pas de calendrier de surveillance d’antibiotique : aucun traitement n’est proposé.' : 'Aucun calendrier ne peut être établi sans proposition thérapeutique.'}</p>
         ) : (
+          <>
+          <FriseGraphique frise={frise} option={affichee} />
           <table className="frise">
             <caption className="sr-only">Calendrier de surveillance et de contrôles</caption>
             <thead>
@@ -581,10 +662,11 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
             </thead>
             <tbody>
               {frise.map((e) => (
-                <LigneFrise key={e.id} e={e} />
+                <LigneFrise key={e.id} e={e} numero={reperes.get(e.id)} />
               ))}
             </tbody>
           </table>
+          </>
         )}
         {plan.controles.length > 0 && (
           <details>
@@ -632,14 +714,19 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
       </div>
 
       <div className="fiche-section">
-        <h3>Situation et fonction rénale</h3>
+        <h3>Situation</h3>
         <p className="aide">{plan.situation.description}</p>
-        {dossier && <CarteFonctionRenale dossier={dossier} plan={plan} allerAuChamp={allerAuChamp} />}
+        {dossier && <AlertesRenales dossier={dossier} allerAuChamp={allerAuChamp} />}
       </div>
 
       <div className="fiche-section fin-fiche">
+        {demanderAvis && (
+          <button type="button" className="btn secondaire demander-avis" onClick={demanderAvis}>
+            Demander un avis SMIT
+          </button>
+        )}
         <details>
-          <summary>Sources de cette fiche ({toutesSources.length})</summary>
+          <summary>Sources de cette prise en charge ({toutesSources.length})</summary>
           <ListeSources refs={toutesSources} />
         </details>
         <details className="discret">

@@ -17,7 +17,7 @@ describe('Interface', () => {
     expect(screen.getByText(/partiellement couverte/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Éléments manquants/ })).toBeInTheDocument();
     expect(screen.getByText('Aucune recommandation dédiée : pas de proposition automatisée')).toBeInTheDocument();
-    expect(screen.queryByText(/Alternatives et options conditionnelles/)).toBeNull();
+    expect(screen.queryByText(/Autres options : alternatives et options conditionnelles/)).toBeNull();
   });
 
   test('« inconnu » est distinct de « non » et le recalcul est immédiat', async () => {
@@ -32,7 +32,7 @@ describe('Interface', () => {
   test('retenir une autre option change le calendrier affiché', async () => {
     const u = userEvent.setup();
     render(<App dossierInitial={casFictif('sab')} />);
-    await u.click(screen.getByText(/Alternatives et options conditionnelles/));
+    await u.click(screen.getByText(/Autres options : alternatives et options conditionnelles/));
     const boutons = screen.getAllByRole('button', { name: 'Retenir cette option' });
     await u.click(boutons[0]);
     expect(screen.getByText(/Calendrier établi pour l'option : Cloxacilline/)).toBeInTheDocument();

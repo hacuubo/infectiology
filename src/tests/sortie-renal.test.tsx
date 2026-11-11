@@ -274,19 +274,22 @@ describe('Interface : explication et accès direct aux champs', () => {
   test('« Compléter » mène directement au champ du poids', async () => {
     const u = userEvent.setup();
     render(<App dossierInitial={casFictif('sarm-hd')} />);
-    const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
+    const fiche = screen.getByRole('heading', { name: /^Prise en charge/ }).closest('section')!;
     // Les éléments manquants sont listés en tête de fiche, chacun menant à son champ.
     const manquants = within(fiche).getByRole('region', { name: /Éléments manquants/ });
     await u.click(within(manquants).getByRole('button', { name: /^Compléter : poids/ }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Poids')));
   });
 
-  test('fiche patient : estimations distinctes avec formule, version, unité et détail du calcul', async () => {
+  test('prise en charge : ni DFG indexé ni estimation utilisée, une ligne d’adaptation rénale par molécule', async () => {
     render(<App dossierInitial={casFictif('sab')} />);
-    const fiche = screen.getByRole('heading', { name: /Fiche opérationnelle/ }).closest('section')!;
-    expect(within(fiche).getByText(/DFG estimé indexé/)).toBeInTheDocument();
-    expect(within(fiche).getAllByText(/mL\/min\/1,73 m²/).length).toBeGreaterThan(0);
-    expect(within(fiche).getAllByText(/version 2009, sans coefficient racial/).length).toBeGreaterThan(0);
-    expect(within(fiche).getAllByText('Détail du calcul et source').length).toBe(3);
+    const fiche = screen.getByRole('heading', { name: /^Prise en charge/ }).closest('section')!;
+    expect(within(fiche).queryByText(/DFG estimé indexé/)).toBeNull();
+    expect(fiche).not.toHaveTextContent(/Estimation utilisée/);
+    expect(within(fiche).queryAllByText('Détail du calcul et source')).toHaveLength(0);
+    const rein = fiche.querySelector('.synthese .rein')!;
+    expect(rein.textContent).toMatch(/Pas d’adaptation de posologie à la fonction rénale|posologie recommandée|non calculée/);
+    // Le DFG reste affiché dans l'onglet Patient.
+    expect(document.querySelector('[data-champ="patient.renal.dfg"]')).toHaveTextContent(/mL\/min\/1,73 m²/);
   });
 });

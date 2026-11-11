@@ -243,13 +243,12 @@ describe('Déterminisme et dédoublonnage', () => {
 
 /* ------------------------------------------------------------------ */
 describe('Interface : parcours, accessibilité, responsive', () => {
-  test('régression CSS : les onglets réapparaissent sous 980 px (règle placée après la règle générale)', () => {
+  test('régression CSS : la barre d’onglets du bas est toujours affichée (jamais masquée hors impression)', () => {
     const css: string = readFileSync('src/ui/styles.css', 'utf-8') // chemin relatif à la racine du projet (répertoire de lancement de vitest);
-    const general = css.indexOf('.onglets { display: none');
-    const media = css.indexOf('@media (max-width: 980px)');
-    expect(general).toBeGreaterThan(-1);
-    expect(media).toBeGreaterThan(general);
-    expect(css.slice(media, css.indexOf('}', css.indexOf('.onglets', media)) + 1)).toMatch(/\.onglets \{ display: flex; \}/);
+    expect(css).toMatch(/\.onglets \{ display: grid;[^}]*position: fixed;[^}]*bottom: 0;/);
+    // Hors @media print, aucune règle ne masque les onglets.
+    const horsImpression = css.replace(/@media print \{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '');
+    expect(horsImpression).not.toMatch(/\.onglets[^{]*\{[^}]*display: none/);
   });
 
   test('groupes radio : un seul arrêt de tabulation, flèches pour changer de choix', async () => {
@@ -287,7 +286,7 @@ describe('Interface : parcours, accessibilité, responsive', () => {
     expect(within(barre).getByText(/Sepsis : antibiothérapie IV immédiate/)).toBeInTheDocument();
     expect(screen.getAllByText(/Sepsis : antibiothérapie IV immédiate/)).toHaveLength(1);
     // IRA : aucune estimation ne personnalise la dose ; chaque molécule l'explique (méropénème, amikacine).
-    expect(screen.getAllByText(/Adaptation rénale non calculée/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Adaptation à la fonction rénale non calculée/).length).toBeGreaterThanOrEqual(2);
   });
 
   test('résumé lisible : libellés accentués, pas de valeur codée brute', async () => {

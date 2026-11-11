@@ -75,6 +75,23 @@ export function lignesResume(dossier: Dossier, ctx: ContexteDecision): [string, 
   return lignes;
 }
 
+/** Résumé d'une ligne de chaque étape de la saisie, affiché quand l'étape est repliée (reprend les lignes du résumé). */
+const LIGNES_ETAPE: Record<string, (cle: string) => boolean> = {
+  't-entree': (k) => k === 'Syndrome',
+  't-patient': (k) => ['Patient', 'Grossesse', 'Rein', 'Allergies', 'Terrain', 'Antibiotiques récents', 'Antécédents micro.'].includes(k),
+  't-contexte': (k) => k === 'Contexte' || k === 'Matériel',
+  't-micro': (k) => /^(Hémocultures|ECBU|Prélèvement)/.test(k),
+  't-horaires': (k) => k === '1re dose',
+};
+export function resumesEtapes(dossier: Dossier, ctx: ContexteDecision): Record<string, string> {
+  const lignes = lignesResume(dossier, ctx);
+  const out: Record<string, string> = {};
+  for (const [id, garde] of Object.entries(LIGNES_ETAPE)) out[id] = lignes.filter(([k]) => garde(k)).map(([k, v]) => `${k} : ${v}`).join(' · ');
+  out['t-entree'] = dossier.entree === 'microbiologie' ? 'B. Résultat microbiologique' : dossier.entree === 'syndrome' ? (out['t-entree'] ? `A. ${out['t-entree']}` : 'A. Syndrome non choisi') : 'Point d’entrée non choisi';
+  if (!out['t-micro']) out['t-micro'] = 'Aucun prélèvement saisi';
+  return out;
+}
+
 export function ResumePatient({ dossier, ctx }: { dossier: Dossier; ctx: ContexteDecision }) {
   const lignes = lignesResume(dossier, ctx);
   return (
@@ -89,5 +106,44 @@ export function ResumePatient({ dossier, ctx }: { dossier: Dossier; ctx: Context
         ))}
       </dl>
     </section>
+  );
+}
+
+/** Une pastille du bandeau patient ; `manque` la signale comme donnée à compléter. */
+type Pastille = { texte: string; etat?: 'manque' | 'ok' | 'alerte' };
+
+/** Pastilles du bandeau patient permanent (exportées pour les tests). Aucune valeur n'est déduite. */
+export function pastillesBandeau(dossier: Dossier, ctx: ContexteDecision): Pastille[] {
+  const p = dossier.patient;
+  const out: Pastille[] = [];
+  const sexe = p.sexe === 'inconnu' ? 'sexe ?' : p.sexe === 'femme' ? 'Femme' : 'Homme';
+  out.push({ texte: `${sexe}, ${p.age !== undefined ? `${nombreFr(p.age)} ans` : 'âge ?'}`, etat: p.sexe === 'inconnu' || p.age === undefined ? 'manque' : undefined });
+  out.push({ texte: `${p.poidsKg !== undefined ? `${nombreFr(p.poidsKg, 1)} kg` : 'poids ?'}${p.tailleCm !== undefined ? ` · ${nombreFr(p.tailleCm)} cm` : ''}`, etat: p.poidsKg === undefined ? 'manque' : undefined });
+  const est = ctx.renal.estimations.find((e) => e.calculable && e.valeur !== undefined);
+  if (p.renal.dialyse !== 'aucune' && p.renal.dialyse !== 'inconnu') out.push({ texte: libelle(p.renal.dialyse) });
+  else if (est) out.push({ texte: `${est.nomCourt} ${nombreFr(est.valeur!)} ${est.unite}` });
+  else if (p.renal.dfg) out.push({ texte: `DFG ${nombreFr(p.renal.dfg.valeur, 1)} ${p.renal.dfg.unite ?? ''}`.trim() });
+  else out.push({ texte: 'rein ?', etat: 'manque' });
+  out.push(
+    p.statutAllergie === 'inconnu'
+      ? { texte: 'allergie ?', etat: 'manque' }
+      : p.statutAllergie === 'presentes'
+        ? { texte: `Allergie : ${p.allergies.map((a) => a.molecule || '?').join(', ') || 'à préciser'}`, etat: 'alerte' }
+        : { texte: 'Allergie : aucune connue', etat: 'ok' },
+  );
+  out.push({ texte: p.contexte === 'inconnu' ? 'contexte ?' : libelle(p.contexte).replace(/^./, (c) => c.toUpperCase()), etat: p.contexte === 'inconnu' ? 'manque' : undefined });
+  if (p.gravite === 'sepsis' || p.gravite === 'choc_septique') out.push({ texte: libelle(p.gravite).replace(/^./, (c) => c.toUpperCase()), etat: 'alerte' });
+  return out;
+}
+
+export function BandeauPatient({ dossier, ctx }: { dossier: Dossier; ctx: ContexteDecision }) {
+  return (
+    <ul className="bandeau-patient" aria-label="Patient en cours">
+      {pastillesBandeau(dossier, ctx).map((x, i) => (
+        <li key={i} className={x.etat ? `pastille ${x.etat}` : 'pastille'}>
+          {x.texte}
+        </li>
+      ))}
+    </ul>
   );
 }

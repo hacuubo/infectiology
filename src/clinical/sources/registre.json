@@ -220,7 +220,7 @@
     "dateConsultation": "2026-11-04",
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur",
-    "notes": "Remplace la version 2021. Page SCCM lue ; article (payant) non lu."
+    "notes": "Remplace la version 2021. Page SCCM lue ; texte intégral lu le 2026-11-11 dans la co-publication Intensive Care Med 2026;52:863-936 (accès libre) : recommandations 25-27 sur la couverture empirique (pathogène multirésistant, antifongique), voir docs/sources/recherche-hemocultures-probabiliste.md."
   },
   {
     "id": "HAS-2025-sepsis",
@@ -2568,5 +2568,121 @@
     "dateConsultation": "2026-11-06",
     "statutAcces": "consultee",
     "statutVigueur": "en_vigueur"
+  },
+  {
+    "id": "ECMM-ISHAM-ASM-2025-candidose",
+    "organisme": "ECMM (avec ISHAM et ASM)",
+    "titre": "Global guideline for the diagnosis and management of candidiasis: an initiative of the ECMM in cooperation with ISHAM and ASM (Cornely OA, Sprute R, Bassetti M et al., Lancet Infect Dis 2025;25:e280-e293, doi 10.1016/S1473-3099(24)00749-7)",
+    "annee": 2025,
+    "version": "Publié en ligne le 13/02/2025 ; version corrigée du 26/02/2025 lue",
+    "type": "recommandation",
+    "url": "https://doi.org/10.1016/S1473-3099(24)00749-7",
+    "urlPdf": "https://lirias.kuleuven.be/retrieve/4cfc0f21-9518-42e6-8cc7-729a94d7b2b1",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Site Lancet en 403 ; copie de la version publiée (CC-BY selon Unpaywall) lue sur le dépôt KU Leuven. Article principal lu, annexe non lue. Échinocandines « strongly recommended » en 1re ligne ; fluconazole « only marginally recommended » en initial ; retrait du CVC « <48-72 h » ; durée 14 j « from the first day of persistently negative blood cultures » (texte) mais « after last positive blood culture » (figure 2) : incohérence interne ; fond d'œil et échographie ciblés (figure 1). Correction d'avril 2025 (isavuconazole, figure 2) signalée par un résumé, non vérifiée."
+  },
+  {
+    "id": "IDSA-2016-candidose",
+    "organisme": "IDSA",
+    "titre": "Clinical Practice Guideline for the Management of Candidiasis: 2016 Update by the Infectious Diseases Society of America (Pappas PG et al., Clin Infect Dis 2016;62(4):e1-e50, doi 10.1093/cid/civ933)",
+    "annee": 2016,
+    "version": "Publié en ligne le 16/12/2015",
+    "type": "recommandation",
+    "url": "https://www.idsociety.org/practice-guideline/candidiasis/",
+    "urlPdf": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4725385/",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Page IDSA « CURRENT ». Texte intégral lu sur PMC (OUP en 403). Recs 1-13 (candidémie du non-neutropénique) : échinocandine en initial (forte, élevée) ; fluconazole alternatif chez les patients non graves ; relais habituellement en 5-7 j ; fond d'œil dilaté chez tous les non-neutropéniques la 1re semaine ; hémocultures tous les 1-2 j ; 2 semaines après clairance et résolution des symptômes ; retrait du CVC individualisé. Aucune mention d'échocardiographie trouvée dans le texte."
+  },
+  {
+    "id": "SPILF-2021-antifongiques-diapo",
+    "organisme": "SPILF — comité des référentiels (d'après COMAI AP-HP)",
+    "titre": "Bon usage des antifongiques — diaporama de synthèse du comité des référentiels de la SPILF (13/10/2021) à partir des recommandations COMAI AP-HP (mise à jour 30/08/2019)",
+    "annee": 2021,
+    "version": "13/10/2021",
+    "type": "recommandation",
+    "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/spilf-groupe-recos-antifongiques.pptx",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Seul document « fongique » hors hématologie listé sur la page SPILF des recommandations. Non gradé. Diapo 3-5 : ablation immédiate du cathéter, contrôle des hémocultures, ETT J5-J7, FO dans les 8 jours (commentaire SPILF : FO pour toute candidémie) ; caspofungine ou micafungine en 1re ligne probabiliste ; fluconazole si pas de choc, pas d'azolés antérieurs ou porte d'entrée urinaire ; 14 j à partir de la 1re hémoculture négative ; désescalade après 3-5 j. Texte source COMAI AP-HP non lu. Tableaux : rattachement ligne/colonne reconstitué."
+  },
+  {
+    "id": "SFAR-SPILF-SRLF-2004-candidoses",
+    "organisme": "SFAR / SPILF / SRLF (avec SFH, SFMM, SFGM)",
+    "titre": "Prise en charge des candidoses et aspergilloses invasives de l'adulte — conférence de consensus commune, 13 mai 2004 (résumé)",
+    "annee": 2004,
+    "version": "13/05/2004",
+    "type": "consensus",
+    "url": "https://www.infectiologie.com/UserFiles/File/spilf/recos/antifongiques-court-04.pdf",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "incertain",
+    "notes": "Non retirée formellement mais dépassée sur la 1re intention (fluconazole en tête d'algorithme, caspofungine en 2e intention) par IDSA 2016, ECMM 2025 et SPILF 2021. Non listée sur la page SPILF actuelle. Ne pas fonder de règle dessus."
+  },
+  {
+    "id": "ESCMID-2012-candida-non-neutropenique",
+    "organisme": "ESCMID (Fungal Infection Study Group)",
+    "titre": "ESCMID* guideline for the diagnosis and management of Candida diseases 2012: non-neutropenic adult patients (Clin Microbiol Infect 2012;18 Suppl 7, doi 10.1111/1469-0691.12039)",
+    "annee": 2012,
+    "type": "recommandation",
+    "url": "https://doi.org/10.1111/1469-0691.12039",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "contenu_non_lisible",
+    "statutVigueur": "incertain",
+    "notes": "Éditeur en 403. Absente de la page ESCMID des recommandations publiées 2021-2026. Citée par ECMM 2025 parmi les recommandations internationales existantes."
+  },
+  {
+    "id": "ESICM-ESCMID-2019-candidose-rea",
+    "organisme": "ESICM / ESCMID",
+    "titre": "ESICM/ESCMID task force on practical management of invasive candidiasis in critically ill patients (Intensive Care Med 2019, doi 10.1007/s00134-019-05599-w)",
+    "annee": 2019,
+    "type": "consensus",
+    "url": "https://doi.org/10.1007/s00134-019-05599-w",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "contenu_non_lisible",
+    "statutVigueur": "incertain",
+    "notes": "Accès fermé (Unpaywall « closed »). Titre et DOI lus dans Europe PMC (PMID 30911804) ; contenu non lu."
+  },
+  {
+    "id": "SFM-REMIC-2022-hemocultures",
+    "organisme": "SFM",
+    "titre": "REMIC — Référentiel en microbiologie médicale, version 7.1 (2022), chapitre hémocultures",
+    "annee": 2022,
+    "version": "7.1",
+    "type": "referentiel",
+    "url": "https://www.sfm-microbiologie.org/",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "contenu_non_lisible",
+    "statutVigueur": "incertain",
+    "notes": "Ouvrage payant, non trouvé en ligne. Version « REMIC 7.1 - 2022 » attestée uniquement par un cours DESC 2023 (tableaux d'interprétation en image). Aucune conduite probabiliste selon l'examen direct vérifiée."
+  },
+  {
+    "id": "CHU-Nancy-2019-algorithme-hemocultures",
+    "organisme": "CHU de Nancy (document hébergé sur infectiologie.com, espace groupe-atb)",
+    "titre": "Traitement probabiliste des bactériémies sur l'examen direct des hémocultures (hors neutropénie fébrile) — algorithme local V1.06/2019",
+    "annee": 2019,
+    "version": "V1.06/2019",
+    "type": "documentation",
+    "url": "https://www.infectiologie.com/UserFiles/File/groupe-atb/algorithme-de-pec-bacteriemies-chu-nancy.pdf",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "incertain",
+    "notes": "Protocole hospitalier local, pas une recommandation ; non gradé ; antérieur à SSC 2026 ; aucune dose. Seul document trouvé traitant de la conduite selon l'examen direct (CGP amas/chaînettes, BGN, levures, BG+). Organigramme en colonnes : correspondances reconstituées, branche « valvulopathie/endocardite/matériel » et lignes CGP en chaînettes non fiables à l'extraction. Exemple seulement."
+  },
+  {
+    "id": "SPILF-DESC-2023-hemocultures-LeMonnier",
+    "organisme": "SPILF (cours DES MIT)",
+    "titre": "Bonnes pratiques de prélèvement des hémocultures : quand, pour qui, comment ? — A. Le Monnier, DES MIT thématique 16, 28 mars 2023 (support de formation, pas une recommandation)",
+    "annee": 2023,
+    "type": "documentation",
+    "url": "https://www.infectiologie.com/UserFiles/File/formation/desc/2023/seminaire-mars-2023/t16-mardi-28.03/conf-6-le-monnier-hemocultures-v-pdf.pdf",
+    "dateConsultation": "2026-11-11",
+    "statutAcces": "consultee",
+    "statutVigueur": "en_vigueur",
+    "notes": "Grille d'interprétation : Corynebacterium, Bacillus, Propionibacterium acnes « Peu probable », « Sauf si présence sur 2, 3 flacons ou + ». Cite REMIC 7.1 - 2022 (tableaux en image, non lisibles)."
   }
 ]

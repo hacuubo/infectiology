@@ -194,4 +194,40 @@ export const R_SYNDROME_NON_COUVERT: Regle = {
       .fin(),
 };
 
-export const REGLES_TRANSVERSALES = [R_PEDIATRIE, R_GRAVITE, R_TERRAIN, R_GROSSESSE, R_ALLERGIE, R_DONNEES, R_REEVALUATION, R_PERSISTANCE, R_SYNDROME_NON_COUVERT];
+/**
+ * Hémoculture positive à un germe que l'application ne modélise pas (examen direct « autre » : levures, bacille à
+ * Gram positif, cocci à Gram négatif… ; ou germe identifié hors liste), sans foyer déclaré. Les règles de foyer
+ * (pneumonie, peau, intra-abdominal, méningite) traitent elles-mêmes ce cas quand un foyer est déclaré.
+ * Absence expliquée : rien n'est proposé, rien n'est extrapolé.
+ */
+export const R_HEMOCULTURE_NON_COUVERTE: Regle = {
+  id: 'R-HEMOCULTURE-NON-COUVERTE',
+  libelle: 'Hémoculture positive à un germe non couvert (levures, bacille à Gram positif, autre)',
+  description: 'Germe hors périmètre des règles de bactériémie : absence de proposition expliquée, avis infectiologique.',
+  statut: 'verifiee_ia',
+  priorite: 10,
+  sources: [],
+  sApplique: (ctx) => adulte(ctx) && bacteriemie(ctx) && ctx.foyer === 'inconnu' && germePrincipal(ctx).g === 'autre',
+  appliquer: (ctx) => {
+    const { prl } = germePrincipal(ctx);
+    const auGram = prl?.stade === 'examen_direct' || !prl?.organisme;
+    const germe = auGram ? 'examen direct « autre » (levures, bacille à Gram positif, cocci à Gram négatif…)' : `germe identifié hors liste${prl?.organismeLibre ? ` (${prl.organismeLibre})` : ''}`;
+    return new Fiche(ctx, 'verifiee_ia')
+      .situation('hemoculture-non-couverte', `Hémoculture positive à un germe non couvert par l'application — ${germe}`, 'non_couverte', 'Les règles de bactériémie couvrent les staphylocoques, streptocoques, entérocoques et bacilles à Gram négatif. Les levures (candidémie), les bacilles à Gram positif et les autres germes ne sont pas modélisés : aucune proposition n\'est générée ni extrapolée.')
+      .absence(
+        'Traitement d\'une hémoculture positive à un germe non couvert',
+        'Germe hors du périmètre des règles de bactériémie de cette version. Levures (candidémie) : des recommandations existent (ECMM/ISHAM/ASM 2025, IDSA 2016, SPILF 2021 : échinocandine en 1re intention) mais ne sont pas encore intégrées ; leurs divergences (fond d\'œil, échocardiographie, point de départ des 14 jours) restent à arbitrer. Bacilles à Gram positif : pas de recommandation dédiée retrouvée ; contaminants possibles, sauf hémocultures positives répétées (Doern 2019).',
+        ['Avis infectiologique sans attendre', auGram ? 'Préciser l\'examen direct auprès du laboratoire (levures ? bacille à Gram positif ?) et suivre l\'identification' : 'Préciser le germe et son antibiogramme ou antifongigramme', 'Rechercher la porte d\'entrée (cathéter, foyer profond)'],
+        [
+          S('ECMM-ISHAM-ASM-2025-candidose', 'p. 7', 'Anidulafungin, caspofungin, micafungin, and rezafungin are strongly recommended as first-line treatment for candidaemia.', 'choix'),
+          S('IDSA-2016-candidose', 'rec. 1', 'An echinocandin (caspofungin: loading dose 70 mg, then 50 mg daily; micafungin: 100 mg daily; anidulafungin: loading dose 200 mg, then 100 mg daily) is recommended as initial therapy', 'choix'),
+          S('SPILF-2021-antifongiques-diapo', 'diapo 5', 'Pendant 14 jours à partir de la 1ère hémoculture négative', 'duree'),
+          S('DOERN-2019-contamination', 'Bacteria Associated with Contaminated Blood Cultures', 'These organisms may be considered contaminants unless recovered from multiple blood cultures obtained in sequence', 'definition'),
+        ],
+      )
+      .avis('Avis infectiologique : hémoculture positive à un germe non couvert par l\'application.', true, [])
+      .fin();
+  },
+};
+
+export const REGLES_TRANSVERSALES = [R_PEDIATRIE, R_GRAVITE, R_TERRAIN, R_GROSSESSE, R_ALLERGIE, R_DONNEES, R_REEVALUATION, R_PERSISTANCE, R_SYNDROME_NON_COUVERT, R_HEMOCULTURE_NON_COUVERTE];
