@@ -1,0 +1,20 @@
+{
+  "name": "Infectiology — aide à la décision en antibiothérapie",
+  "short_name": "Infectiology",
+  "description": "Aide à la décision en antibiothérapie adulte, en attendant l'avis du service de maladies infectieuses. Outil en développement, non validé pour l'usage clinique.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f3f8",
+  "theme_color": "#f4f3f8",
+  "categories": ["medical"],
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
