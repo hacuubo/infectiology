@@ -40,6 +40,14 @@ describe('Hémoculture positive à un germe non couvert', () => {
     expect(plan(cas(prl, 'sepsis')).urgence.niveau).toBe('immediate');
   });
 
+  test('l’explication cite les recommandations sur la candidémie sans proposer de traitement', () => {
+    const p = plan(cas({ stade: 'examen_direct', examenDirect: 'autre' }));
+    const a = p.absencesRecommandation![0];
+    expect(a.recherche).toMatch(/échinocandine en 1re intention/);
+    expect(a.sources.map((s) => s.source)).toEqual(expect.arrayContaining(['ECMM-ISHAM-ASM-2025-candidose', 'IDSA-2016-candidose', 'SPILF-2021-antifongiques-diapo']));
+    expect(p.options).toHaveLength(0);
+  });
+
   test('le libellé saisi par le laboratoire est repris', () => {
     expect(plan(cas({ organisme: 'autre', organismeLibre: 'Candida albicans' })).situation.libelle).toMatch(/Candida albicans/);
   });
@@ -49,6 +57,40 @@ describe('Hémoculture positive à un germe non couvert', () => {
     d.entree = 'syndrome';
     d.syndrome = 'pulmonaire';
     expect(plan(d).regles.map((r) => r.id)).not.toContain('R-HEMOCULTURE-NON-COUVERTE');
+  });
+});
+
+describe('Cocci à Gram positif en amas (examen direct) : couverture du SARM selon le risque', () => {
+  const rangs = (p: Plan) => Object.fromEntries(p.options.map((o) => [o.id, o.rang]));
+
+  test.each(['stable', 'sepsis'])('communautaire sans facteur de risque (%s) : céfazoline en 1re ligne, pas d’anti-SARM', (grav) => {
+    const p = plan(cas({ stade: 'examen_direct', examenDirect: 'cgp_amas' }, grav));
+    expect(rangs(p)).toMatchObject({ 'proba-sab-cefazoline': 'premiere_ligne', 'proba-sab-vanco': 'conditionnelle' });
+    const alerte = p.urgence.alertes.find((a) => /pas d'anti-SARM en probabiliste/.test(a.texte))!;
+    expect(alerte.sources?.some((s) => s.source === 'SRLF-SFAR-2014-RFE-antibiotiques-rea')).toBe(true);
+  });
+
+  test.each([
+    ['associé aux soins', (d: Dossier) => (d.patient.contexte = 'associe_aux_soins'), /infection associée aux soins/],
+    ['hémodialyse', (d: Dossier) => (d.patient.renal.dialyse = 'hemodialyse_intermittente'), /hémodialyse/],
+    ['cathéter de longue durée', (d: Dossier) => (d.patient.materielVasculaire = 'picc'), /cathéter de longue durée/],
+    ['antécédent de SARM', (d: Dossier) => (d.patient.antecedentsMicro = [{ organisme: 'staphylococcus_aureus', resistance: 'SARM' } as Dossier['patient']['antecedentsMicro'][number]]), /antécédent de SARM/],
+  ])('facteur de risque (%s) : vancomycine en 1re ligne, céfazoline en alternative', (_n, modif, motif) => {
+    const d = cas({ stade: 'examen_direct', examenDirect: 'cgp_amas' }, 'sepsis');
+    modif(d);
+    const p = plan(d);
+    expect(rangs(p)).toMatchObject({ 'proba-sab-vanco': 'premiere_ligne', 'proba-sab-cefazoline': 'alternative' });
+    expect(p.urgence.alertes.some((a) => /facteur de risque de SARM/.test(a.texte) && motif.test(a.texte))).toBe(true);
+  });
+
+  test('contexte inconnu : les deux options restent conditionnelles et le contexte est demandé', () => {
+    const p = plan(cas({ stade: 'examen_direct', examenDirect: 'cgp_amas' }, 'stable', 'inconnu'));
+    expect(rangs(p)).toMatchObject({ 'proba-sab-vanco': 'conditionnelle', 'proba-sab-cefazoline': 'conditionnelle' });
+    expect(p.urgence.alertes.some((a) => /préciser le contexte/.test(a.texte))).toBe(true);
+  });
+
+  test('S. aureus identifié, sans antibiogramme : même logique', () => {
+    expect(rangs(plan(cas({ organisme: 'staphylococcus_aureus' })))['proba-sab-cefazoline']).toBe('premiere_ligne');
   });
 });
 

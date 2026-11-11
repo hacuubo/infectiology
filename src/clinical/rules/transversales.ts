@@ -216,9 +216,14 @@ export const R_HEMOCULTURE_NON_COUVERTE: Regle = {
       .situation('hemoculture-non-couverte', `Hémoculture positive à un germe non couvert par l'application — ${germe}`, 'non_couverte', 'Les règles de bactériémie couvrent les staphylocoques, streptocoques, entérocoques et bacilles à Gram négatif. Les levures (candidémie), les bacilles à Gram positif et les autres germes ne sont pas modélisés : aucune proposition n\'est générée ni extrapolée.')
       .absence(
         'Traitement d\'une hémoculture positive à un germe non couvert',
-        'Germe hors du périmètre des règles de bactériémie de cette version : aucune recommandation n\'a été intégrée pour ce germe (candidémie, bacilles à Gram positif, autres).',
+        'Germe hors du périmètre des règles de bactériémie de cette version. Levures (candidémie) : des recommandations existent (ECMM/ISHAM/ASM 2025, IDSA 2016, SPILF 2021 : échinocandine en 1re intention) mais ne sont pas encore intégrées ; leurs divergences (fond d\'œil, échocardiographie, point de départ des 14 jours) restent à arbitrer. Bacilles à Gram positif : pas de recommandation dédiée retrouvée ; contaminants possibles, sauf hémocultures positives répétées (Doern 2019).',
         ['Avis infectiologique sans attendre', auGram ? 'Préciser l\'examen direct auprès du laboratoire (levures ? bacille à Gram positif ?) et suivre l\'identification' : 'Préciser le germe et son antibiogramme ou antifongigramme', 'Rechercher la porte d\'entrée (cathéter, foyer profond)'],
-        [],
+        [
+          S('ECMM-ISHAM-ASM-2025-candidose', 'p. 7', 'Anidulafungin, caspofungin, micafungin, and rezafungin are strongly recommended as first-line treatment for candidaemia.', 'choix'),
+          S('IDSA-2016-candidose', 'rec. 1', 'An echinocandin (caspofungin: loading dose 70 mg, then 50 mg daily; micafungin: 100 mg daily; anidulafungin: loading dose 200 mg, then 100 mg daily) is recommended as initial therapy', 'choix'),
+          S('SPILF-2021-antifongiques-diapo', 'diapo 5', 'Pendant 14 jours à partir de la 1ère hémoculture négative', 'duree'),
+          S('DOERN-2019-contamination', 'Bacteria Associated with Contaminated Blood Cultures', 'These organisms may be considered contaminants unless recovered from multiple blood cultures obtained in sequence', 'definition'),
+        ],
       )
       .avis('Avis infectiologique : hémoculture positive à un germe non couvert par l\'application.', true, [])
       .fin();
