@@ -3,7 +3,7 @@
  * frise graphique du traitement (placement sans approximation, numéros repris dans le tableau).
  */
 import { describe, expect, test } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { App } from '../ui/App';
 import { FriseGraphique, numerosReperes } from '../ui/FriseGraphique';
 import { resoudreCalendrier, type EvenementFriseDetaille } from '../schedule/frise';
@@ -82,5 +82,35 @@ describe('Bandeau patient et progression', () => {
     const boutons = within(nav).getAllByRole('button');
     expect(boutons).toHaveLength(5);
     expect(boutons[0]).toHaveTextContent(/Point d’entrée.*à compléter/);
+  });
+});
+
+describe('Planche Tactile (v9) : barre d’onglets et fiche', () => {
+  test('trois vues, une seule affichée ; « Demander un avis SMIT » ouvre la vue Avis', async () => {
+    render(<App dossierInitial={CAS_ECOLI_I} />);
+    const saisie = document.querySelector('.colonne-saisie')!;
+    const resultat = document.querySelector('.colonne-resultat')!;
+    const avis = document.querySelector('.colonne-avis')!;
+    expect(saisie).not.toHaveClass('masque');
+    expect(resultat).toHaveClass('masque');
+    expect(avis).toHaveClass('masque');
+    const nav = screen.getByRole('navigation', { name: /Onglets de l’application/ });
+    fireEvent.click(within(nav).getByRole('button', { name: /^Prise en charge/ }));
+    expect(resultat).not.toHaveClass('masque');
+    expect(saisie).toHaveClass('masque');
+    fireEvent.click(within(resultat as HTMLElement).getByRole('button', { name: 'Demander un avis SMIT' }));
+    expect(avis).not.toHaveClass('masque');
+    expect(within(nav).getByRole('button', { name: /^Avis SMIT/ })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('en-tête de fiche : situation en titre ; traitement proposé avec « Retenir ce traitement »', () => {
+    render(<App dossierInitial={CAS_ECOLI_I} />);
+    const h = screen.getByRole('heading', { name: /^Prise en charge : / });
+    expect(h.closest('.entete-fiche')).not.toBeNull();
+    const dd = document.querySelector('.synthese dd.traitement');
+    if (dd) {
+      fireEvent.click(within(dd as HTMLElement).getByRole('button', { name: 'Retenir ce traitement' }));
+      expect(document.querySelector('.synthese')).toHaveTextContent(/Traitement retenu/);
+    }
   });
 });

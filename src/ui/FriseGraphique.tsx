@@ -33,8 +33,8 @@ export function FriseGraphique({ frise, option }: { frise: EvenementFriseDetaill
 
   const derniere = Math.max(0, ...places.map((e) => e.position!));
   const jours = Math.max(3, ...durees, Math.ceil((derniere + 1) / 24));
-  // Graduations : chaque jour jusqu'à deux semaines, puis chaque semaine (J1, J8, J15…).
-  const pas = jours <= 14 ? 1 : 7;
+  // Graduations lisibles sur téléphone : chaque jour jusqu'à une semaine, un jour sur deux jusqu'à deux semaines, puis chaque semaine.
+  const pas = jours <= 7 ? 1 : jours <= 14 ? 2 : 7;
   const graduations: number[] = [];
   for (let j = 1; j <= jours; j += pas) graduations.push(j);
 

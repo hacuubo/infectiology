@@ -11,11 +11,12 @@ import { dossierParDefaut } from '../engine/etat';
 import { contexteUI } from '../ui/contexte-ui';
 
 describe('Onglet Patient', () => {
-  test('onglets « Patient » et « Prise en charge »', () => {
+  test('onglets « Patient », « Prise en charge » et « Avis SMIT »', () => {
     render(<App />);
-    const nav = screen.getByRole('navigation', { name: /écran étroit/ });
+    const nav = screen.getByRole('navigation', { name: /Onglets de l’application/ });
     expect(within(nav).getByRole('button', { name: /^Patient/ })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: /^Prise en charge/ })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: /^Avis SMIT/ })).toBeInTheDocument();
     expect(within(nav).queryByRole('button', { name: /Saisie|Fiche/ })).toBeNull();
     expect(screen.getByRole('heading', { name: /^Prise en charge/ })).toBeInTheDocument();
   });
@@ -105,12 +106,12 @@ describe('Onglet Patient', () => {
 
 describe('Demande d’avis infectiologique', () => {
   beforeEach(() => window.localStorage.clear());
-  test('dernière section de l’onglet Patient : destinataire, aperçu, lien de messagerie et signature', async () => {
+  test('vue Avis SMIT : destinataire, aperçu, lien de messagerie et signature', async () => {
     const u = userEvent.setup();
-    const { container } = render(<App />);
+    render(<App />);
     const section = screen.getByRole('heading', { name: /Demande d’avis infectiologique/ }).closest('section')!;
-    // Juste avant le pied de page de la colonne Patient.
-    expect(section.nextElementSibling).toBe(container.querySelector('.colonne-saisie > footer.pied-saisie'));
+    // Vue « Avis SMIT » à part, ouverte par la barre d’onglets ou le bouton en fin de fiche.
+    expect(section.closest('.colonne-avis')).not.toBeNull();
     expect(section).toHaveTextContent(DESTINATAIRE_AVIS);
 
     await u.type(screen.getByLabelText('Âge'), '68');

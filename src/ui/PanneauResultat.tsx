@@ -365,12 +365,11 @@ function texteSurveillance(l: LigneSurveillance): string {
 const MOTIFS_DEJA_PRESENTES = ['informations_manquantes', 'non_indiquee'] as const;
 
 /** Synthèse : les informations principales de la fiche (situation, germe, traitement retenu avec dose et durée, surveillance). */
-function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: Plan; choixPrescripteur: boolean; explicationVisible: boolean }) {
+function SyntheseFiche({ plan, choixPrescripteur, explicationVisible, onRetenir }: { plan: Plan; choixPrescripteur: boolean; explicationVisible: boolean; onRetenir?: (id: string) => void }) {
   const ind = plan.indication;
   // Motifs « informations manquantes » du moteur (masqués plus bas) : statut, motif et prochaine action, mot pour mot.
   const etat = plan.sortie.motifs.filter((m) => m.type === 'informations_manquantes');
   const provisoire = elementsManquants(plan).some((m) => m.impact === 'bloque_decision');
-  const niveau = plan.urgence.niveau;
   const retenue = plan.options.find((o) => o.id === plan.optionRetenueId) ?? plan.options.find((o) => o.rang === 'premiere_ligne');
   const nonTraiter = ind?.decision === 'ne_pas_traiter';
   const sansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
@@ -380,30 +379,10 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
   const survIndication = sansTraitement && ind ? [...ind.actions, ...ind.surveillance] : [];
   const dureeUnique = retenue && retenue.prescriptions.length > 0 && retenue.prescriptions.every((p) => p.duree.texte === retenue.prescriptions[0].duree.texte && p.duree.pointDeDepart === retenue.prescriptions[0].duree.pointDeDepart);
   const avisUrgents = plan.avisSpecialise.filter((a) => a.urgent);
-  const determinants = plan.microbiologie.flatMap((m) => m.determinants.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
-  const inconnues = plan.microbiologie.flatMap((m) => m.inconnues.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
   return (
     <div className="fiche-section synthese">
-      <h3>Synthèse</h3>
+      <h3 className="sr-only">Synthèse</h3>
       <dl className="synthese-dl">
-        <dt>Situation</dt>
-        <dd>
-          {plan.situation.libelle} {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{LIBELLE_URGENCE[niveau]}</Badge>}
-        </dd>
-        {ind && (
-          <>
-            <dt>Indication</dt>
-            <dd>
-              <strong>{indicationOuiNon(ind)}</strong> — {LIBELLE_DECISION[ind.decision]}
-            </dd>
-          </>
-        )}
-        <dt>Germe{plan.microbiologie.length > 1 ? 's' : ''}</dt>
-        <dd>
-          {plan.microbiologie.length ? plan.microbiologie.map((m) => m.germe).join(' ; ') : 'non identifié'}
-          {determinants.length > 0 && <div className="aide">{determinants.join(' ; ')}</div>}
-          {inconnues.length > 0 && <div className="aide">À préciser : {inconnues.join(' ; ')}</div>}
-        </dd>
         {nonTraiter ? (
           <>
             <dt>Raison de ne pas traiter</dt>
@@ -411,7 +390,7 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
           </>
         ) : (
           <>
-            <dt>
+            <dt className={retenue ? 'traitement-label' : undefined}>
               {choixPrescripteur ? 'Traitement retenu' : 'Traitement proposé (1re ligne)'}
               {retenue && provisoire ? ' — provisoire' : ''}
             </dt>
@@ -461,6 +440,13 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
                   {retenue.commentaire && <p className="aide">{retenue.commentaire}</p>}
                   <RefsInline refs={retenue.sources} />
                   {autresOptions > 0 && <div className="aide">{autresOptions} autre{autresOptions > 1 ? 's' : ''} option{autresOptions > 1 ? 's' : ''} : voir « Autres options » ci-dessous.</div>}
+                  {onRetenir && !choixPrescripteur && (
+                    <div className="actions-traitement">
+                      <button type="button" className="btn retenir-traitement" onClick={() => onRetenir(retenue.id)}>
+                        Retenir ce traitement
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : ind && sansTraitement ? (
                 LIBELLE_DECISION[ind.decision]
@@ -507,7 +493,36 @@ function SyntheseFiche({ plan, choixPrescripteur, explicationVisible }: { plan: 
   );
 }
 
-export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, changements = [] }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier; allerAuChamp?: AllerAuChamp; changements?: string[] }) {
+/** En-tête de la fiche : couverture de la situation, situation en titre, indication et germe en sous-titre. */
+function EnteteFiche({ plan }: { plan: Plan }) {
+  const ind = plan.indication;
+  const couv = plan.situation.couverture;
+  const germes = plan.microbiologie.length ? plan.microbiologie.map((m) => m.germe).join(' ; ') : 'germe non identifié';
+  const determinants = plan.microbiologie.flatMap((m) => m.determinants.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
+  const inconnues = plan.microbiologie.flatMap((m) => m.inconnues.map((x) => `${plan.microbiologie.length > 1 ? `${m.germe} — ` : ''}${x.texte}`));
+  return (
+    <div className="entete-fiche">
+      <Badge type={couv === 'couverte' ? 'ok' : couv === 'partielle' ? 'attention' : 'urgence'}>{couv === 'couverte' ? 'situation couverte' : couv === 'partielle' ? 'partiellement couverte' : 'non couverte'}</Badge>
+      <h2 id="t-fiche">
+        <span className="sr-only">Prise en charge : </span>
+        {plan.situation.libelle}
+      </h2>
+      <p className="sous-titre">
+        {ind && (
+          <>
+            Indication : <strong>{indicationOuiNon(ind)}</strong> — {LIBELLE_DECISION[ind.decision]} ·{' '}
+          </>
+        )}
+        {plan.microbiologie.length > 1 ? 'Germes : ' : plan.microbiologie.length ? 'Germe : ' : ''}
+        {germes}
+      </p>
+      {determinants.length > 0 && <p className="aide">{determinants.join(' ; ')}</p>}
+      {inconnues.length > 0 && <p className="aide">À préciser : {inconnues.join(' ; ')}</p>}
+    </div>
+  );
+}
+
+export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, changements = [], demanderAvis }: { plan: Plan; onRetenir?: (id: string) => void; dossier?: Dossier; allerAuChamp?: AllerAuChamp; changements?: string[]; demanderAvis?: () => void }) {
   const ind = plan.indication;
   const conclusionSansTraitement = !!ind && !['traiter', 'urgence'].includes(ind.decision);
   const niveau = plan.urgence.niveau;
@@ -539,12 +554,7 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
         Prise en charge recalculée : {ind ? `${LIBELLE_DECISION[ind.decision]} ; ` : ''}{LIBELLE_URGENCE[niveau]} ; {plan.options.length} option(s)
         {urgentes.length ? ` ; ${urgentes.length} alerte(s) urgente(s)` : ''}.
       </p>
-      <h2 id="t-fiche">
-        Prise en charge{' '}
-        <Badge type={plan.situation.couverture === 'couverte' ? 'ok' : plan.situation.couverture === 'partielle' ? 'attention' : 'urgence'}>
-          {plan.situation.couverture === 'couverte' ? 'situation couverte' : plan.situation.couverture === 'partielle' ? 'partiellement couverte' : 'non couverte'}
-        </Badge>
-      </h2>
+      <EnteteFiche plan={plan} />
 
       {changements.length > 0 && (
         <div className="alerte attention changements" role="status">
@@ -557,8 +567,10 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
         </div>
       )}
       <ElementsManquants manquants={manquants} allerAuChamp={allerAuChamp} />
-      <SyntheseFiche plan={plan} choixPrescripteur={!!dossier?.optionRetenueId} explicationVisible={explicationVisible} />
+      <SyntheseFiche plan={plan} choixPrescripteur={!!dossier?.optionRetenueId} explicationVisible={explicationVisible} onRetenir={onRetenir} />
       {autresAlertes.length > 0 && (
+        <div className="fiche-section bloc-points">
+        <h3 aria-hidden="true">Points d’attention</h3>
         <ul className="points-attention" aria-label="Points d'attention">
           {autresAlertes.map((a, i) => (
             <li key={i} className={a.niveau}>
@@ -568,6 +580,7 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
             </li>
           ))}
         </ul>
+        </div>
       )}
 
       <div className="fiche-section">
@@ -707,6 +720,11 @@ export function PanneauResultat({ plan, onRetenir, dossier, allerAuChamp, change
       </div>
 
       <div className="fiche-section fin-fiche">
+        {demanderAvis && (
+          <button type="button" className="btn secondaire demander-avis" onClick={demanderAvis}>
+            Demander un avis SMIT
+          </button>
+        )}
         <details>
           <summary>Sources de cette prise en charge ({toutesSources.length})</summary>
           <ListeSources refs={toutesSources} />

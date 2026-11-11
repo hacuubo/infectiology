@@ -22,7 +22,14 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
     return d;
   });
   const [invalidations, setInvalidations] = useState<Invalidation[]>([]);
-  const [onglet, setOnglet] = useState<'saisie' | 'resultat'>('saisie');
+  // Trois vues, une à la fois, choisies dans la barre d'onglets fixée en bas de l'écran.
+  const [onglet, setOngletBrut] = useState<'saisie' | 'resultat' | 'avis'>('saisie');
+  const setOnglet = useCallback((o: 'saisie' | 'resultat' | 'avis') => {
+    setOngletBrut((avant) => {
+      if (avant !== o) window.scrollTo?.({ top: 0 });
+      return o;
+    });
+  }, []);
   // Résumé du patient réduit par défaut : la saisie reste au premier plan.
   const [resumeReduit, setResumeReduit] = useState(true);
 
@@ -121,8 +128,8 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
     const verifier = () => {
       attente = 0;
       if (col.offsetParent === null || ancre.current) return; // colonne masquée (onglet Prise en charge) ou repli en cours
-      const prog = col.querySelector('.progression');
-      const hautVisible = prog ? prog.getBoundingClientRect().bottom : col.getBoundingClientRect().top;
+      const barre = document.querySelector('.barre-contexte');
+      const hautVisible = Math.max(barre ? barre.getBoundingClientRect().bottom : 0, col.getBoundingClientRect().top);
       const sections = [...col.querySelectorAll<HTMLElement>('[data-etape]')];
       // Une seule étape à la fois, la plus basse éligible : la compensation de défilement reste exacte.
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -190,7 +197,17 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
       el.classList.add('surbrillance');
       window.setTimeout(() => el.classList.remove('surbrillance'), 2500);
     }, 0);
-  }, [ouvrirEtape]);
+  }, [ouvrirEtape, setOnglet]);
+
+  // Hauteur de la barre permanente : les sections ciblées s'arrêtent juste dessous.
+  const barreContexte = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = barreContexte.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--haut-barre', `${Math.round(el.getBoundingClientRect().height)}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <div className="app">
@@ -200,7 +217,7 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
       </header>
 
       {/* Barre permanente : alertes urgentes et résumé du patient, visibles quel que soit l'onglet ou le défilement. */}
-      <div className="barre-contexte">
+      <div className="barre-contexte" ref={barreContexte}>
         <div className={`barre-urgence ${typeUrgence(niveau)}`} role="region" aria-label="Niveau d'urgence et alertes urgentes">
           <Badge type={typeUrgence(niveau)}>{LIBELLE_URGENCE[niveau]}</Badge>
           {urgentes.length > 0 && (
@@ -229,20 +246,28 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
             </GardeLocale>
           )}
         </div>
+        {onglet === 'saisie' && <Progression aCompleter={etapesACompleter} replies={replies} ouvrir={ouvrirEtape} toutDeplier={() => setReplies(new Set())} />}
       </div>
 
-      <nav className="onglets" aria-label="Affichage sur écran étroit">
+      <nav className="onglets" aria-label="Onglets de l’application">
         <button type="button" aria-pressed={onglet === 'saisie'} className={onglet === 'saisie' ? 'actif' : ''} onClick={() => setOnglet('saisie')}>
+          <span className="onglet-icone" aria-hidden="true" />
           Patient
         </button>
         <button type="button" aria-pressed={onglet === 'resultat'} className={onglet === 'resultat' ? 'actif' : ''} onClick={() => setOnglet('resultat')}>
-          Prise en charge {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{niveau === 'immediate' ? 'urgence' : 'élevée'}</Badge>}
+          <span className="onglet-icone" aria-hidden="true" />
+          <span>
+            Prise en charge {niveau !== 'standard' && <Badge type={typeUrgence(niveau)}>{niveau === 'immediate' ? 'urgence' : 'élevée'}</Badge>}
+          </span>
+        </button>
+        <button type="button" aria-pressed={onglet === 'avis'} className={onglet === 'avis' ? 'actif' : ''} onClick={() => setOnglet('avis')}>
+          <span className="onglet-icone" aria-hidden="true" />
+          Avis SMIT
         </button>
       </nav>
 
       <main className="contenu">
-        <div ref={colonneSaisie} className={`colonne-saisie ${onglet === 'resultat' ? 'masque-etroit' : ''}`}>
-          <Progression aCompleter={etapesACompleter} replies={replies} ouvrir={ouvrirEtape} toutDeplier={() => setReplies(new Set())} />
+        <div ref={colonneSaisie} className={`colonne-saisie ${onglet !== 'saisie' ? 'masque' : ''}`}>
           <div className="ligne reinitialiser">
               <button
                 type="button"
@@ -277,11 +302,6 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
               </RepliContexte.Provider>
             </ChampsManquants.Provider>
           </GardeLocale>
-          {ctx && (
-            <GardeLocale nom="demande d’avis" cle={dossier}>
-              <AvisInfectiologique key={nouveauPatient} dossier={dossier} ctx={ctx} />
-            </GardeLocale>
-          )}
           {/* En fin de saisie : statut de l'outil et état de la base clinique. */}
           <footer className="pied pied-saisie">
             <div className="avertissement-global" role="note">
@@ -310,10 +330,10 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
             </p>
           </footer>
         </div>
-        <div className={`colonne-resultat ${onglet === 'saisie' ? 'masque-etroit' : ''}`}>
+        <div className={`colonne-resultat ${onglet !== 'resultat' ? 'masque' : ''}`}>
           {resultat.ok && plan ? (
             <GardeErreur cle={plan} rendu={(message, reessayer) => <PanneauErreurTechnique sortie={{ traitement: 'aucun', urgence: false, actionsUrgentes: [], ecartees: [], motifs: [{ type: 'erreur_technique', rang: 0, statut: 'Erreur technique d’affichage — ce n’est pas une conclusion médicale', motif: `L’affichage de la prise en charge a échoué (${message}).`, verifie: [], dejaPropose: [], aCompleter: [], prochaineAction: 'Les données saisies sont conservées : réessayer. Si l’erreur persiste, décider sans l’application (avis du SMIT) et signaler l’erreur.', sources: [], origine: ['interface'] }] }} onReessayer={reessayer} />}>
-              <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} allerAuChamp={allerAuChamp} changements={changements} />
+              <PanneauResultat plan={plan} dossier={dossier} onRetenir={(id) => modifier((x) => (x.optionRetenueId = id))} allerAuChamp={allerAuChamp} changements={changements} demanderAvis={() => setOnglet('avis')} />
             </GardeErreur>
           ) : (
             !resultat.ok && <PanneauErreurTechnique sortie={resultat.sortie} onReessayer={() => setEssai((n) => n + 1)} />
@@ -321,6 +341,13 @@ export function App({ dossierInitial }: { dossierInitial?: Dossier } = {}) {
           <footer className="pied">
             Outil en développement, non validé pour l'usage clinique. Moteur déterministe : à entrées et version clinique identiques, le résultat est identique. Les règles « vérifiées par IA » ne sont pas validées médicalement. Sources : SPILF, HAS, ANSM, CA-SFM/EUCAST, ESCMID, ESC, IDSA ; voir les sources de chaque prise en charge.
           </footer>
+        </div>
+        <div className={`colonne-avis ${onglet !== 'avis' ? 'masque' : ''}`}>
+          {ctx && (
+            <GardeLocale nom="demande d’avis" cle={dossier}>
+              <AvisInfectiologique key={nouveauPatient} dossier={dossier} ctx={ctx} />
+            </GardeLocale>
+          )}
         </div>
       </main>
     </div>

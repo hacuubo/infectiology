@@ -33,7 +33,7 @@ export function AvisInfectiologique({ dossier, ctx }: { dossier: Dossier; ctx: C
 
   return (
     <section className="carte avis" aria-labelledby="t-avis">
-      <h2 id="t-avis">6. Demande d’avis infectiologique</h2>
+      <h2 id="t-avis">Demande d’avis infectiologique</h2>
       <p className="aide">
         Courriel à <strong>{DESTINATAIRE_AVIS}</strong>, rédigé à partir des données saisies. Ne saisissez ni nom ni identifiant : des données nominatives ne s’envoient que par une messagerie sécurisée de santé.
       </p>

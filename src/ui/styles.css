@@ -73,17 +73,11 @@ a { color: var(--accent); }
 @media (max-height: 639.98px) {
   .barre-contexte { position: sticky; top: 0; max-height: 45vh; overflow-y: auto; }
 }
-.onglets { display: none; gap: 6px; padding: 8px 16px 0; }
-.onglets button { flex: 1; padding: 10px; border: 1px solid var(--bord-controle); background: var(--surface); border-radius: var(--rayon); font-weight: 600; color: var(--texte); }
-.onglets button.actif { background: var(--accent); color: #fff; border-color: var(--accent); }
-/* Écrans étroits (tablette en portrait) : une colonne et des onglets Saisie / Fiche.
-   Ces règles sont placées APRÈS la règle générale .onglets (anomalie corrigée : la règle
-   générale masquait les onglets sous 980 px et la fiche devenait inaccessible). */
-@media (max-width: 980px) {
-  .contenu { grid-template-columns: minmax(0, 1fr); }
-  .onglets { display: flex; }
-  .masque-etroit { display: none !important; }
-}
+/* Barre d'onglets Patient / Prise en charge / Avis SMIT : fixée en bas, à toutes les largeurs
+   (anomalie ancienne à ne pas reproduire : une règle masquant les onglets rendait la fiche inaccessible). */
+.onglets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; }
+/* Une seule vue à la fois. */
+.masque { display: none !important; }
 
 /* Cartes */
 .carte { background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 14px 16px; }
@@ -209,7 +203,7 @@ details.discret > summary { font-weight: normal; font-size: 0.88rem; }
 
 @media print {
   .app { height: auto; }
-  .colonne-saisie, .onglets, .bouton-resume { display: none !important; }
+  .colonne-saisie, .colonne-avis, .onglets, .bouton-resume { display: none !important; }
   .colonne-resultat { overflow: visible; display: flex !important; }
   .contenu { grid-template-columns: 1fr; }
 }
@@ -402,13 +396,6 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 .fg-reevaluation { background: var(--attention); }
 @media (max-width: 480px) { .fg-ligne { grid-template-columns: minmax(64px, 88px) minmax(0, 1fr); gap: 6px; } }
 
-/* Écran étroit : onglets en bas, à portée du pouce */
-@media (max-width: 980px) {
-  .onglets { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0; gap: 6px; background: var(--surface); border-top: 1px solid var(--bord); box-shadow: 0 -6px 18px -12px rgba(28, 24, 48, 0.35); padding: 6px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
-  .onglets button { border: 0; min-height: 48px; border-radius: 14px; background: transparent; color: var(--texte-2); }
-  .onglets button.actif { background: var(--accent-clair); color: var(--accent-texte); box-shadow: inset 0 0 0 2px var(--accent); }
-  .contenu { padding-bottom: 84px; }
-}
 @media print { .onglets, .progression { display: none !important; } }
 /* Une section atteinte depuis les étapes ne passe pas sous la barre de progression collante. */
 .colonne-saisie section.carte { scroll-margin-top: 150px; }
@@ -425,3 +412,117 @@ section.carte.section-manquante { border-left: 4px solid var(--attention); }
 @media print { .bouton-repli, .tout-deplier { display: none !important; } }
 /* Les libellés pour lecteur d'écran (position absolue) restent dans la liste défilante des étapes. */
 .etapes { position: relative; }
+
+/* =====================================================================
+   Planche « Tactile » (v9) : une vue à la fois, barre d'onglets fixée en
+   bas (Patient / Prise en charge / Avis SMIT), fiche comme la planche 5,
+   plus la frise graphique (seul emprunt à la planche 4).
+   ===================================================================== */
+.app { height: auto; min-height: 100vh; }
+.bandeau, .barre-contexte { padding-inline: max(16px, calc((100% - 760px) / 2 + 16px)); }
+.barre-contexte { position: sticky; top: 0; z-index: 10; max-height: none; overflow: visible; }
+#resume-patient { max-height: 40vh; overflow-y: auto; }
+.contenu { display: block; max-width: 760px; width: 100%; margin: 0 auto; padding: 12px 16px calc(100px + env(safe-area-inset-bottom, 0px)); overflow: visible; min-height: 0; }
+.colonne-saisie, .colonne-resultat, .colonne-avis { display: flex; flex-direction: column; gap: 12px; min-width: 0; position: relative; overflow: visible; padding-right: 0; }
+.colonne-saisie section.carte { scroll-margin-top: calc(var(--haut-barre, 200px) + 12px); }
+
+/* Progression dans la barre permanente (vue Patient seulement) */
+.barre-contexte .progression { position: static; background: transparent; box-shadow: none; padding: 10px 0 0; border-radius: 0; }
+
+/* Barre d'onglets du bas */
+.onglets { margin: 0; gap: 0; background: var(--surface); border-top: 1px solid var(--bord); box-shadow: 0 -6px 18px -12px rgba(28, 24, 48, 0.35); padding: 6px max(6px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px)); }
+.onglets button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px; padding: 4px; border: 0; border-radius: 14px; background: transparent; color: var(--texte-2); font-size: 0.8rem; font-weight: 600; line-height: 1.15; text-align: center; }
+.onglet-icone { width: 40px; height: 24px; border-radius: 999px; background: var(--bord); flex: none; }
+.onglets button.actif { color: var(--accent-texte); }
+.onglets button.actif .onglet-icone { background: var(--accent-clair); box-shadow: inset 0 0 0 2px var(--accent); }
+.onglets .badge { font-size: 0.66rem; padding: 0 6px; }
+@media (min-width: 761px) { .onglets { padding-inline: calc((100% - 560px) / 2); } }
+
+/* Fiche : pas de cadre, blocs posés sur le fond */
+.carte.fiche, .carte.fiche.urgence, .carte.fiche.attention { background: transparent; border: 0; box-shadow: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.fiche .fiche-section { margin: 0; }
+.fiche .fiche-section > h3 { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--texte-2); font-weight: 700; margin: 0 0 7px; border: 0; padding: 0; }
+.fiche .fiche-section:empty { display: none; }
+
+/* En-tête : pastille, situation, sous-titre */
+.entete-fiche { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.entete-fiche > .badge { font-size: 0.75rem; font-weight: 700; padding: 2px 9px; }
+.carte .entete-fiche h2 { display: block; margin: 6px 0 2px; font-size: 1.32rem; font-weight: 800; line-height: 1.2; }
+.entete-fiche .sous-titre { margin: 0; color: var(--texte-2); font-size: 0.92rem; }
+.entete-fiche .aide { margin: 2px 0 0; }
+
+/* Éléments à compléter */
+.fiche .elements-manquants { margin: 0; background: var(--attention-clair); box-shadow: none; border-radius: 20px; padding: 10px 14px; }
+
+/* Synthèse : blocs, traitement en encadré vert plein */
+.synthese-dl { display: flex; flex-direction: column; gap: 0; }
+.synthese-dl dt { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--texte-2); font-weight: 700; margin: 14px 0 7px; }
+.synthese-dl dt:first-child { margin-top: 0; }
+.synthese-dl dd { margin: 0; }
+.synthese-dl dd:not(.traitement) { background: var(--surface); border-radius: 14px; padding: 10px 12px; }
+.synthese-dl dd ul { padding-left: 1.1em; }
+.synthese-dl dt.traitement-label { background: var(--ok); color: #cdeedb; border-radius: 20px 20px 0 0; padding: 16px 18px 4px; margin: 14px 0 0; font-size: 0.74rem; }
+.synthese-dl dt.traitement-label:first-child { margin-top: 0; }
+.synthese-dl dd.traitement { background: var(--ok); color: #fff; border-radius: 0 0 20px 20px; padding: 4px 18px 18px; box-shadow: 0 12px 24px -14px rgba(22, 120, 74, 0.7); }
+.synthese-dl dd.traitement .traitement-nom { display: inline-block; font-size: 1.9rem; line-height: 1.1; color: #fff; font-weight: 800; }
+.synthese-dl dd.traitement .dci strong, .synthese-dl dd.traitement .dose-principale strong, .synthese-dl dd.traitement .rein-adaptee, .synthese-dl dd.traitement .rein-adaptee strong, .synthese-dl dd.traitement .adaptation { color: #fff; }
+.synthese-dl dd.traitement.avec-adaptation .traitement-nom { font-weight: 600; }
+.synthese-dl dd.traitement .synthese-prescription { margin-top: 8px; font-size: 1.04rem; }
+.synthese-dl dd.traitement .aide, .synthese-dl dd.traitement .rein-sans_adaptation { color: rgba(255, 255, 255, 0.9); }
+.synthese-dl dd.traitement a { color: #fff; }
+.synthese-dl dd.traitement .badge { background: rgba(255, 255, 255, 0.16); color: #fff; border: 1px solid rgba(255, 255, 255, 0.28); }
+.synthese-dl dd.traitement .avert { color: #fff; background: rgba(0, 0, 0, 0.16); border-radius: 10px; padding: 4px 9px; margin-top: 4px; }
+/* Ce qui rend la proposition provisoire ou non calculée reste en orange sur fond clair : jamais noyé dans le vert. */
+.synthese-dl dd.traitement .etat-proposition, .synthese-dl dd.traitement .rein-non_calculee { background: var(--attention-clair); color: var(--attention); border-radius: 12px; padding: 8px 10px; margin: 0 0 8px; }
+.synthese-dl dd.traitement .rein-non_calculee { margin: 6px 0 0; }
+.actions-traitement { margin-top: 12px; }
+.btn.retenir-traitement { background: #fff; color: #11633d; border: 1px solid #fff; min-height: 44px; font-weight: 700; }
+.btn.retenir-traitement:hover { background: #f1fbf5; }
+
+/* Points d'attention */
+.bloc-points .points-attention { margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.95rem; }
+.bloc-points .points-attention li { margin: 0; }
+
+/* Autres options (alternatives) */
+.fiche .autres-options > summary { background: var(--surface); border-radius: 14px; padding: 12px 14px; min-height: 44px; }
+.fiche .autres-options[open] > summary { margin-bottom: 8px; }
+.fiche .option { border: 0; background: var(--surface); border-radius: 14px; }
+.fiche details:not(.autres-options):not(.discret) > summary { cursor: pointer; }
+
+/* Calendrier : cartes, « maintenant » en violet clair */
+.fiche .frise-graphique { background: var(--surface); border-radius: 20px; }
+table.frise { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px; }
+table.frise thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+table.frise th, table.frise td { background: var(--surface); border-bottom: 0; padding: 10px 12px; }
+table.frise th.moment { width: 30%; min-width: 6.5em; border-radius: 14px 0 0 14px; }
+table.frise td { border-radius: 0 14px 14px 0; }
+table.frise tr.maintenant th, table.frise tr.maintenant td { background: var(--accent-clair); }
+table.frise tr.maintenant th.moment { color: var(--accent-texte); }
+
+/* Autres blocs de la fiche */
+.fiche .fiche-section > ul { background: var(--surface); border-radius: 14px; padding: 10px 12px 10px 28px; margin: 0; }
+.fiche .bloc-points > ul.points-attention { padding: 10px 12px; list-style: none; }
+
+/* Pied de fiche : sources, puis demande d'avis */
+.fiche .fin-fiche { border-top: 1px solid var(--bord); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: var(--texte-2); }
+.btn.demander-avis { order: 1; min-height: 44px; width: 100%; background: transparent; color: var(--accent-texte); border: 1px solid var(--accent); border-radius: 14px; font-weight: 600; }
+
+@media print {
+  .barre-contexte { position: static; }
+  .contenu { max-width: none; padding-bottom: 0; }
+  .carte.fiche { display: block; }
+  .demander-avis { display: none !important; }
+  .synthese-dl dt.traitement-label, .synthese-dl dd.traitement { background: #fff; border: 2px solid var(--ok); box-shadow: none; }
+  .synthese-dl dt.traitement-label, .synthese-dl dd.traitement, .synthese-dl dd.traitement * { color: #000 !important; }
+  .synthese-dl dt.traitement-label { border-bottom: 0; }
+  .synthese-dl dd.traitement { border-top: 0; }
+  .retenir-traitement { display: none !important; }
+}
+.entete-fiche > .badge::first-letter { text-transform: uppercase; }
+.synthese-dl dd.traitement .refs-inline, .synthese-dl dd.traitement .refs-inline * { color: rgba(255, 255, 255, 0.9); }
+.synthese-dl dd.traitement .refs-inline .etat-source { color: #ffe2c2; }
+/* Adaptation rénale en pastille, comme sur la planche (sauf « non calculée », gardée en alerte orange). */
+.synthese-dl dd.traitement .rein:not(.rein-non_calculee) { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.28); font-size: 0.88rem; }
+.synthese-dl dd.traitement .rein:not(.rein-non_calculee) { border-radius: 12px; }
+/* Téléphone : une seule colonne de champs, comme la planche (les boutons − / + de 44 px ne tiennent pas à deux). */
+@media (max-width: 600px) { .deux-colonnes { grid-template-columns: minmax(0, 1fr); } }
